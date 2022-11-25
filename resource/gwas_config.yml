@@ -1,0 +1,15 @@
+-
+  file: '/mnt/mac32/prepare_gwas_data/Eczema/EAGLE_AD_GWAS_results_2015_hg38.tsv.gz'
+  trait: 'eczemas'
+  sample_size: 116863
+  type: cc
+  col_name_mapping:
+    snp: 'hm_rsid' #optional
+    chrom: 'hm_chrom'
+    position: 'hm_pos'
+    beta: 'hm_beta'
+    effect_allele: 'hm_effect_allele'
+    other_allele: 'hm_other_allele'
+    pvalue: 'p_value'
+    se: 'standard_error'
+    eaf: 'hm_effect_allele_frequency'

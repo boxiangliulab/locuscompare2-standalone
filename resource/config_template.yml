@@ -1,0 +1,14 @@
+working_dir: '/ebs2/linyi/00_data/locuscompare2/output/silver_std'
+input:
+  # gwas, eqlt config will be generated here
+  vcf: '/ebs2/linyi/00_data/locuscompare2/raw/genotype/phased_hg38'
+  genecode: '/ebs2/linyi/00_data/locuscompare2/raw/genecode/v26/gencode.v26.basic.annotation.gtf.gz'
+  ld_block_loci_file: '/ebs2/linyi/00_data/locuscompare2/raw/ld_block/eur_hg38_ld_block.bed'
+  eqtl_finemapping_file: '/ebs2/linyi/00_data/locuscompare2/raw/eqtl/gtex_v8/finemapping/gtex_v8.eqtl_annot_rsid.vcf.gz'
+  prediction_dir: '/ebs2/linyi/00_data/locuscompare2/raw/pred_model_cov/eqtl/mashr'
+  reference_genotype_panel_ld_ref_file: '/ebs2/linyi/00_data/locuscompare2/raw/ld_ref/refld.1kg.nfe.b38'
+p-value_threshold:
+  gwas: 1.0E-8
+  eqtl: 1.0E-6
+neighbour_snp_range: 50
+population: 'EUR'

@@ -1,0 +1,16 @@
+-
+  file: '/mnt/mac32/biodata/colocalization-tools/raw/eqtl/Cells_EBV-transformed_lymphocytes.tsv.gz'
+  tissue: 'Cells_EBV-transformed_lymphocytes'
+  sample_size: 147
+  type: quant
+  col_name_mapping:
+    snp: 'rsid'
+    chrom: 'chromosome'
+    position: 'position'
+    beta: 'beta'
+    alt: 'alt'
+    ref: 'ref'
+    pvalue: 'pvalue'
+    se: 'se'
+    gene_id: 'molecular_trait_id'
+    maf: 'maf'
