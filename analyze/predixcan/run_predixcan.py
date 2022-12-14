@@ -58,7 +58,7 @@ class Predixcan:
                                         usecols=['chrom', 'gene_file'],
                                         dtype={'chrom': 'string'})
         # gene column name should be the same as predixcan output gene column name
-        eqtl_summary_df['gene'] = eqtl_summary_df['gene_file'].str.rstrip('.tsv')
+        eqtl_summary_df['gene'] = eqtl_summary_df['gene_file'].str.rstrip('.tsv.gz')
         eqtl_summary_df['eqtl_path'] = eqtl_summary_df[['chrom', 'gene_file']].apply(
             lambda row: os.path.join(eqtl_output_dir, *row), axis=1)
         # 2 columns:[gene,eqtl_path] left after drop unused columns
@@ -99,7 +99,7 @@ class Predixcan:
             report_df.to_csv(output_file_path, sep=const.output_spliter, header=True, index=False)
 
     def __get_output_file(self, working_dir):
-        _output_file_name = f'{gpr.PredixcanGwasProcessor.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv'
+        _output_file_name = f'{gpr.PredixcanGwasProcessor.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 
 

@@ -7,7 +7,7 @@ if (length(args) < 2) {
 }
 input_file_path = args[1]
 output_file_path = args[2]
-if (!file.exists(input_file_path) || !file.info(input_file_path)$size > 0) {
+if (is.na(input_file_path) || !file.exists(input_file_path) || !file.info(input_file_path)$size > 0) {
   print("input_file_path file does not exist or is empty!")
   q(save = "no")
 }

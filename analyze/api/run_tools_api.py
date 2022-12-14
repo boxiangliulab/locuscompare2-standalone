@@ -6,7 +6,7 @@ import analyze.coloc.run_coloc as rc
 import analyze.fastenloc.run_fastenloc as rf
 import analyze.fastenloc.gwas_data_processor as fgdp
 from analyze.predixcan import run_predixcan as rp, gwas_data_processor as pgdp
-from analyze.smr import run_smr as rs, gwas_data_processor as sgdp, eqtl_data_processor as sedp
+from analyze.smr import run_smr as rs, eqtl_data_processor as sedp
 from analyze.ecaviar import run_ecaviar as run_e, data_processor as edp
 from common import global_data_process as gdp
 from common import coloc_utils as util
@@ -35,7 +35,7 @@ def __preprocess_and_run_jlim(global_processor):
 
 
 def __preprocess_and_run_fastenloc(processor):
-    _working_dir = os.path.join(processor.tool_parent_dir, fgdp.FastenlocGwasProcessor.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
     fgdp_obj = fgdp.FastenlocGwasProcessor()
     fastenloc_gwas_result = fgdp_obj.prepare_gwas_data(working_dir=_working_dir,
                                                        gwas_preprocessed_file=processor.gwas_preprocessed_file,
@@ -108,12 +108,8 @@ def __preprocess_and_run_predixcan(glob_processor):
 
 
 def __preprocess_and_run_smr(glob_processor):
-    _working_dir = os.path.join(glob_processor.tool_parent_dir, sgdp.SmrGwasProcessor.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(glob_processor.tool_parent_dir, rs.Smr.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
-    smr_gwas_processor = sgdp.SmrGwasProcessor()
-    smr_gwas_result = smr_gwas_processor.prepare(_working_dir,
-                                                 glob_processor.gwas_preprocessed_file,
-                                                 glob_processor.gwas_col_dict)
     # prepare gwas file finished
     _eqtl_p_thresh = glob_processor.global_config['p-value_threshold']['eqtl']
     pop = glob_processor.global_config.get('population', 'EUR').upper()
@@ -129,8 +125,7 @@ def __preprocess_and_run_smr(glob_processor):
                                                         glob_processor.ref_vcf_dir,
                                                         pop)
     # prepare ldref file finished
-    _gwas_chrom_group_dir = smr_gwas_result[0]
-    if len(os.listdir(_gwas_chrom_group_dir)) == 0:
+    if len(os.listdir(glob_processor.gwas_output_dir)) == 0:
         logging.warning('Dependent files not found, did you run gwas_data_processor?')
         return None
     _subset_vcf_dir = smr_eqtl_result[0]
@@ -149,7 +144,7 @@ def __preprocess_and_run_smr(glob_processor):
                    gdp.Processor.VAR_ID_COL_NAME,
                    _genecode_file,
                    glob_processor.gwas_filter_file,
-                   _gwas_chrom_group_dir,
+                   glob_processor.gwas_output_dir,
                    glob_processor.gwas_preprocessed_file,
                    glob_processor.gwas_col_dict,
                    _gwas_sample_size,
@@ -187,7 +182,6 @@ def __preprocess_and_run_ecaviar(glob_processor):
     ecaviar = run_e.ECaviar()
     return asyncio.run(ecaviar.run(working_dir=_working_dir,
                                    candidate_data_dir=preproc_rst_dir,
-                                   gwas_cluster_dir=glob_processor.gwas_cluster_output_dir,
                                    gwas_preprocessed_file=glob_processor.gwas_preprocessed_file,
                                    eqtl_grouped_dir=glob_processor.eqtl_output_dir,
                                    var_id_col_name=gdp.Processor.VAR_ID_COL_NAME,

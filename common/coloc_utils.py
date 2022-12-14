@@ -21,7 +21,7 @@ shell_command_get_vcf_data_by_position = 'tabix {} chr{}:{}-{}'
 def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefix_col, readonly_cols=None, dtype=None):
     """
 
-    output file names: {working_dir}/{by_dir_col}/{by_file_prefix_col}.tsv
+    output file names: {working_dir}/{by_dir_col}/{by_file_prefix_col}.tsv.gz
     """
     if not os.path.exists(src_file_path) or os.path.getsize(src_file_path) <= 0:
         warnings.warn(
@@ -35,7 +35,7 @@ def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefi
                 chrom = group[by_dir_col].iloc[0]
                 subdir = os.path.join(working_dir, f'{chrom}')
                 Path(subdir).mkdir(parents=True, exist_ok=True)
-                csv_file = os.path.join(subdir, f'{name}.tsv')
+                csv_file = os.path.join(subdir, f'{name}.tsv.gz')
                 # check csv_file existence and determine write mode
                 if os.path.exists(csv_file) and os.path.getsize(csv_file) > 0:
                     mode = 'a'
@@ -401,7 +401,7 @@ def union_range(subset_df, target_df, snp_col_name, chrom_col_name, pos_col_name
         for _, row in disjoint_set_df.iterrows():
             range_min = row.loc[range_min_pos_col_name]
             range_max = row.loc[range_max_pos_col_name]
-            file_name = f'{row.loc[snp_col_name]}-chr{row.loc[chrom_col_name]}.tsv'
+            file_name = f'{row.loc[snp_col_name]}-chr{row.loc[chrom_col_name]}.tsv.gz'
             range_df = target_df[(target_df[chrom_col_name] == row[chrom_col_name]) &
                                  (row.loc[range_min_pos_col_name] <= target_df[pos_col_name]) &
                                  (target_df[pos_col_name] <= row.loc[range_max_pos_col_name])]
@@ -534,6 +534,8 @@ def check_file_or_path_exist(file_path, raise_error=True):
 def mapping_var_id_to_rsid(result_df, result_df_var_id_col_name,
                            result_df_gene_id_col_name, gwas_preprocessed_file=None,
                            ref_var_id_col_name=None, gwas_col_dict=None, eqtl_col_dict=None):
+    if result_df is None or result_df.shape[0] == 0:
+        return result_df
     if gwas_preprocessed_file is not None and gwas_col_dict.get('snp') is not None and ref_var_id_col_name is not None:
         mapping_df = pd.read_table(gwas_preprocessed_file, usecols=[ref_var_id_col_name, gwas_col_dict['snp']])
         mapping_df.rename({gwas_col_dict['snp']: 'rsid'}, axis='columns', inplace=True)
@@ -549,10 +551,10 @@ def mapping_var_id_to_rsid(result_df, result_df_var_id_col_name,
         merged_genes = set()
         for indx, row in result_df.iterrows():
             gene_id = row.loc[result_df_gene_id_col_name]
-            if gene_id in merged_genes:
+            eqtl_gene_file = row.loc['eqtl_path']
+            if (gene_id in merged_genes) or (not file_exists(eqtl_gene_file)):
                 continue
 
-            eqtl_gene_file = row.loc['eqtl_path']
             mapping_df = pd.read_table(eqtl_gene_file, usecols=[ref_var_id_col_name, eqtl_col_dict['snp']])
             mapping_df.rename({eqtl_col_dict['snp']: 'rsid'}, axis='columns', inplace=True)
             # merged has 2 or 3 columns:
@@ -564,6 +566,8 @@ def mapping_var_id_to_rsid(result_df, result_df_var_id_col_name,
             merged_dfs.append(merged)
             merged_genes.add(gene_id)
         del merged_genes
+        if len(merged_dfs) == 0:
+            return result_df
         merged_df = pd.concat(merged_dfs)
         del merged_dfs
         # merged_df has 2 columns: result_df_var_id_col_name, rsid
@@ -609,6 +613,24 @@ async def async_run_cmd(cmd):
         print(f'[stderr]\n{stderr.decode()}')
 
 
+async def gather_with_limit(limit, *coros):
+    """
+    asyncio.gather alternative with limit number of concurrent coroutines, mainly used to avoid OOM
+
+    limit
+        Number of concurrent coroutines
+    coros
+        coroutines, NOT tasks
+    """
+    semaphore = asyncio.Semaphore(limit)
+
+    async def sem_coro(coro):
+        async with semaphore:
+            return await coro
+
+    return await asyncio.gather(*(sem_coro(c) for c in coros), return_exceptions=True)
+
+
 def run_logging_command(command):
     p = subprocess.Popen(command,
                          stdout=subprocess.PIPE,
@@ -652,3 +674,28 @@ def remove_nan_from_ld(ld_file, header):
     ld_df.to_csv(ld_file, mode='w', sep=' ', index=False, header=False)
     return nan_cols
 
+
+def get_tools_params(tool_name, param_prefix='--'):
+    params_str = ''
+    param_dict = get_tools_params_dict(tool_name)
+    if param_dict is not None:
+        for pk, pv in param_dict.items():
+            if pv is not None:
+                params_str += f'{param_prefix}{pk} {pv} '
+    else:
+        logging.info(f'No parameter config for {tool_name}, use default parameters')
+    return params_str
+
+
+def get_tools_params_dict(tool_name):
+    params = None
+    if file_exists(const.tools_config):
+        with open(const.tools_config, 'r') as cfg_file:
+            params = yaml.safe_load(cfg_file)
+            if params is not None and tool_name in params:
+                params = params[tool_name]
+            else:
+                logging.info(f'No parameter config for {tool_name}, use default parameters')
+    else:
+        logging.info(f'No parameter config for {tool_name}, use default parameters')
+    return {} if params is None else params

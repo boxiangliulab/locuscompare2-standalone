@@ -8,7 +8,7 @@ input:
   prediction_dir: '/ebs2/linyi/00_data/locuscompare2/raw/pred_model_cov/eqtl/mashr'
   reference_genotype_panel_ld_ref_file: '/ebs2/linyi/00_data/locuscompare2/raw/ld_ref/refld.1kg.nfe.b38'
 p-value_threshold:
-  gwas: 1.0E-8
+  gwas: 5.0E-8
   eqtl: 1.0E-6
-neighbour_snp_range: 50
+neighbour_snp_range: 25
 population: 'EUR'

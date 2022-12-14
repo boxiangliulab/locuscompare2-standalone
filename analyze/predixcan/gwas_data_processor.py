@@ -55,7 +55,7 @@ class PredixcanGwasProcessor:
         return output_processed_file
 
     def __get_output_file(self, working_dir):
-        return os.path.join(working_dir, 'gwas_processed.tsv')
+        return os.path.join(working_dir, 'gwas_processed.tsv.gz')
 
 
 if __name__ == '__main__':

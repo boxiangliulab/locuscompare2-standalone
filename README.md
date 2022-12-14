@@ -171,16 +171,16 @@ input:
 p-value_threshold:
   # GWAS and eQTL significance P-value threshold. Coefficient type should be float. 
   # For example, use 5.0E-8 rather than 5E-8
-  gwas: 1.0E-8
+  gwas: 5.0E-8
   eqtl: 1.0E-6
   
 # The upstream and downstream variants number of a significant snp
-neighbour_snp_range: 50
+neighbour_snp_range: 25
 # Your research population, EUR, EAS, SAS, AMR or AFR
 population: 'EUR'
 ```
 
-### Generate Multiple Configs GWAS and eQTL
+### Generate Multiple Configs GWAS and eQTL (Optional)
 If you need to run a number of GWAS and eQTL data, you need to provide config file for each GWAS-eQTL pair.
 
 The [config generator](/common/config_generator.py) is a tool to generate config files.
@@ -197,7 +197,13 @@ python3 colotools_project_path/common/config_generator.py --out output_dir
 ```
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
 
-### 3. Run Colotools
+### Config Arguments for Each Tool (Optional)
+
+You can set arguments for each tools by creating a config file named 'tools_config.yml' in project root folder 'colocalization-tools/'.
+
+The configuration example is in [/resource/tools_config.yml](/resource/tools_config.yml) .
+
+## 3. Run Colotools
 
 + Run Colotools in command line
 ```shell

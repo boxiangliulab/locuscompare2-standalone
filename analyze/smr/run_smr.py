@@ -7,7 +7,7 @@ from pathlib import Path
 import logging
 import pandas as pd
 import pyranges as pr
-import analyze.smr.gwas_data_processor as gpr
+import analyze.smr.eqtl_data_processor as edp
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
@@ -15,6 +15,8 @@ from common import coloc_utils as utils, global_data_process as gdp, constants a
 
 
 class Smr:
+    COLOC_TOOL_NAME = 'smr'
+
     def __init__(self):
         logging.info('init Smr')
 
@@ -49,6 +51,8 @@ class Smr:
 
         gwas_files = {}
         for chrom_group_file in os.listdir(gwas_chrom_group_dir):
+            if not (chrom_group_file.endswith('.tsv') or chrom_group_file.endswith('.tsv.gz')):
+                continue
             chr_nums = re.findall(r'\d+', chrom_group_file)
             if len(chr_nums) == 0:
                 continue
@@ -60,7 +64,6 @@ class Smr:
         # Loop to process all eQTL trait file
         gwas_chroms = pval_filtered_gwas_df[gwas_col_dict['chrom']].unique().tolist()
 
-        smr_min_snp = 1
         genecode_df = self.__prepare_genecode(genecode_file)
         for _, row in eqtl_summary_df.iterrows():
             chrom = str(row.loc['chrom'])
@@ -69,7 +72,7 @@ class Smr:
             eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
             gene_id = utils.get_file_name(eqtl_gene_file)
             eqtl_positions = ast.literal_eval(row.loc['positions'])
-            if len(eqtl_positions) < smr_min_snp:
+            if len(eqtl_positions) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
             if not pval_filtered_gwas_df[pval_filtered_gwas_df[gwas_col_dict['chrom']] == chrom].loc[
                    :, gwas_col_dict['position']].isin(eqtl_positions).any():
@@ -77,7 +80,7 @@ class Smr:
                 continue
             gwas_file = gwas_files[chrom]
             candidate_gwas_df = pd.read_table(gwas_file, sep=const.column_spliter, dtype=gwas_type_dict)
-            if len(candidate_gwas_df) < smr_min_snp:
+            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
             # eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter, dtype=eqtl_type_dict)
             # 这里过滤不过滤都一样, smr代码会自行进行过滤
@@ -89,11 +92,11 @@ class Smr:
             candidate_eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter, dtype=eqtl_type_dict)
             candidate_gwas_df = candidate_gwas_df[
                 candidate_gwas_df[var_id_col_name].isin(candidate_eqtl_trait_df[var_id_col_name])].copy()
-            if len(candidate_gwas_df) < smr_min_snp:
+            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
             utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name,
                                           candidate_gwas_df, var_id_col_name)
-            if len(candidate_gwas_df) < smr_min_snp:
+            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
             gwas_input_path = os.path.join(input_dir, f'gwas_chr{chrom}_{gene_id}.tsv')
             eqtl_input_path = os.path.join(input_dir, f'eqtl_chr{chrom}_{gene_id}.tsv')
@@ -106,7 +109,7 @@ class Smr:
                                             sep=const.column_spliter, header=0,
                                             usecols=[eqtl_col_dict['position'], var_id_col_name],
                                             dtype={eqtl_col_dict['position']: 'Int64'})
-            if len(vcf_matching_df) < smr_min_snp:
+            if len(vcf_matching_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
             # Drop GWAS rows that does not have vcf records
             # SNP in vcf_matching_df is subset of SNP in candidate_gwas_df, so it's fine to drop intersect rows here
@@ -114,7 +117,7 @@ class Smr:
             # Drop eQTL rows that does not have vcf records
             utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name, vcf_matching_df, var_id_col_name)
             del vcf_matching_df
-            if len(candidate_gwas_df) < smr_min_snp:
+            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
             eqtl_flist_file = os.path.join(input_dir, f'{gene_id}_flist.txt')
             eqtl_besd_file = os.path.join(input_dir, f'{gene_id}')
@@ -202,7 +205,7 @@ class Smr:
         return output_file
 
     def get_output_file(self, working_dir):
-        _output_file_name = f'{gpr.SmrGwasProcessor.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv'
+        _output_file_name = f'{Smr.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 
     def __get_input_dir(self, working_dir):
@@ -242,7 +245,7 @@ class Smr:
         report_df = pd.concat(single_result_list)
         report_df.sort_values(by='p_SMR', ascending=True, inplace=True)
         report_df.drop_duplicates(subset=['topSNP', 'p_SMR', 'gene_id'], inplace=True)
-        report_df = utils.mapping_var_id_to_rsid(report_df, 'topSNP', 'probeID',
+        report_df = utils.mapping_var_id_to_rsid(report_df, 'topSNP', 'gene_id',
                                                  gwas_preprocessed_file, var_id_col_name,
                                                  gwas_col_dict, eqtl_col_dict)
         if len(report_df) <= 0:
@@ -264,7 +267,7 @@ if __name__ == '__main__':
             glob_processor.gwas_filter_file) <= 0 or not os.path.exists(
         glob_processor.eqtl_output_report) or os.path.getsize(glob_processor.eqtl_output_report) <= 0:
         raise ValueError(f'Dependant files not found, did you run global_data_process?')
-    _working_dir = os.path.join(glob_processor.tool_parent_dir, gpr.SmrGwasProcessor.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(glob_processor.tool_parent_dir, Smr.COLOC_TOOL_NAME)
     _gwas_chrom_group_dir = sys.argv[1]
     if len(os.listdir(_gwas_chrom_group_dir)) == 0:
         raise ValueError(f'Dependant files not found, did you run gwas_data_processor?')

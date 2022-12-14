@@ -310,7 +310,7 @@ class Jlim:
 
         # Consolidate files and sort pvlaue
         Path(output_analyze_output_dir).mkdir(parents=True, exist_ok=True)
-        reppert_file = f'{output_jlim_output_whole_file}.tsv'
+        reppert_file = f'{output_jlim_output_whole_file}.tsv.gz'
         if len(jlim_out_list) > 0:
             pd.concat(jlim_out_list).sort_values(self.jlim_output_file_pvalue_clo_name).to_csv(
                 reppert_file, header=True,

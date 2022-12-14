@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import datetime
 import logging
+import re
 
 sys.path.append(os.path.abspath(os.path.dirname(Path(__file__).resolve())))
 import coloc_utils as utils
@@ -51,6 +52,7 @@ class Processor:
         self.gwas_preprocessed_file = self.config_holder.gwas_preprocessed_file
         self.gwas_filter_file = self.config_holder.gwas_filter_file
         self.gwas_cluster_output_dir = self.config_holder.gwas_cluster_output_dir
+        self.gwas_output_dir = self.config_holder.gwas_output_dir
         self.gwas_cluster_summary = self.config_holder.gwas_cluster_summary
 
         # vcf input output path
@@ -59,17 +61,20 @@ class Processor:
 
     def preprocess_eqtl(self):
         # group by trait
+        logging.info('start to split eQTL file by gene')
         utils.delete_dir(self.eqtl_output_dir)
         Path(self.eqtl_output_dir).mkdir(exist_ok=True, parents=True)
         utils.split_file_by_col_name(self.eqtl_output_dir, f'{self.global_config["input"]["eqtl"]["file"]}',
                                      self.eqtl_col_dict['chrom'], self.eqtl_col_dict['gene_id'],
                                      readonly_cols=self.eqtl_col_dict.values())
+        logging.info('finish split eQTL file')
         # drop na or no significant snp gene file, sort by position
         total_gene_file_count = 0
         good_result_count = 0
         chrom_list = []
         gene_file_list = []
         postions_list = []
+        logging.info('start to filter gene eQTL file')
         for chrom_dir in os.listdir(f'{self.eqtl_output_dir}'):
             if not chrom_dir.startswith('.'):
                 for eqtl_file in os.listdir(f'{self.eqtl_output_dir}/{chrom_dir}'):
@@ -86,7 +91,8 @@ class Processor:
         eqtl_filter_result = pd.DataFrame(
             {'chrom': chrom_list, 'gene_file': gene_file_list, 'positions': postions_list})
         eqtl_filter_result.to_csv(self.eqtl_output_report, sep=const.output_spliter, index=False)
-        logging.info(f'processed {total_gene_file_count} gene files, good result {good_result_count}')
+        logging.info(
+            f'finish filter gene eQTL file, {total_gene_file_count} gene files, good result {good_result_count}')
         return eqtl_filter_result
 
     def __prepare_eqtl_data(self, eqtl_trait_file_path):
@@ -154,7 +160,8 @@ class Processor:
             gwas_df['varbeta'] = gwas_df[self.gwas_col_dict['se']] ** 2
         gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper()
         gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper()
-        logging.info(f'Writing GWAS preprocessed data to {self.gwas_preprocessed_file}, time: {datetime.datetime.now()}')
+        logging.info(
+            f'Writing GWAS preprocessed data to {self.gwas_preprocessed_file}, time: {datetime.datetime.now()}')
         gwas_df.to_csv(self.gwas_preprocessed_file, sep=const.output_spliter, header=True, index=False)
         logging.info(f'Filtering GWAS preprocessed data by p-value, time: {datetime.datetime.now()}')
         pval_filter_gwas_df = \
@@ -171,16 +178,65 @@ class Processor:
             return
         neighbor_range = self.global_config['neighbour_snp_range']
         logging.info(
-            f'Clustering GWAS SNP ranges, range files will be written to {self.gwas_cluster_output_dir}, time: {datetime.datetime.now()}')
-        # Union GWAS ranges if they overlap with each other
+            f'Clumping GWAS SNPs, range files will be written to {self.gwas_cluster_output_dir}, time: {datetime.datetime.now()}')
+        # perform LD clumping on gwas input
+        utils.delete_dir(self.gwas_output_dir)
+        Path(self.gwas_output_dir).mkdir(exist_ok=True, parents=True)
         utils.delete_dir(self.gwas_cluster_output_dir)
         Path(self.gwas_cluster_output_dir).mkdir(exist_ok=True, parents=True)
-        union_range_gwas_df = utils.union_range(pval_filter_gwas_df, gwas_df,
-                                                Processor.VAR_ID_COL_NAME, self.gwas_col_dict['chrom'],
-                                                self.gwas_col_dict['position'], self.gwas_col_dict['pvalue'],
-                                                neighbor_range, range_file_dir=self.gwas_cluster_output_dir)
-        logging.info(f'Writing GWAS SNP ranges summary to {self.gwas_cluster_summary}, time: {datetime.datetime.now()}')
-        union_range_gwas_df.to_csv(self.gwas_cluster_summary, sep=const.output_spliter, header=True, index=False)
+        population = self.global_config.get('population', 'EUR').upper()
+        ref_vcf_dir = self.global_config['input']['vcf']
+        chrom_list = []
+        range_lead_list = []
+        positions_list = []
+        for name, group in gwas_df.groupby(self.gwas_col_dict['chrom']):
+            group_file = os.path.join(self.gwas_output_dir, f'chr{name}.tsv.gz')
+            group.to_csv(group_file, sep=const.output_spliter, header=True, index=False)
+            input_vcf = os.path.join(ref_vcf_dir, population, f'chr{name}.vcf.gz')
+            clumped_out = os.path.join(self.gwas_output_dir, f'chr{name}')
+            os.system(f'plink --vcf {input_vcf}  '
+                      f'--clump {group_file} '
+                      f'--clump-p1 {self.global_config["p-value_threshold"]["gwas"]} '
+                      f'--clump-p2 {self.global_config["p-value_threshold"]["gwas"]} '
+                      f'--clump-snp-field {self.gwas_col_dict["snp"]} '
+                      f'--clump-field {self.gwas_col_dict["pvalue"]} '
+                      f'--out {clumped_out}')
+            clumped_file = f'{clumped_out}.clumped'
+            if not os.path.exists(clumped_file) or os.path.getsize(clumped_file) <= 0:
+                logging.warning(f'No significant SNP on chromosome {name}')
+                continue
+            index_variant_df = pd.read_table(clumped_file, sep=r'\s+', usecols=['SNP', 'BP', 'SP2'])
+            for _, row in index_variant_df.iterrows():
+                peak_snps = re.sub(r'\(\d+\)', '', row.loc['SP2']).split(',')
+                range_df = utils.find_peak_range_df(name, row.loc['BP'], group, self.gwas_col_dict['chrom'],
+                                                    self.gwas_col_dict['position'], neighbor_range)
+                if len(peak_snps) == 0 or peak_snps[0] == 'NONE':
+                    peak_positions = [row.loc['BP']]
+                else:
+                    # consider the index snp(i.e. lead snp), index snp maybe on the edge of the cluster
+                    peak_snps.append(row.loc['SNP'])
+                    peak_positions = group.loc[group[self.gwas_col_dict['snp']].isin(peak_snps)][
+                        self.gwas_col_dict['position']].tolist()
+                # all peak_positions should be in range_df, else extends range_df
+                if not all(pos in range_df[self.gwas_col_dict['position']].values for pos in peak_positions):
+                    # retrieve range_df from group by peak_positions.min <= group[position] <= peak_positions.max
+                    range_df = group[(min(peak_positions) <= group[self.gwas_col_dict['position']]) & (
+                            group[self.gwas_col_dict['position']] <= max(peak_positions))]
+                range_lead_var_id = \
+                    range_df.loc[range_df[self.gwas_col_dict['position']] == row.loc['BP']][
+                        Processor.VAR_ID_COL_NAME].iloc[0]
+                positions_list.append(peak_positions)
+                chrom_list.append(name)
+                range_lead_list.append(range_lead_var_id)
+                file_name = f'{range_lead_var_id}-chr{name}.tsv.gz'
+                range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
+                                header=True,
+                                index=False)
+        logging.info(
+            f'Writing GWAS significant ranges summary to {self.gwas_cluster_summary}, time: {datetime.datetime.now()}')
+        cluster_summary_df = pd.DataFrame(
+            {'chrom': chrom_list, 'range_lead': range_lead_list, 'positions': positions_list})
+        cluster_summary_df.to_csv(self.gwas_cluster_summary, sep=const.output_spliter, header=True, index=False)
         logging.info(f'GWAS data preprocess completed, time: {datetime.datetime.now()}')
 
 

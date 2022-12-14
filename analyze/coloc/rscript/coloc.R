@@ -15,14 +15,20 @@ eqtl_type = args[7]
 src_gwas_path = args[8]
 # Original source eqtl file path to be appended to result file, optional
 src_eqtl_path = args[9]
+# prior probability a SNP is associated with trait 1, default 1e-4
+tp1 = as.numeric(args[10])
+# prior probability a SNP is associated with trait 2, default 1e-4
+tp2 = as.numeric(args[11])
+# prior probability a SNP is associated with both traits, default 1e-5
+tp12 = as.numeric(args[12])
 # The threshold to consider overall H4 is true, only when overall H4 is true, the SNP level H4 is considered as relevant, optional
-overall_h4_threshold = as.numeric(args[10])
+overall_h4_threshold = as.numeric(args[13])
 
-if (!file.exists(gwas_path) || !file.info(gwas_path)$size > 0) {
+if (is.na(gwas_path) || !file.exists(gwas_path) || !file.info(gwas_path)$size > 0) {
   print("GWAS file does not exist or is empty!")
   q(save = "no")
 }
-if (!file.exists(eqtl_path) || !file.info(eqtl_path)$size > 0) {
+if (is.na(eqtl_path) || !file.exists(eqtl_path) || !file.info(eqtl_path)$size > 0) {
   print("eQTL file does not exist or is empty!")
   q(save = "no")
 }
@@ -34,10 +40,10 @@ if (is.na(eqtl_sample_size)) {
 }
 gwas_df = read.table(file = gwas_path, header = T)
 eqtl_df = read.table(file = eqtl_path, header = T)
-if (is.na(gwas_type)) {
+if (is.na(gwas_type) || tolower(gwas_type) == 'na' || tolower(gwas_type) == 'none') {
   gwas_type = "cc"
 }
-if (is.na(eqtl_type)) {
+if (is.na(eqtl_type) || tolower(eqtl_type) == 'na' || tolower(eqtl_type) == 'none') {
   eqtl_type = "quant"
 }
 if (is.na(overall_h4_threshold)) {
@@ -92,7 +98,7 @@ d2 = list(snp = input$var_id_, beta = input$beta_eqtl, varbeta = input$varbeta_e
 
 # result = coloc.susie(s1, s2)
 
-result = coloc.abf(dataset1 = d1, dataset2 = d2)
+result = coloc.abf(dataset1 = d1, dataset2 = d2, p1 = tp1, p2 = tp2, p12 = tp12)
 
 if (is.null(result$summary)) {
   print(paste("No results for gene", input$gene_id[0:1]))

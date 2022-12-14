@@ -9,6 +9,8 @@ from sklearn import linear_model
 from sklearn import metrics
 from sklearn import svm
 from sklearn.model_selection import train_test_split
+from pulearn import BaggingPuClassifier
+
 from ranking.constants import GENE_ID_COL_NAME
 from ranking.constants import TOOL_SIG_COL_INFO
 from ranking.constants import RESULT_TYPE_PVAL
@@ -43,7 +45,7 @@ def read_sim_result(tool, rpts, sig_column):
     tool_df_list = []
     for idx, sim_model in enumerate(SIM_MODEL_ORDER):
         report = rpts.get(sim_model)
-        if report is None or len(report) == 0:
+        if report is None or len(report) == 0 or (not os.path.exists(report)) or os.path.getsize(report) <= 0:
             continue
         report_df = pd.read_table(report, usecols=[sig_column, GENE_ID_COL_NAME])
         report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -261,14 +263,49 @@ def train_lr_model(input_df, test_result_file):
     merged_df['prediction'] = y_pred
     predictions = [round(value) for value in y_pred]
     print("Accuracy of logistic regression:", metrics.accuracy_score(y_test, predictions))
-    print("MAE of random logistic regression:", metrics.mean_absolute_error(y_test, y_pred))
-    print("MSE of random logistic regression:", metrics.mean_squared_error(y_test, y_pred))
-    print("R2 of random logistic regression:", metrics.r2_score(y_test, y_pred))
+    print("MAE of logistic regression:", metrics.mean_absolute_error(y_test, y_pred))
+    print("MSE of logistic regression:", metrics.mean_squared_error(y_test, y_pred))
+    print("R2 of logistic regression:", metrics.r2_score(y_test, y_pred))
+    merged_df.to_csv(test_result_file, sep='\t', header=True, index=False)
+
+
+def train_pu(x_train, y_train, model_save_path=None):
+    rf = ensemble.RandomForestClassifier(n_estimators=10000, max_depth=10)
+    pu_estimator = BaggingPuClassifier(
+        base_estimator=rf, n_estimators=10000)
+    model = pu_estimator.fit(x_train, y_train)
+    if model_save_path is not None:
+        joblib.dump(model, model_save_path)
+    return model
+
+
+def train_pu_model(input_df, test_result_file):
+    if input_df is None or input_df.shape[0] == 0:
+        print('input is empty, nothing to do')
+        return
+    x_df = input_df[[tool for tool, _, _ in TOOL_SIG_COL_INFO]]
+    y_df = input_df[LABEL_COL_NAME]
+
+    x_train, x_test, y_train, y_test = train_test_split(x_df, y_df, test_size=0.2)
+    model_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'model', 'ensemble_pu')
+    if Path(model_path).exists():
+        model = joblib.load(model_path)
+    else:
+        model = train_pu(x_train, y_train, model_save_path=model_path)
+    merged_df = pd.DataFrame(y_test)
+    merged_df.reset_index(drop=True, inplace=True)
+    y_pred = model.predict(x_test)
+    merged_df['prediction'] = y_pred
+    predictions = [round(value) for value in y_pred]
+    print("Accuracy of PU learning:", metrics.accuracy_score(y_test, predictions))
+    print("MAE of PU learning:", metrics.mean_absolute_error(y_test, y_pred))
+    print("MSE of PU learning:", metrics.mean_squared_error(y_test, y_pred))
+    print("R2 of PU learning:", metrics.r2_score(y_test, y_pred))
     merged_df.to_csv(test_result_file, sep='\t', header=True, index=False)
 
 
 def read_tool_result(rpt, tool_name, sig_col_name):
-    if rpt is None:
+    if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     rpt_df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, sig_col_name])
     rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -439,6 +476,28 @@ def run_ranking_lr(rpt=None, output_file_path=None):
     return output_file_path
 
 
+def run_ranking_pu(rpt=None, output_file_path=None):
+    if rpt is None:
+        print('No data provided')
+        return None
+    target_df = prepare_ranking_input(rpt)
+    if target_df is None or target_df.shape[0] == 0:
+        print('Data provided is empty')
+        return None
+    target_df.reset_index(drop=True, inplace=True)
+    # missing tool columns will be filled in prepare_ranking_input
+    x_df = target_df[[tool for tool, _, _ in TOOL_SIG_COL_INFO]]
+    model_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'model', 'ensemble_pu')
+    if Path(model_path).exists():
+        model = joblib.load(model_path)
+    else:
+        raise ValueError('Model does not exist!')
+    target_df[PREDICT_COL_NAME] = model.predict(x_df)
+    target_df.sort_values(PREDICT_COL_NAME, ascending=False, inplace=True)
+    target_df.to_csv(output_file_path, sep='\t', header=True, index=False)
+    return output_file_path
+
+
 if __name__ == '__main__':
     sim_file_set = [
         {
@@ -519,14 +578,14 @@ if __name__ == '__main__':
     all_tool_list = [tool for tool, _, _ in TOOL_SIG_COL_INFO]
     for sim_files in sim_file_set:
         _rpts = {}
-        for sim_model in SIM_MODEL_ORDER:
-            for tool in os.listdir(sim_files[sim_model]):
+        for _sim_model in SIM_MODEL_ORDER:
+            for tool in os.listdir(sim_files[_sim_model]):
                 if tool not in all_tool_list:
                     continue
                 if _rpts.get(tool) is None:
                     _rpts[tool] = {}
-                _rpts[tool][sim_model] = None
-                analyzed_dir = os.path.join(sim_files[sim_model], tool, 'analyzed')
+                _rpts[tool][_sim_model] = None
+                analyzed_dir = os.path.join(sim_files[_sim_model], tool, 'analyzed')
                 if not os.path.exists(analyzed_dir):
                     continue
                 tool_sim_model_rpts = [os.path.join(analyzed_dir, tool_sim_model_rpt) for
@@ -536,16 +595,16 @@ if __name__ == '__main__':
                 if len(tool_sim_model_rpts) == 0:
                     continue
                 for tool_sim_model_rpt in tool_sim_model_rpts:
-                    if _rpts[tool][sim_model] is not None:
+                    if _rpts[tool][_sim_model] is not None:
                         break
-                    if not tool_sim_model_rpt.endswith('.tsv'):
+                    if not (tool_sim_model_rpt.endswith('.tsv') or tool_sim_model_rpt.endswith('.tsv.gz')):
                         continue
-                    if tool == 'fastenloc' and tool_sim_model_rpt.endswith('.sig.tsv'):
-                        _rpts[tool][sim_model] = tool_sim_model_rpt
+                    if tool == 'fastenloc' and (tool_sim_model_rpt.endswith('.sig.tsv') or tool_sim_model_rpt.endswith('.sig.tsv.gz')):
+                        _rpts[tool][_sim_model] = tool_sim_model_rpt
                     elif tool == 'ecaviar':
-                        _rpts[tool][sim_model] = tool_sim_model_rpt
+                        _rpts[tool][_sim_model] = tool_sim_model_rpt
                     elif os.path.basename(tool_sim_model_rpt).startswith(tool) and tool != 'fastenloc':
-                        _rpts[tool][sim_model] = tool_sim_model_rpt
+                        _rpts[tool][_sim_model] = tool_sim_model_rpt
         rpt_set.append((sim_files['generated_file_path'], _rpts))
     # training and testing model
     input_df_list = []
@@ -563,3 +622,4 @@ if __name__ == '__main__':
     train_svm_model(train_input_df, 'svm_test_set_result.tsv')
     train_rf_model(train_input_df, 'rf_test_set_result.tsv')
     train_lr_model(train_input_df, 'lr_test_set_result.tsv')
+    train_pu_model(train_input_df, 'pu_test_set_result.tsv')

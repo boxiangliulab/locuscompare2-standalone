@@ -1,9 +1,8 @@
-import asyncio
 import logging
 import os
 import sys
 from pathlib import Path
-
+from datetime import datetime
 import pandas as pd
 
 sys.path.append(
@@ -13,19 +12,18 @@ from common import coloc_utils as utils, constants as const
 
 class ECaviar:
     ECAVIAR_TOOL_NAME = 'ecaviar'
-    shell_command_run_finemap = 'finemap --sss --in-files {}'
+    shell_command_run_finemap = 'finemap --sss --in-files {} {} --log'
 
     def __init__(self):
         logging.info('init eCaviar')
 
-    async def run(self, working_dir, candidate_data_dir, gwas_cluster_dir, gwas_preprocessed_file, eqtl_grouped_dir,
-                  var_id_col_name,
-                  gwas_col_dict, eqtl_col_dict):
+    async def run(self, working_dir, candidate_data_dir, gwas_preprocessed_file, eqtl_grouped_dir,
+                  var_id_col_name, gwas_col_dict, eqtl_col_dict):
         logging.info('eCaviar start to run...')
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
-
-        tasks = []
+        coros = []
         finemap_snp_files = []
+        finemap_params = utils.get_tools_params('finemap')
         for gene_dir in os.listdir(candidate_data_dir):
             if not gene_dir.startswith('.'):
                 for causal_snp_dir in os.listdir(f'{candidate_data_dir}/{gene_dir}'):
@@ -33,34 +31,38 @@ class ECaviar:
                         candidate_dir = f'{candidate_data_dir}/{gene_dir}/{causal_snp_dir}'
                         finemap_file_name = f'{causal_snp_dir}_{gene_dir}'
                         run_finemap_cmd = self.shell_command_run_finemap.format(
-                            f'{candidate_dir}/{finemap_file_name}.in')
-
-                        tasks.append(asyncio.create_task(utils.async_run_cmd(run_finemap_cmd)))
+                            f'{candidate_dir}/{finemap_file_name}.in', finemap_params)
+                        # asyncio.create_task will submit task immediately
+                        coros.append(utils.async_run_cmd(run_finemap_cmd))
                         finemap_snp_files.append((f'{candidate_dir}/gwas_{finemap_file_name}.snp',
                                                   f'{candidate_dir}/eqtl_{finemap_file_name}.snp'))
 
-        await asyncio.gather(*tasks, return_exceptions=True)
-
+        await utils.gather_with_limit(50, *coros)
         logging.info(f'finish eCaviar process.')
         logging.info(f'generate eCaviar report.')
-        return self.generate_report(working_dir=working_dir, finemap_reports=finemap_snp_files,
-                                    gwas_cluster_dir=gwas_cluster_dir,
+        return self.generate_report(working_dir=working_dir,
+                                    finemap_reports=finemap_snp_files,
                                     gwas_preprocessed_file=gwas_preprocessed_file,
-                                    eqtl_grouped_dir=eqtl_grouped_dir, var_id_col_name=var_id_col_name,
-                                    gwas_col_dict=gwas_col_dict, eqtl_col_dict=eqtl_col_dict)
+                                    eqtl_grouped_dir=eqtl_grouped_dir,
+                                    var_id_col_name=var_id_col_name,
+                                    gwas_col_dict=gwas_col_dict,
+                                    eqtl_col_dict=eqtl_col_dict)
 
-    def generate_report(self, working_dir, finemap_reports, gwas_cluster_dir, gwas_preprocessed_file, eqtl_grouped_dir,
+    def generate_report(self, working_dir, finemap_reports, gwas_preprocessed_file, eqtl_grouped_dir,
                         var_id_col_name, gwas_col_dict, eqtl_col_dict):
-        output_report_path = f'{working_dir}/analyzed/report.tsv'
-        var_ids, chroms, gene_ids, gwas_paths, eqtl_paths, gwas_pips, eqtl_pips, gene_clpps = [], [], [], [], [], [] ,[] ,[]
+        output_report_path = f'{working_dir}/analyzed/{self.ECAVIAR_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
+        var_ids, chroms, gene_ids, gwas_paths, eqtl_paths, gwas_pips, eqtl_pips, gene_clpps = [], [], [], [], [], [], [], []
         for gwas_snp, eqtl_snp in finemap_reports:
             if not utils.file_exists(gwas_snp) or not utils.file_exists(eqtl_snp):
-                with open(f'{working_dir}/analyzed/error.log', mode='a') as err_report:
-                    err_report.write(f'{gwas_snp} or {eqtl_snp} is not found.\n')
-                    continue
+                logging.error(f'{gwas_snp} or {eqtl_snp} is not found.')
+                continue
+            try:
+                gwas_snp_df = pd.read_csv(gwas_snp, sep=' ', usecols=['snp', 'snp_prob'])
+                eqtl_snp_df = pd.read_csv(eqtl_snp, sep=' ', usecols=['snp', 'snp_prob'])
+            except Exception as e:
+                logging.error(f'Read snp file {gwas_snp} or {eqtl_snp} failed. Error: {e}')
+                continue
 
-            gwas_snp_df = pd.read_csv(gwas_snp, sep=' ', usecols=['snp', 'snp_prob'])
-            eqtl_snp_df = pd.read_csv(eqtl_snp, sep=' ', usecols=['snp', 'snp_prob'])
             merge_snp_pd = pd.merge(left=gwas_snp_df, right=eqtl_snp_df, how='inner', on='snp',
                                     suffixes=('_gwas', '_eqtl'))
             merge_snp_pd['snp_clpp'] = merge_snp_pd['snp_prob_gwas'] * merge_snp_pd['snp_prob_eqtl']
@@ -73,7 +75,7 @@ class ECaviar:
             chrom = var_id.split('_')[0]
             chrom_num = chrom.replace('chr', '')
             gene_id = gwas_snp_file.split('_')[3].split('.')[0]
-            eqtl_path = f'{eqtl_grouped_dir}/{chrom_num}/{gene_id}.tsv'
+            eqtl_path = f'{eqtl_grouped_dir}/{chrom_num}/{gene_id}.tsv.gz'
 
             var_ids.append(var_id)
             chroms.append(chrom_num)
@@ -112,9 +114,24 @@ if __name__ == '__main__':
                                         'se': 'standard_error', 'eaf': 'hm_effect_allele_frequency'}
     _eqtl_col_dict = {'snp': 'rsid', 'chrom': 'chromosome', 'position': 'position', 'beta': 'beta', 'alt': 'alt',
                                         'ref': 'ref', 'pvalue': 'pvalue', 'se': 'se', 'gene_id': 'molecular_trait_id', 'maf': 'maf'}
-    eCaviar.generate_report(working_dir='/Users/nicklin/Desktop/CAD/report', finemap_reports=None,
-                            gwas_cluster_dir='/Volumes/HD/biodata/colocalization-tools/preprocessed/gwas/cad/clustered',
+
+    snp_reports = []
+    _dir = '/Volumes/HD/nlrp/test_run/processed/default/Artery_Aorta/cad/ecaviar/candidate'
+    for sub_dir in os.listdir(_dir):
+        if not sub_dir.startswith('.'):
+            for snp_dir in os.listdir(f'{_dir}/{sub_dir}'):
+                if not snp_dir.startswith('.'):
+                    g_rpt = ''
+                    e_rpt = ''
+                    for snp_rpt in os.listdir(f'{_dir}/{sub_dir}/{snp_dir}'):
+                        if snp_rpt.startswith('gwas') and snp_rpt.endswith('.snp'):
+                            g_rpt = f'{_dir}/{sub_dir}/{snp_dir}/{snp_rpt}'
+                        if snp_rpt.startswith('eqtl') and snp_rpt.endswith('.snp'):
+                            e_rpt = f'{_dir}/{sub_dir}/{snp_dir}/{snp_rpt}'
+                snp_reports.append((g_rpt, e_rpt))
+
+    eCaviar.generate_report(working_dir='/Volumes/HD/nlrp/test_run', finemap_reports=snp_reports,
                             gwas_preprocessed_file='/Volumes/HD/biodata/colocalization-tools/preprocessed/gwas/cad/preprocessed.tsv',
                             eqtl_grouped_dir='/Volumes/HD/biodata/colocalization-tools/preprocessed/eqtl/Artery_Aorta/grouped',
-                            var_id_col_name='var_id',
+                            var_id_col_name='var_id_',
                             gwas_col_dict=_gwas_col_dict, eqtl_col_dict=_eqtl_col_dict)

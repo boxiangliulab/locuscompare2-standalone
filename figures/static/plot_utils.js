@@ -359,7 +359,8 @@
 		plotType,
 		gene_name,
 		colocType,
-		profile
+		profile,
+		clickCallback
 	) {
 		if (!data_association || data_association.length === 0) {
 			console.warn('data is nul')
@@ -374,7 +375,7 @@
 				scale_function: 'if',
 				field: '{{namespace}}category',
 				parameters: {
-					field_value: 'target_pvalue',
+					field_value: 'target',
 					then: 'diamond',
 					else: 'circle',
 				},
@@ -383,7 +384,7 @@
 				scale_function: 'if',
 				field: '{{namespace}}category',
 				parameters: {
-					field_value: 'target_pvalue',
+					field_value: 'target',
 					then: 80,
 					else: isColoc ? 40 : 20,
 				},
@@ -484,7 +485,9 @@
 				},
 				y1: {
 					label: !isColoc
-						? '-log10 p-value'
+						? colocType === 'gene_type'
+							? 'rank value'
+							: '-log10 p-value'
 						: colocType !== 'gwas_plot'
 						? profile.tissue + ' eQTL -log10(P)'
 						: profile.trait + ' GWAS -log10(P)',
@@ -545,7 +548,10 @@
 							colocType === 'pvalue_plot'
 								? -Math.log10(d.position)
 								: parseInt(d.position)
-						d.pval = -Math.log10(d.pvalue)
+						d.pval =
+							colocType === 'gene_type'
+								? d.pvalue
+								: -Math.log10(d.pvalue)
 						d.x =
 							colocType === 'pvalue_plot'
 								? d.bp
@@ -606,7 +612,7 @@
 			}
 		}
 		layout.panels[0].data_layers[1].color.parameters.categories = [
-			'target_pvalue',
+			'target',
 			'single_chr',
 			'double_chr',
 			'r2_five',
@@ -627,19 +633,39 @@
 		]
 		// Generate the plot
 		var plot = lz.populate(plot_id, data_sources, layout)
+
+		plot.on('element_clicked', function () {
+			console.log('event', this)
+			clickCallback && clickCallback(this)
+		})
 	}
 
-	function manhattanPlot(dom_id, data) {
+	function manhattanPlot(dom_id, data, clickCallback, plotType) {
 		console.log('manhattanPlot', data)
-		reloadlz(dom_id, data, 'manhattan')
+		reloadlz(dom_id, data, 'manhattan', null, plotType, null, clickCallback)
 	}
 
-	function colocPlot(dom_id, data, gene_name, plotType, profile) {
+	function colocPlot(
+		dom_id,
+		data,
+		gene_name,
+		plotType,
+		profile,
+		clickCallback
+	) {
 		console.log('colocPlot')
 		data = data.sort((a, b) => {
 			return a.position - b.position
 		})
-		reloadlz(dom_id, data, 'coloc', gene_name, plotType, profile)
+		reloadlz(
+			dom_id,
+			data,
+			'coloc',
+			gene_name,
+			plotType,
+			profile,
+			clickCallback
+		)
 	}
 
 	return { manhattanPlot, colocPlot }

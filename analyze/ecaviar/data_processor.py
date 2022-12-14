@@ -25,13 +25,13 @@ class ECaviarDataProcessor:
                 gwas_col_dict, eqtl_col_dict, population, gwas_sample_size, eqtl_sample_size, var_id_col_name):
         eqtl_candidate_df = pd.read_csv(eqtl_report, sep=const.column_spliter)
         gwas_candidate_df = pd.read_csv(gwas_cluster_summary, sep=const.column_spliter)
-        gwas_cluster_snps_dict = self.__get_cluster_significant_snps_dict(gwas_candidate_df, gwas_col_dict)
+        gwas_cluster_snps_dict = self.__get_cluster_significant_snps_dict(gwas_candidate_df)
         output_base_dir = f'{working_dir}/candidate'
         Path(output_base_dir).mkdir(exist_ok=True, parents=True)
 
         for gwas_cluster_file in os.listdir(gwas_cluster_dir):
-            # cluster file name example: chr{chromosome}_{position}-chr{}.tsv
-            result = re.match('^(.*).tsv$', gwas_cluster_file)
+            # cluster file name example: chr{chromosome}_{position}-chr{}.tsv.gz
+            result = re.match(r'^(.*)\.tsv(\.gz)?$', gwas_cluster_file)
             if result and not gwas_cluster_file.startswith('.'):
                 report_variant_id = result.group(1)
                 # get chr{x}_{position}
@@ -52,7 +52,7 @@ class ECaviarDataProcessor:
                             # gwas, eqtl position matching的交集
                             matching_gwas_df = gwas_cluster_df[
                                 gwas_cluster_df[gwas_col_dict['position']].isin(
-                                    eqtl_grouped_df[eqtl_col_dict['position']])]
+                                    eqtl_grouped_df[eqtl_col_dict['position']])].copy()
 
                             if len(matching_gwas_df) == 0:
                                 continue
@@ -66,7 +66,7 @@ class ECaviarDataProcessor:
                             output_vcf_name = f'{variant_id}.vcf'
                             if Path(input_vcf).exists():
                                 snp_varids_positions = matching_gwas_df[[var_id_col_name,
-                                                                        gwas_col_dict['position']]]
+                                                                        gwas_col_dict['position']]].copy()
                                 snp_varids_positions.sort_values(by=gwas_col_dict['position'], inplace=True)
                                 utils.extract_vcf_data(chromosome, snp_varids_positions, input_vcf, vcf_output_dir,
                                                        output_vcf_name,
@@ -92,7 +92,7 @@ class ECaviarDataProcessor:
                                                                     vcf_matching_df[gwas_col_dict['position']].tolist())
 
                                 # 从vcf matching snps中移除LD行列为nan的snp
-                                vcf_matching_df = vcf_matching_df[~vcf_matching_df[gwas_col_dict['position']].isin(nan_cols)]
+                                vcf_matching_df = vcf_matching_df[~vcf_matching_df[gwas_col_dict['position']].isin(nan_cols)].copy()
 
                                 # Drop GWAS rows that does not have vcf records
                                 # SNP in vcf_matching_df is subset of SNP in candidate_gwas_df, so it's fine to drop intersect rows here
@@ -155,16 +155,15 @@ class ECaviarDataProcessor:
                             # 生成finemap所需的in file
                             finemap_in_file = f'{candidate_dir}/{variant_id}_{gene_id}.in'
                             with open(finemap_in_file, mode='w') as in_file:
-                                in_file.write('z;ld;snp;config;n-ind\n')
-                                in_file.write(f'{gwas_zscore_file};{output_ld_file}.ld;{candidate_dir}/gwas_{variant_id}_{gene_id}.snp;{candidate_dir}/gwas_{variant_id}_{gene_id}.config;{gwas_sample_size}\n')
-                                in_file.write(f'{eqtl_zscore_file};{output_ld_file}.ld;{candidate_dir}/eqtl_{variant_id}_{gene_id}.snp;{candidate_dir}/eqtl_{variant_id}_{gene_id}.config;{eqtl_sample_size}')
+                                in_file.write('z;ld;snp;config;log;n-ind\n')
+                                in_file.write(f'{gwas_zscore_file};{output_ld_file}.ld;{candidate_dir}/gwas_{variant_id}_{gene_id}.snp;{candidate_dir}/gwas_{variant_id}_{gene_id}.config;{candidate_dir}/gwas_log.log;{gwas_sample_size}\n')
+                                in_file.write(f'{eqtl_zscore_file};{output_ld_file}.ld;{candidate_dir}/eqtl_{variant_id}_{gene_id}.snp;{candidate_dir}/eqtl_{variant_id}_{gene_id}.config;{candidate_dir}/eqtl_log.log;{eqtl_sample_size}')
         return output_base_dir
 
-    def __get_cluster_significant_snps_dict(self, cluster_df, gwas_col):
-        grouped = cluster_df.groupby('range_lead')
+    def __get_cluster_significant_snps_dict(self, cluster_df):
         cluster_snps_dict = {}
-        for name, group in grouped:
-            cluster_snps_dict[name] = group[gwas_col['position']].tolist()
+        for _, row in cluster_df.iterrows():
+            cluster_snps_dict[row.loc['range_lead']] = self.__convert_positions_str_to_list(row.loc['positions'])
         return cluster_snps_dict
 
     def __get_eqtl_significant_snp_positions(self, eqtl_df, gene_file_name):
@@ -172,13 +171,15 @@ class ECaviarDataProcessor:
         if results.empty:
             return []
         else:
-            significant_positions = results.iloc[0]['positions']
-            if isinstance(significant_positions, str):
-                return json.loads(significant_positions)
-            elif isinstance(significant_positions, list):
-                return significant_positions
-            else:
-                return []
+            return self.__convert_positions_str_to_list(results.iloc[0]['positions'])
+
+    def __convert_positions_str_to_list(self, positions_str):
+        if isinstance(positions_str, str):
+            return json.loads(positions_str)
+        elif isinstance(positions_str, list):
+            return positions_str
+        else:
+            return []
 
 
 if __name__ == '__main__':

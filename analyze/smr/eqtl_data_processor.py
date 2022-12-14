@@ -1,7 +1,6 @@
 import ast
 import os
 import sys
-import analyze.smr.gwas_data_processor as gpr
 from pathlib import Path
 from datetime import datetime
 import pandas as pd
@@ -117,13 +116,12 @@ class SmrEqtlProcessor:
 
 if __name__ == '__main__':
     glob_processor = gdp.Processor()
-    g_processor = gpr.SmrGwasProcessor()
     if not os.path.exists(glob_processor.eqtl_output_report) or os.path.getsize(
             glob_processor.eqtl_output_report) <= 0:
         raise ValueError(f'Dependant files not found, did you run global_data_process to preprocess eqtl files?')
     if not os.path.exists(glob_processor.gwas_filter_file) or os.path.getsize(glob_processor.gwas_filter_file) <= 0:
         raise ValueError(f'Dependant files not found, did you run global_data_process to preprocess gwas files?')
-    _working_dir = os.path.join(glob_processor.tool_parent_dir, gpr.SmrGwasProcessor.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(glob_processor.tool_parent_dir, 'smr')
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     _eqtl_p_thresh = glob_processor.global_config['p-value_threshold']['eqtl']
     pop = glob_processor.global_config.get('population', 'EUR').upper()

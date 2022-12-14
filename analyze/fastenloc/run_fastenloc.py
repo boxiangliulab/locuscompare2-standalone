@@ -8,6 +8,8 @@ import logging
 
 
 class Fastenloc:
+    COLOC_TOOL_NAME = 'fastenloc'
+
     def __init__(self):
         logging.info('init Fastenloc')
 
@@ -19,14 +21,16 @@ class Fastenloc:
         start_time = datetime.now()
         logging.info(f'fastenloc start at: {start_time}')
 
-        shell_command_fastenloc_execute = 'fastenloc -e {} -g {} -t {} -prefix {}'
+        shell_command_fastenloc_execute = 'fastenloc -e {} -g {} -t {} -prefix {} {}'
         output_analyze_output_dir = f'{working_dir}/analyzed'
+        fastenloc_params = utils.get_tools_params(self.COLOC_TOOL_NAME, param_prefix='-')
 
         Path(output_analyze_output_dir).mkdir(parents=True, exist_ok=True)
         com_str = shell_command_fastenloc_execute.format(eqtl_finemapping_file,
                                                          f'{output_torus_output_file}.gz',
                                                          eqtl_tissue,
-                                                         f'{output_analyze_output_dir}/{eqtl_tissue}')
+                                                         f'{output_analyze_output_dir}/{eqtl_tissue}',
+                                                         fastenloc_params)
         os.system(com_str)
         report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue, gwas_preprocessed_file, eqtl_output_dir,
                               var_id_col_name, gwas_col_dict, eqtl_output_report, eqtl_col_dict)
@@ -39,8 +43,8 @@ class Fastenloc:
         report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
         report_output_snp_file = f'{output_dir}/{final_report_file}.enloc.snp.out'
 
-        report_output_sig_tsv_file = f'{output_dir}/output_{datetime.now().strftime("%Y%m%d%H%M%S")}.sig.tsv'
-        report_output_snp_tsv_file = f'{output_dir}/{gdr.FastenlocGwasProcessor.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv'
+        report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
+        report_output_snp_tsv_file = f'{output_dir}/output_{datetime.now().strftime("%Y%m%d%H%M%S")}.sig.tsv.gz'
 
         # sort sig file rcp(colocalization probability)
         if utils.file_exists(report_output_sig_file):
@@ -57,8 +61,9 @@ class Fastenloc:
             df_output_sig_mg = pd.merge(df_output_sig, filtered_gene[['gene_id', 'chrom']], on=['gene_id'], how='left')
 
             df_output_sig_mg['eqtl_path'] = eqtl_output_dir + '/' + df_output_sig_mg['chrom'].astype(str) + '/' + \
-                                            df_output_sig_mg['Signal'].str.split(':').str[0] + '.tsv'
+                                            df_output_sig_mg['Signal'].str.split(':').str[0] + '.tsv.gz'
             df_output_sig_mg['gwas_path'] = gwas_preprocessed_file
+            df_output_sig_mg['rsid'] = ''
             df_output_sig_mg.to_csv(report_output_sig_tsv_file, sep=const.output_spliter, header=True, index=False)
 
             # sort snp file rcp(colocalization probability)
@@ -72,7 +77,7 @@ class Fastenloc:
             df_output_snp[var_id_col_name] = df_output_snp['SNP'].str.split('_').str[0] + '_' + \
                                              df_output_snp['SNP'].str.split('_').str[1]
             df_output_snp['eqtl_path'] = eqtl_output_dir + '/' + df_output_snp['chrom'] + '/' + \
-                                         df_output_snp['Signal'].str.split(':').str[0] + '.tsv'
+                                         df_output_snp['Signal'].str.split(':').str[0] + '.tsv.gz'
             df_output_snp['gwas_path'] = gwas_preprocessed_file
             df_output_snp['gene_id'] = df_output_snp['Signal'].str.split(':').str[0]
             # preprocessed_pd = pd.read_csv(gwas_preprocessed_file, sep='\s+')
@@ -86,13 +91,13 @@ class Fastenloc:
             #                     how='left')
 
             merge_pd.to_csv(report_output_snp_tsv_file, sep=const.output_spliter, header=True, index=False)
-        return report_output_snp_tsv_file
+        return report_output_sig_tsv_file
 
 
 if __name__ == '__main__':
     fastenloc = Fastenloc()
     processor = gdp.Processor()
-    _working_dir = os.path.join(processor.tool_parent_dir, gdr.FastenlocGwasProcessor.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(processor.tool_parent_dir, fastenloc.COLOC_TOOL_NAME)
     fastenloc.run(eqtl_tissue=processor.eqtl_tissue,
                   working_dir=_working_dir,
                   eqtl_finemapping_file=processor.global_config['input']['eqtl_finemapping_file'],

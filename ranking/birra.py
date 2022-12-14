@@ -35,7 +35,7 @@ def prepare_birra_input(output_file_path, rpts):
 
 
 def read_tool_result(rpt, tool_name, sig_col_name, sig_type):
-    if rpt is None:
+    if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     rpt_df = pd.read_table(rpt, usecols=[sig_col_name, GENE_ID_COL_NAME])
     rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)

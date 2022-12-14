@@ -8,10 +8,10 @@ if (length(args) < 2) {
 input_file_path = args[1]
 output_file_path = args[2]
 prior_fun = args[3]
-if (is.na(prior_fun)) {
+if (is.na(prior_fun) || tolower(prior_fun) == 'na' || tolower(prior_fun) == 'none') {
   prior_fun = "expit"
 }
-if (!file.exists(input_file_path) || !file.info(input_file_path)$size > 0) {
+if (is.na(input_file_path) || !file.exists(input_file_path) || !file.info(input_file_path)$size > 0) {
   print("input_file_path file does not exist or is empty!")
   q(save = "no")
 }

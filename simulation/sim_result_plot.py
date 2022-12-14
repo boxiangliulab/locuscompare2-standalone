@@ -142,7 +142,7 @@ def plot_all_roc(generated_file_path,
                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
     if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
         plot_single_roc(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                        rpt_prob_col_name='CLPP', rpt_pval_col_name=None,
+                        rpt_prob_col_name='clpp', rpt_pval_col_name=None,
                         tool='ecaviar')
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
@@ -185,7 +185,7 @@ def plot_all_prc(generated_file_path,
                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
     if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
         plot_single_prc(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                        rpt_prob_col_name='CLPP', rpt_pval_col_name=None, tool='eCaviar')
+                        rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='eCaviar')
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
@@ -256,7 +256,7 @@ def plot_all_against_ensemble_roc(generated_file_path,
 
     if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
         ecaviar_df = prepare_plot_data(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                                       rpt_prob_col_name='CLPP', rpt_pval_col_name=None, tool='ecaviar')
+                                       rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='ecaviar')
         plot_roc_curve(ecaviar_df[is_positive_col_name], ecaviar_df[prob_col_name], tool='eCaviar')
     else:
         ecaviar_df = None
@@ -436,6 +436,29 @@ def plot_all_against_ensemble_roc(generated_file_path,
     intact_expit_df.loc[intact_expit_df[tp_na_bool_series].index, is_positive_col_name] = 0
     intact_expit_df.loc[intact_expit_df['intact_probability'].isna(), 'intact_probability'] = 0
     plot_roc_curve(intact_expit_df[is_positive_col_name], intact_expit_df['intact_probability'], tool='intact expit')
+    # ---------simple ranking
+    simple_ranking_result_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'avg_ranking'])
+    # Convert simple mean ranking to probability. TODO this method is not good
+    simple_ranking_result_df[prob_col_name] = 1 - simple_ranking_result_df['avg_ranking'] / simple_ranking_result_df['avg_ranking'].max()
+    std_df = retrieve_std_df(generated_file_path, sec_causal_type)
+    simple_ranking_result_df = pd.merge(left=simple_ranking_result_df, right=std_df,
+                                        left_on='gene_id', right_on='gene_id',
+                                        how='left')
+    tp_na_bool_series = simple_ranking_result_df[is_positive_col_name].isna()
+    simple_ranking_result_df.loc[simple_ranking_result_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    plot_roc_curve(simple_ranking_result_df[is_positive_col_name], simple_ranking_result_df[prob_col_name],
+                   tool='avg ranking')
+    # --------
+    # --------pu learning
+    pu_learning_output_file = os.path.join(output_dir, 'train_pu.tsv')
+    machine_learning.run_ranking_pu(rpt=rpt_obj, output_file_path=pu_learning_output_file)
+    pu_learning_df = pd.read_table(pu_learning_output_file, usecols=['gene_id', 'ml_probability'])
+    pu_learning_df = pd.merge(left=pu_learning_df, right=std_df,
+                              left_on='gene_id', right_on='gene_id',
+                              how='left')
+    tp_na_bool_series = pu_learning_df[is_positive_col_name].isna()
+    pu_learning_df.loc[pu_learning_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    plot_roc_curve(pu_learning_df[is_positive_col_name], pu_learning_df['ml_probability'], tool='pu learning')
     # --------
     if output_figure_path is not None:
         plt.savefig(output_figure_path)

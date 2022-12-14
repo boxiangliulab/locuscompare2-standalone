@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import logging
 
 import pandas as pd
 
@@ -10,7 +11,7 @@ from ranking.constants import AVG_RANKING_COL_NAME
 
 
 def read_tool_result(rpt, tool_name, sig_col_name):
-    if rpt is None:
+    if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     additional_reading_cols = []
     if tool_name == 'predixcan':
@@ -31,13 +32,14 @@ def read_tool_result(rpt, tool_name, sig_col_name):
 
 def prepare_ranking_input(output_file_path, rpts):
     if rpts is None:
-        print('No reports provided')
+        logging.warning('No reports provided')
         return None
     non_empty_rpt_cnt = 0
     for rpt in rpts.values():
         non_empty_rpt_cnt += 0 if rpt is None else 1
     if non_empty_rpt_cnt < 2:
-        print('At least 2 reports required to run ensemble ranking, now only got {non_empty_rpt_cnt}, nothing to do')
+        logging.warning(
+            f'At least 2 reports required to run intact, now only got {non_empty_rpt_cnt}, nothing to do')
         return None
     df_list = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
@@ -53,6 +55,8 @@ def prepare_ranking_input(output_file_path, rpts):
             ranking_df = pd.merge(left=ranking_df, right=rpt_df,
                                   left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
                                   how='outer')
+    if ranking_df is None:
+        return None
     tool_ranking_cols = []
     prob_tools = []
     pval_tools = []
@@ -74,6 +78,7 @@ def prepare_ranking_input(output_file_path, rpts):
     # 如果部分基因在TWAS或者colocalization这两边任何一方没有结果, 怎么处理? input如果有一方是NA, 那么output也是NA
     if len(prob_tools) == 0 or len(pval_tools) == 0:
         ranking_df.to_csv(output_file_path, sep='\t', header=True, index=False)
+        logging.warning('To run intact, you need both TWAS results and colocalization results, skipping')
         return output_file_path
     zscore_cols = [f'{col}_zscore' for col in pval_tools]
     ranking_df['probability'] = ranking_df[prob_tools].mean(axis=1)
@@ -87,6 +92,10 @@ def prepare_ranking_input(output_file_path, rpts):
 def run_ranking(rpt=None, output_file_path=None, prior_fun=None):
     ranking_input_file = os.path.join(os.path.dirname(output_file_path), f'pre_{output_file_path.split(os.sep)[-1]}')
     prepare_ranking_input(output_file_path=ranking_input_file, rpts=rpt)
-    rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'intact.R')
-    os.system(f'Rscript --no-save --no-restore {rscript_path} {ranking_input_file} {output_file_path} {prior_fun}')
+    if not os.path.exists(ranking_input_file) or os.path.getsize(ranking_input_file) <= 0:
+        return None
+    intact_input_df = pd.read_table(ranking_input_file, nrows=0)
+    if 'probability' in intact_input_df.columns and 'zscore' in intact_input_df.columns:
+        rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'intact.R')
+        os.system(f'Rscript --no-save --no-restore {rscript_path} {ranking_input_file} {output_file_path} {prior_fun}')
     return output_file_path

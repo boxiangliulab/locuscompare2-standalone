@@ -151,6 +151,18 @@ fi
 chmod 777 ${finemap_file}
 cp ${finemap_file} ${current_conda_bin}
 
+#install intact
+echo "Installing INTACT..."
+intact_file="INTACT_0.99.0.tar.gz"
+curl --connect-timeout 10 --retry 3 -o ${intact_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/intact/${intact_file}
+if [[ $? != 0 ]];then
+	echo "error downloading INTACT"
+	exit 1
+fi
+R CMD INSTALL ${intact_file}
+if [[ $? != 0 ]];then
+	echo "error installing INTACT"
+	exit
+fi
+
 echo "All finished"
-
-

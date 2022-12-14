@@ -7,7 +7,6 @@ import logging
 
 
 class FastenlocGwasProcessor:
-    COLOC_TOOL_NAME = 'fastenloc'
 
     def __init__(self):
         logging.info('init FastenlocGwasProcessor')
@@ -95,7 +94,7 @@ class FastenlocGwasProcessor:
 if __name__ == '__main__':
     fastenloc_gwas_pro = FastenlocGwasProcessor()
     processor = gdp.Processor()
-    _working_dir = os.path.join(processor.tool_parent_dir, FastenlocGwasProcessor.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(processor.tool_parent_dir, 'fastenloc')
     fastenloc_gwas_pro.prepare_gwas_data(working_dir=_working_dir,
                                          gwas_preprocessed_file=processor.gwas_preprocessed_file,
                                          gwas_col_dict=processor.gwas_col_dict,

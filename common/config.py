@@ -22,10 +22,11 @@ class ConfigHolder:
 
         self.gwas_trait = self.global_config['input']['gwas']['trait']
         self.eqtl_tissue = self.global_config['input']['eqtl']['tissue']
+        self.population = self.global_config['population']
 
         self.study_dir = os.path.join(self.output_processed_dir, study)
 
-        self.tool_parent_dir = os.path.join(self.study_dir, self.eqtl_tissue, self.gwas_trait)
+        self.tool_parent_dir = os.path.join(self.study_dir, self.eqtl_tissue, self.gwas_trait, self.population)
         Path(self.tool_parent_dir).mkdir(exist_ok=True, parents=True)
 
         self.report_path = os.path.join(self.study_dir, self.eqtl_tissue)
@@ -36,14 +37,15 @@ class ConfigHolder:
         # eqtl output path
         self.eqtl_output_dir = os.path.join(self.output_preprocessed_dir, 'eqtl', self.eqtl_tissue, 'grouped')
         self.eqtl_output_report = os.path.join(self.output_preprocessed_dir, 'eqtl', self.eqtl_tissue,
-                                               'filtered_gene.tsv')
+                                               'filtered_gene.tsv.gz')
 
         # gwas output path
         self.gwas_preprocessed_dir = os.path.join(self.output_preprocessed_dir, 'gwas', self.gwas_trait)
-        self.gwas_preprocessed_file = os.path.join(self.gwas_preprocessed_dir, 'preprocessed.tsv')
-        self.gwas_filter_file = os.path.join(self.gwas_preprocessed_dir, 'pval_filtered.tsv')
+        self.gwas_preprocessed_file = os.path.join(self.gwas_preprocessed_dir, 'preprocessed.tsv.gz')
+        self.gwas_output_dir = os.path.join(self.output_preprocessed_dir, 'gwas', self.gwas_trait, 'grouped')
+        self.gwas_filter_file = os.path.join(self.gwas_preprocessed_dir, 'pval_filtered.tsv.gz')
         self.gwas_cluster_output_dir = os.path.join(self.gwas_preprocessed_dir, 'clustered')
-        self.gwas_cluster_summary = os.path.join(self.gwas_preprocessed_dir, 'cluster_summary.tsv')
+        self.gwas_cluster_summary = os.path.join(self.gwas_preprocessed_dir, 'cluster_summary.tsv.gz')
 
         # vcf input output path
         self.vcf_output_dir = os.path.join(self.gwas_preprocessed_dir, 'vcf')

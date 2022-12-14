@@ -10,17 +10,17 @@ input_file_path = args[1]
 output_file_path = args[2]
 
 if (!is.na(args[3])) {
-  sample_zie = as.numeric(args[3])
+  sample_zie = as.integer(args[3])
 } else {
   sample_zie = NA
 }
 
 method = args[4]
-if (is.na(method) || tolower(method) == "geo") {
+if (is.na(method)  || tolower(method) == 'na' || tolower(method) == 'none' || tolower(method) == "geo") {
   method = "geom.mean"
 }
 
-if (!file.exists(input_file_path) || !file.info(input_file_path)$size > 0) {
+if (is.na(input_file_path) || !file.exists(input_file_path) || !file.info(input_file_path)$size > 0) {
   print("input_file_path file does not exist or is empty!")
   q(save = "no")
 }
