@@ -75,6 +75,7 @@ class Processor:
         gene_file_list = []
         postions_list = []
         logging.info('start to filter gene eQTL file')
+        logging.info(f'Filtering eQTL data by p-value threshold {self.config_holder.eqtl_p_threshold}')
         for chrom_dir in os.listdir(f'{self.eqtl_output_dir}'):
             if not chrom_dir.startswith('.'):
                 for eqtl_file in os.listdir(f'{self.eqtl_output_dir}/{chrom_dir}'):
@@ -115,7 +116,7 @@ class Processor:
             return None, None
         else:
             pval_filter_eqtl_df = \
-                utils.filter_data_frame_by_p_value(eqtl_trait_df, self.global_config['p-value_threshold']['eqtl'],
+                utils.filter_data_frame_by_p_value(eqtl_trait_df, self.config_holder.eqtl_p_threshold,
                                                    self.eqtl_col_dict['pvalue'], inplace=False)
             if pval_filter_eqtl_df.empty:
                 del eqtl_trait_df
@@ -163,10 +164,10 @@ class Processor:
         logging.info(
             f'Writing GWAS preprocessed data to {self.gwas_preprocessed_file}, time: {datetime.datetime.now()}')
         gwas_df.to_csv(self.gwas_preprocessed_file, sep=const.output_spliter, header=True, index=False)
-        logging.info(f'Filtering GWAS preprocessed data by p-value, time: {datetime.datetime.now()}')
+        logging.info(f'Filtering GWAS data by p-value threshold {self.config_holder.gwas_p_threshold}')
         pval_filter_gwas_df = \
             utils.filter_data_frame_by_p_value(gwas_df,
-                                               self.global_config['p-value_threshold']['gwas'],
+                                               self.config_holder.gwas_p_threshold,
                                                self.gwas_col_dict['pvalue'],
                                                inplace=False)
         logging.info(
@@ -196,8 +197,8 @@ class Processor:
             clumped_out = os.path.join(self.gwas_output_dir, f'chr{name}')
             os.system(f'plink --vcf {input_vcf}  '
                       f'--clump {group_file} '
-                      f'--clump-p1 {self.global_config["p-value_threshold"]["gwas"]} '
-                      f'--clump-p2 {self.global_config["p-value_threshold"]["gwas"]} '
+                      f'--clump-p1 {self.config_holder.gwas_p_threshold} '
+                      f'--clump-p2 {self.config_holder.gwas_p_threshold} '
                       f'--clump-snp-field {self.gwas_col_dict["snp"]} '
                       f'--clump-field {self.gwas_col_dict["pvalue"]} '
                       f'--out {clumped_out}')
@@ -215,6 +216,8 @@ class Processor:
                 else:
                     # consider the index snp(i.e. lead snp), index snp maybe on the edge of the cluster
                     peak_snps.append(row.loc['SNP'])
+                    # NOTE!! The column gwas_col_dict['snp'] in gwas file can be other values(like variant_id),
+                    # as long as they match the values of ID column in vcf file, else clumping won't work
                     peak_positions = group.loc[group[self.gwas_col_dict['snp']].isin(peak_snps)][
                         self.gwas_col_dict['position']].tolist()
                 # all peak_positions should be in range_df, else extends range_df

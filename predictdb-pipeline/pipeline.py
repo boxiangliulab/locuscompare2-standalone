@@ -161,16 +161,18 @@ def create_genotype_from_vcf(input_vcf, output_dir):
 
 
 def preprocess_gene_exp(input_bed, output_for_peer, output_for_train,
-                        gene_id_col_name=None, rest_non_individual_col_names=None):
-    if rest_non_individual_col_names is None:
-        rest_non_individual_col_names = ['#chr', 'start', 'end', 'gid', 'strand']
+                        gene_id_col_name=None, non_individual_col_names=None):
+    if non_individual_col_names is None:
+        non_individual_col_names = ['#chr', 'start', 'end', 'pid', 'gid', 'strand']
     if gene_id_col_name is None:
         gene_id_col_name = 'pid'
+    if gene_id_col_name in non_individual_col_names:
+        non_individual_col_names.remove(gene_id_col_name)
     logging.info('Preprocess gene expression start')
     if not os.path.exists(input_bed) or os.path.getsize(input_bed) <= 0:
         raise ValueError(f'{input_bed} does not exist or is empty')
     bed_df = pd.read_table(input_bed, header=0)
-    bed_df.drop(columns=rest_non_individual_col_names, inplace=True)
+    bed_df.drop(columns=non_individual_col_names, inplace=True)
     bed_df.set_index(gene_id_col_name, inplace=True)
     result = bed_df.T
     result.to_csv(output_for_peer, sep='\t', header=True, index=False)
@@ -240,7 +242,7 @@ def generate_db(summary_dir, weights_dir, output_db):
 
 
 def run(input_geno_vcf=None, use_varid_in_covariances=True, input_exp_bed=None, exp_gene_id_col_name=None,
-        exp_rest_non_individual_col_names=None, input_gene_code=None, sim_data=False, output_dir=None):
+        exp_non_individual_col_names=None, input_gene_code=None, sim_data=False, output_dir=None):
     __init_logger()
     logging.info('Training pipline start')
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -253,7 +255,7 @@ def run(input_geno_vcf=None, use_varid_in_covariances=True, input_exp_bed=None, 
     input_for_peer = os.path.join(output_dir, 'peer_input.tab')
     expression_file = os.path.join(output_dir, 'expression_input.tsv')
     preprocess_gene_exp(input_exp_bed, input_for_peer, expression_file, exp_gene_id_col_name,
-                        exp_rest_non_individual_col_names)
+                        exp_non_individual_col_names)
     # NOTE that input_for_train has row indexes
     peer_cov_file_name = 'covariates.tsv'
     individual_ids = pd.read_table(expression_file, header=None, skiprows=1, usecols=[0])
@@ -283,7 +285,7 @@ if __name__ == '__main__':
                         help='Gene expression in bed format')
     parser.add_argument('--exp_gene_id_col_name', dest='exp_gene_id_col_name',
                         help='Gene id column name in Gene expression bed format file')
-    parser.add_argument('--exp_rest_non_individual_col_names', dest='exp_rest_non_individual_col_names', type=str,
+    parser.add_argument('--exp_non_individual_col_names', dest='exp_non_individual_col_names', type=str,
                         nargs='*',
                         help='Column names in Gene expression bed format file, '
                              'except individual column and gene id column')
@@ -297,5 +299,5 @@ if __name__ == '__main__':
     use_varid = args.use_varid_in_covariances if args.use_varid_in_covariances else not args.use_rsid_in_covariances
     run(input_geno_vcf=args.genotype_vcf, use_varid_in_covariances=use_varid,
         input_exp_bed=args.gene_expression, exp_gene_id_col_name=args.exp_gene_id_col_name,
-        exp_rest_non_individual_col_names=args.exp_rest_non_individual_col_names, input_gene_code=args.genecode,
+        exp_non_individual_col_names=args.exp_non_individual_col_names, input_gene_code=args.genecode,
         sim_data=args.sim_data, output_dir=args.output_dir)

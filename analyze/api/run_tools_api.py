@@ -8,6 +8,7 @@ import analyze.fastenloc.gwas_data_processor as fgdp
 from analyze.predixcan import run_predixcan as rp, gwas_data_processor as pgdp
 from analyze.smr import run_smr as rs, eqtl_data_processor as sedp
 from analyze.ecaviar import run_ecaviar as run_e, data_processor as edp
+from analyze.twas import run_twas as rt
 from common import global_data_process as gdp
 from common import coloc_utils as util
 import logging
@@ -111,7 +112,6 @@ def __preprocess_and_run_smr(glob_processor):
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rs.Smr.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     # prepare gwas file finished
-    _eqtl_p_thresh = glob_processor.global_config['p-value_threshold']['eqtl']
     pop = glob_processor.global_config.get('population', 'EUR').upper()
     smr_eqtl_processor = sedp.SmrEqtlProcessor()
     smr_eqtl_result = smr_eqtl_processor.prepare_ld_ref(_working_dir,
@@ -121,7 +121,7 @@ def __preprocess_and_run_smr(glob_processor):
                                                         glob_processor.eqtl_output_report,
                                                         glob_processor.eqtl_output_dir,
                                                         glob_processor.eqtl_col_dict,
-                                                        _eqtl_p_thresh,
+                                                        glob_processor.config_holder.eqtl_p_threshold,
                                                         glob_processor.ref_vcf_dir,
                                                         pop)
     # prepare ldref file finished
@@ -136,7 +136,6 @@ def __preprocess_and_run_smr(glob_processor):
 
     _gwas_sample_size = glob_processor.global_config['input']['gwas']['sample_size']
     _eqtl_sample_size = glob_processor.global_config['input']['eqtl'].get('sample_size', 948)
-    _eqtl_p_thresh = glob_processor.global_config['p-value_threshold']['eqtl']
     _genecode_file = glob_processor.global_config['input']['genecode']
     smr = rs.Smr()
 
@@ -151,7 +150,7 @@ def __preprocess_and_run_smr(glob_processor):
                    glob_processor.eqtl_output_report,
                    glob_processor.eqtl_output_dir,
                    glob_processor.eqtl_col_dict,
-                   _eqtl_p_thresh,
+                   glob_processor.config_holder.eqtl_p_threshold,
                    _subset_vcf_dir,
                    smr_eqtl_result[1],
                    _ld_ref_dir,
@@ -187,3 +186,20 @@ def __preprocess_and_run_ecaviar(glob_processor):
                                    var_id_col_name=gdp.Processor.VAR_ID_COL_NAME,
                                    gwas_col_dict=glob_processor.gwas_col_dict,
                                    eqtl_col_dict=glob_processor.eqtl_col_dict))
+
+
+def __preprocess_and_run_twas(glob_processor):
+    _working_dir = os.path.join(glob_processor.tool_parent_dir, rt.TWAS.COLOC_TOOL_NAME)
+    Path(_working_dir).mkdir(exist_ok=True, parents=True)
+    if len(os.listdir(glob_processor.gwas_output_dir)) == 0:
+        raise ValueError(f'Dependant GWAS files not found, did you run global_data_process?')
+    _weight_pos_file = glob_processor.global_config['input']['twas_weights_pos']
+    pop = glob_processor.global_config.get('population', 'EUR').upper()
+    twas = rt.TWAS()
+    return twas.run(_working_dir,
+                    _weight_pos_file,
+                    glob_processor.gwas_output_dir,
+                    glob_processor.gwas_col_dict,
+                    glob_processor.ref_vcf_dir,
+                    pop,
+                    parallel=glob_processor.config_holder.parallel)

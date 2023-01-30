@@ -6,6 +6,7 @@ TOOL_SIG_COL_INFO = [('coloc', 'overall_H4', RESULT_TYPE_PROB),
                      ('smr', 'p_SMR', RESULT_TYPE_PVAL),
                      ('fastenloc', 'RCP', RESULT_TYPE_PROB),
                      ('predixcan', 'pvalue', RESULT_TYPE_PVAL),
-                     ('ecaviar', 'clpp', RESULT_TYPE_PROB)
+                     ('ecaviar', 'clpp', RESULT_TYPE_PROB),
+                     ('twas', 'TWAS.P', RESULT_TYPE_PVAL)
                      ]
 AVG_RANKING_COL_NAME = 'avg_ranking'

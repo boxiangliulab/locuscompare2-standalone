@@ -200,7 +200,7 @@ def perform_eqtl_analysis(phenotype_bed_path, genotype_vcf_path, output_path, p_
 
 def simulate_for_chrom(input_vcf, chrom_num_in_vcf, gwas_causal_list, eqtl_causal_list, gene_list_path,
                        generated_file_list, genetic_map, ctrl_count, case_count, maf_thresh,
-                       skip_h2=False, heritability=0.2, disease_risk=1.1):
+                       eqtl_genetic_models, heritability=0.2, disease_risk=1.1):
     start_time = datetime.now()
     print(f'simulate for chrom {chrom_num_in_vcf} start at {start_time}')
     gene_list_df = pd.read_table(gene_list_path)
@@ -301,7 +301,7 @@ def simulate_for_chrom(input_vcf, chrom_num_in_vcf, gwas_causal_list, eqtl_causa
         generated_file_row = f'{chrom}\t{gene_id}\t{start}\t{end}\t{center_snp}'
         generated_file_row += f'\t{gwas_simulation_prefix}\t{sample_gwas_summary_stats}\t{gwas_max_assoc_row["SNP"]}'
         generated_file_row += f'\t{gwas_max_assoc_row.loc["P"]}\t{gwas_causal_max_assoc_r2}'
-        for eqtl_causal_type in (range(0, 2) if skip_h2 else range(0, 5)):
+        for eqtl_causal_type in eqtl_genetic_models:
             # generate 250 control data for eQTL
             eqtl_simulation_prefix = f'{gene_id}_eqtl_{eqtl_causal_type}'
             generate_cc(genetic_map,
@@ -412,8 +412,8 @@ def get_bed_chrom_count(bed_file):
     return count if count > 0 else 1
 
 
-def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map,
-             ctrl_count, case_count, maf_thresh, heritability=0.2, disease_risk=1.1, output_dir=None):
+def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map, ctrl_count, case_count, maf_thresh,
+             heritability=0.2, disease_risk=1.1, eqtl_genetic_model=2, output_dir=None):
     start_time = datetime.now()
     print(f'Simulate start at: {start_time}')
     # files used to track causal list
@@ -427,10 +427,11 @@ def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map,
     with open(eqtl_causal_list, mode='w') as eqtl_causal:
         eqtl_causal.write(f'chrom\tgene\tsnp\tposition\tcausal_type\n')
     # write files list header
+    eqtl_genetic_models = [1, eqtl_genetic_model]
     with open(generated_file_list, mode='w') as generated_file:
         header = f'chrom\tgene\tstart\tend\tgwas_causal_snp'
         header += f'\tgwas_geno_prefix\tgwas_sum_stats\tgwas_max_assoc_snp\tgwas_max_assoc_p\tgwas_r2'
-        for i in range(0, 5):
+        for i in eqtl_genetic_models:
             header += f'\teqtl_geno_{i}\teqtl_pheno_{i}\teqtl_sum_stats_{i}\teqtl_max_assoc_snp_{i}\teqtl_max_assoc_p_{i}'
         header += '\n'
         generated_file.write(header)
@@ -440,8 +441,8 @@ def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map,
         if re.search(r'^chr\d+\.vcf\.gz$', file):
             chrom = int(re.search(r'\d+', file).group(0))
             simulate_for_chrom(os.path.join(src_vcf_dir, file), chrom, gwas_causal_list, eqtl_causal_list,
-                               gene_list_file, generated_file_list, genetic_map,
-                               ctrl_count, case_count, maf_thresh, heritability=heritability, disease_risk=disease_risk)
+                               gene_list_file, generated_file_list, genetic_map, ctrl_count, case_count, maf_thresh,
+                               eqtl_genetic_models, heritability=heritability, disease_risk=disease_risk)
     if output_dir is None:
         output_dir = f'output_{output_suffix}'
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -450,18 +451,21 @@ def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map,
     shutil.move(eqtl_causal_list, output_dir)
     shutil.move(generated_file_list, output_dir)
     merge_result = merge_sum_stat_files(os.path.join(output_dir, generated_file_list), output_suffix,
-                                        heritability=heritability, disease_risk=disease_risk, output_dir=output_dir)
+                                        eqtl_genetic_models=eqtl_genetic_models, output_dir=output_dir,
+                                        heritability=heritability, disease_risk=disease_risk)
+    merge_raw_files(os.path.join(output_dir, generated_file_list), output_suffix,
+                    eqtl_genetic_models=eqtl_genetic_models, output_dir=output_dir)
     print(f'Simulate completed, duration {datetime.now() - start_time}')
     return merge_result
 
 
-def merge_raw_files(generated_file_list, output_suffix, output_dir):
+def merge_raw_files(generated_file_list, output_suffix, eqtl_genetic_models, output_dir):
     start_time = datetime.now()
-    print(f'Merge files start at: {start_time}')
+    print(f'Merge raw files start at: {start_time}')
     file_list_df = pd.read_table(generated_file_list)
     file_list_df.sort_values(['chrom', 'start'], inplace=True)
     # concat eqtl genotype files
-    for i in range(0, 5):
+    for i in eqtl_genetic_models:
         os.system(
             f'bcftools concat -a -D {" ".join(file_list_df[f"eqtl_geno_{i}"].dropna())} -Oz -o eqtl_geno_{i}_{output_suffix}.vcf.gz '
             f'&& tabix -f -p vcf eqtl_geno_{i}_{output_suffix}.vcf.gz')
@@ -490,7 +494,7 @@ def merge_raw_files(generated_file_list, output_suffix, output_dir):
     if output_dir is None:
         output_dir = f'output_{output_suffix}'
     Path(output_dir).mkdir(exist_ok=True, parents=True)
-    for i in range(0, 5):
+    for i in eqtl_genetic_models:
         shutil.move(f'eqtl_geno_{i}_{output_suffix}.vcf.gz', output_dir)
         shutil.move(f'eqtl_geno_{i}_{output_suffix}.vcf.gz.tbi', output_dir)
         shutil.move(f'eqtl_exp_{i}_{output_suffix}.bed.gz', output_dir)
@@ -498,19 +502,20 @@ def merge_raw_files(generated_file_list, output_suffix, output_dir):
     shutil.move(f'{gwas_cc_binary}.bed', output_dir)
     shutil.move(f'{gwas_cc_binary}.bim', output_dir)
     shutil.move(f'{gwas_cc_binary}.fam', output_dir)
-    print(f'Merge completed, duration {datetime.now() - start_time}')
+    print(f'Merge raw completed, duration {datetime.now() - start_time}')
     return (os.path.join(output_dir, gwas_cc_binary),
             [(os.path.join(output_dir, f'eqtl_geno_{i}_{output_suffix}.vcf.gz'),
-              os.path.join(output_dir, f'eqtl_exp_{i}_{output_suffix}.bed.gz')) for i in range(0, 5)])
+              os.path.join(output_dir, f'eqtl_exp_{i}_{output_suffix}.bed.gz')) for i in eqtl_genetic_models])
 
 
-def merge_sum_stat_files(generated_file_list, output_suffix, output_dir, heritability=0.2, disease_risk=1.1):
+def merge_sum_stat_files(generated_file_list, output_suffix, eqtl_genetic_models,
+                         output_dir, heritability=0.2, disease_risk=1.1):
     start_time = datetime.now()
-    print(f'Merge files start at: {start_time}')
+    print(f'Merge sumstat files start at: {start_time}')
     file_list_df = pd.read_table(generated_file_list)
     file_list_df.sort_values(['chrom', 'start'], inplace=True)
     # concat eqtl genotype files
-    for i in range(0, 5):
+    for i in eqtl_genetic_models:
         eqtl_sum_stats_list = []
         for indx, file_row in file_list_df.iterrows():
             if pd.isna(file_row.loc[f'eqtl_sum_stats_{i}']):
@@ -545,12 +550,12 @@ def merge_sum_stat_files(generated_file_list, output_suffix, output_dir, heritab
     if output_dir is None:
         output_dir = f'output_{output_suffix}'
     Path(output_dir).mkdir(exist_ok=True, parents=True)
-    for i in range(0, 5):
+    for i in eqtl_genetic_models:
         shutil.move(f'eqtl_simu_{i}_hsq{heritability}_{output_suffix}.tsv', output_dir)
     shutil.move(f'gwas_simu_risk{disease_risk}_{output_suffix}.tsv', output_dir)
-    print(f'Merge completed, duration {datetime.now() - start_time}')
+    print(f'Merge sumstat completed, duration {datetime.now() - start_time}')
     return (os.path.join(output_dir, f'gwas_simu_{output_suffix}.tsv'),
-            [os.path.join(output_dir, f'eqtl_simu_{i}_{output_suffix}.tsv') for i in range(0, 5)])
+            [os.path.join(output_dir, f'eqtl_simu_{i}_{output_suffix}.tsv') for i in eqtl_genetic_models])
 
 
 def get_genes(all_gene_list, output_path, gene_per_chrom=5, chrom_list=None):
@@ -600,7 +605,8 @@ def cleanup():
 
 
 def run(src_vcf_dir, ld_r2_stats, genetic_map, ctrl_count=20000, case_count=20000, maf_thresh=0.1,
-        sample_cnt_per_chrom=5, candicate_loci_list=None, heritability=0.2, sim_chrom_list=None, disease_risk=1.1):
+        sample_cnt_per_chrom=5, candicate_loci_list=None, heritability=0.2, sim_chrom_list=None, disease_risk=1.1,
+        eqtl_genetic_model=2):
     start_time = datetime.now()
     print(f'Simulator start at: {start_time}')
     output_id = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -612,7 +618,7 @@ def run(src_vcf_dir, ld_r2_stats, genetic_map, ctrl_count=20000, case_count=2000
     Path(output_dir).mkdir(exist_ok=True, parents=True)
     simulate(output_id, src_vcf_dir, selected_gene_list_file, genetic_map,
              ctrl_count, case_count, maf_thresh, heritability=heritability, disease_risk=disease_risk,
-             output_dir=output_dir)
+             eqtl_genetic_model=eqtl_genetic_model, output_dir=output_dir)
     print(f'Simulation and analysis completed, results in {output_dir}, total duration {datetime.now() - start_time}')
     os.system(f'mv simu*.log {output_dir} || true')
     cleanup()
@@ -632,7 +638,7 @@ if __name__ == '__main__':
     parser.add_argument('--ctrl', dest='ctrl', default=20000, type=int, help='Number of control samples to simulate')
     parser.add_argument('--case', dest='case', default=20000, type=int, help='Number of case samples to simulate')
     parser.add_argument('--maf', dest='maf', default=0.1, type=float, help='MAF threshold to pick causal variant')
-    parser.add_argument('--cnt_per_chr', dest='gene_cnt_on_chrom', default=5, type=int, help='Gene count per chrom')
+    parser.add_argument('--cnt_per_chr', dest='gene_cnt_on_chrom', default=20, type=int, help='Gene count per chrom')
     parser.add_argument('--loci_list_file', dest='loci_list_file', default=None, type=str,
                         help='Simulation gene list, --cnt_per_chr and --chrs_to_sim will be ingored if this parameter is specified')
     parser.add_argument('--heritability', dest='heritability', default=0.2, type=float,
@@ -642,7 +648,11 @@ if __name__ == '__main__':
     parser.add_argument('--chrs_to_sim', dest='chroms_to_sim', default=None, type=str,
                         choices=[str(i) for i in range(1, 23)], nargs='*',
                         help='Only simulate on specified chromosomes')
+    parser.add_argument('--eqtl_genetic_model', dest='eqtl_genetic_model', default=2, type=int,
+                        choices=[0, 2, 3, 4],
+                        help='eQTL genetic model, one of [0, 2, 3, 4], 0: h0, 2: h2004, 3:h20407, 4:h20709, '
+                             'eQTL h1 (1) data will always be generated')
     args = parser.parse_args()
     print(f'Accepted args:\n {args}')
     run(args.src_vcf_dir, args.ld_r2_stats, args.genetic_map, args.ctrl, args.case, args.maf, args.gene_cnt_on_chrom,
-        args.loci_list_file, args.heritability, args.chroms_to_sim, args.disease_risk)
+        args.loci_list_file, args.heritability, args.chroms_to_sim, args.disease_risk, args.eqtl_genetic_model)

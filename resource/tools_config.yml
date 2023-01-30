@@ -1,7 +1,7 @@
 # finemap v.1.1 refer to http://www.christianbenner.com/index_v1.1.html
 finemap:
   corr-config: 0.95
-  n-causal-max: 5
+  n-causal-max: 1
   n-config-top: 50000
   n-convergence: 1000
   n-iterations: 100000
@@ -10,10 +10,31 @@ finemap:
   prob-tol: 0.001
 # fastenloc refer to https://github.com/xqwen/fastenloc/tree/master/src
 fastenloc:
-  total_variant:
+  # total_variant:
   s: 1.0
 # coloc refer to https://chr1swallace.github.io/coloc/reference/coloc.abf.html
 coloc:
   p1: 1.0E-4
   p2: 1.0E-4
   p12: 1.0E-5
+# smr refer to https://yanglab.westlake.edu.cn/software/smr/#SMR
+smr:
+  heidi-mtd: 1
+  maf: 0.0
+  diff-freq: 0.2
+  diff-freq-prop: 0.99
+  peqtl-heidi: 1.57E-3
+  ld-upper-limit: 0.9
+  ld-lower-limit: 0.05
+  heidi-min-m: 3
+  heidi-max-m: 20
+  cis-wind: 2000
+  # uncomment 'heidi-off' to disable the heidi test
+  # heidi-off:
+twas:
+  max_impute: 0.5
+  min_r2pred: 0.7
+  perm: 0
+  perm_minp: 0.05
+  # uncomment 'force_model' to specify twas model used, default is select most significant cross-val
+  # force_model: lasso

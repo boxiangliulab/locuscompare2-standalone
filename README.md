@@ -8,7 +8,7 @@ Colotools integrates 5 popular colocalization tools:
 + Loci-level colocalization: [JLIM](https://github.com/cotsapaslab/jlim)
 + SNP-level colocalization: [coloc](https://github.com/chr1swallace/coloc) and [fastEnloc](https://github.com/xqwen/fastenloc)
 + Mendelian randomization: [SMR](https://yanglab.westlake.edu.cn/software/smr/#Overview)
-+ Transcriptomic association: [PrediXcan](https://github.com/hakyimlab/PrediXcan)
++ Transcriptomic association: [PrediXcan](https://github.com/hakyimlab/PrediXcan) and [TWAS](http://gusevlab.org/projects/fusion/)
 
 It could run all the colocalization tools above, display summary report and give manhattan plot and LocusCompare plot for 
 the significant SNPs and genes.
@@ -97,7 +97,8 @@ input:
       # Required. The minor allele frequency field name in input eQTL file.
       maf: 'maf'
       
-  # Required if you want to run SMR. The vcf files from 1000genomes. 
+  # Required if you want to run SMR/eCaviar/TWAS. The vcf files from 1000genomes.
+  # NOTE that if you want to run TWAS, one more step: copy resource/convert_vcf_to_plink_binary.sh to vcf directory and run it to generate TWAS LDREF files
   # hg38 http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20190425_NYGC_GATK/
   # hg19 http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
   # We split the vcf files by population EUR, EAS, SAS, AMR, AFR. Please download your research population vcf files from:
@@ -167,9 +168,14 @@ input:
   # AFR：http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.afr.b37.tar.gz
   # Then set the reference genotype panels file here.
   reference_genotype_panel_ld_ref_file: '/Volumes/HD/biodata/colocalization-tools/raw/ldref/refld.1kg.nfe.b38'
+  # Required if you want to run TWAS
+  # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
+  # If you want to compute your weights, refer to predictive-model-pipeline module
+  twas_weights_pos: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model/GTExv8.ALL.Spleen.nofilter.pos'
 
 p-value_threshold:
   # GWAS and eQTL significance P-value threshold. Coefficient type should be float. 
+  # GWAS P-value threshold must <=1.0E-7, eQTL P-value threshold must <=1.0E-5, values out of this range will be discarded
   # For example, use 5.0E-8 rather than 5E-8
   gwas: 5.0E-8
   eqtl: 1.0E-6

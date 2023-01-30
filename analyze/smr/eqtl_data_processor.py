@@ -123,7 +123,6 @@ if __name__ == '__main__':
         raise ValueError(f'Dependant files not found, did you run global_data_process to preprocess gwas files?')
     _working_dir = os.path.join(glob_processor.tool_parent_dir, 'smr')
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
-    _eqtl_p_thresh = glob_processor.global_config['p-value_threshold']['eqtl']
     pop = glob_processor.global_config.get('population', 'EUR').upper()
     smr_eqtl_processor = SmrEqtlProcessor()
     smr_eqtl_processor.prepare_ld_ref(_working_dir,
@@ -133,6 +132,6 @@ if __name__ == '__main__':
                                       glob_processor.eqtl_output_report,
                                       glob_processor.eqtl_output_dir,
                                       glob_processor.eqtl_col_dict,
-                                      _eqtl_p_thresh,
+                                      glob_processor.config_holder.eqtl_p_threshold,
                                       glob_processor.ref_vcf_dir,
                                       pop)

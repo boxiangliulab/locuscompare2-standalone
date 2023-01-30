@@ -37,6 +37,7 @@ input:
   eqtl_finemapping_file: '/Volumes/HD/biodata/colocalization-tools/raw/eqtl/finemapping/v8/v8.vcf.gz'
   prediction_dir: '/Volumes/HD/biodata/colocalization-tools/raw/prediction_model_covariance/mashr'
   reference_genotype_panel_ld_ref_file: '/Volumes/HD/biodata/colocalization-tools/raw/ldref/refld.1kg.nfe.b38'
+  twas_weights_pos: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model/GTExv8.ALL.Whole_Blood.nofilter.pos'
 p-value_threshold:
   gwas: 5.0E-8
   eqtl: 1.0E-6

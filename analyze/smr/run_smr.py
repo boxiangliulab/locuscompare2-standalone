@@ -48,6 +48,7 @@ class Smr:
 
         eqtl_type_dict = {eqtl_col_dict['chrom']: 'category',
                           eqtl_col_dict['position']: 'Int64'}
+        smr_custom_params = utils.get_tools_params(self.COLOC_TOOL_NAME, params_without_value=['heidi-off'])
 
         gwas_files = {}
         for chrom_group_file in os.listdir(gwas_chrom_group_dir):
@@ -172,31 +173,21 @@ class Smr:
                   f'GWAS input file {gwas_input_path} and eQTL input file {eqtl_besd_file}',
                   f' and LD ref file: {output_ld_ref_path}')
             gene_out_result = os.path.join(output_dir, f'{gene_id}_out')
-            os.system(f'smr '
-                      f'--bfile {output_ld_ref_path} '
-                      f'--gwas-summary {gwas_input_path} '
-                      f'--beqtl-summary {eqtl_besd_file} '
-                      f'--cis-wind 200 '
-                      f'--peqtl-smr {eqtl_p_thresh} '
-                      f'--diff-freq-prop 0.99 '
-                      f'--out {gene_out_result}')
+            smr_cmd = f'smr --bfile {output_ld_ref_path} --gwas-summary {gwas_input_path} --beqtl-summary {eqtl_besd_file} --peqtl-smr {eqtl_p_thresh} --out {gene_out_result}'
+            cmd_params = '--diff-freq-prop 0.99 --cis-wind 200'
+            if smr_custom_params and smr_custom_params != '':
+                cmd_params = smr_custom_params
+            os.system(f'{smr_cmd} {cmd_params}')
             gene_out_result_file = f'{gene_out_result}.smr'
             if not utils.file_exists(gene_out_result_file):
                 logging.warning(f'SMR: {gene_out_result_file} does not exist')
                 continue
             gene_result_df = pd.read_table(gene_out_result_file)
-            gene_result_df['gwas_path'] = gwas_file
-            gene_result_df['eqtl_path'] = eqtl_gene_file
             gene_result_df.rename(columns={'probeID': 'gene_id', 'ProbeChr': 'chrom'}, inplace=True)
             gene_result_df.to_csv(gene_out_result_file, sep=const.output_spliter, header=True, index=False)
         output_file = self.get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
-        self.__analyze_result(output_dir,
-                              output_file,
-                              gwas_preprocessed_file,
-                              var_id_col_name,
-                              gwas_col_dict,
-                              eqtl_col_dict)
+        self.__analyze_result(output_dir, output_file)
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
@@ -229,11 +220,7 @@ class Smr:
         return genecode_df
 
     def __analyze_result(self, output_dir,
-                         final_report_file,
-                         gwas_preprocessed_file=None,
-                         var_id_col_name=None,
-                         gwas_col_dict=None,
-                         eqtl_col_dict=None):
+                         final_report_file):
         # Merge every single result
         single_result_list = []
         for single_result in os.listdir(output_dir):
@@ -245,9 +232,6 @@ class Smr:
         report_df = pd.concat(single_result_list)
         report_df.sort_values(by='p_SMR', ascending=True, inplace=True)
         report_df.drop_duplicates(subset=['topSNP', 'p_SMR', 'gene_id'], inplace=True)
-        report_df = utils.mapping_var_id_to_rsid(report_df, 'topSNP', 'gene_id',
-                                                 gwas_preprocessed_file, var_id_col_name,
-                                                 gwas_col_dict, eqtl_col_dict)
         if len(report_df) <= 0:
             utils.delete_file_if_exists(final_report_file)
         else:
@@ -278,7 +262,6 @@ if __name__ == '__main__':
 
     _gwas_sample_size = glob_processor.global_config['input']['gwas']['sample_size']
     _eqtl_sample_size = glob_processor.global_config['input']['eqtl'].get('sample_size', 948)
-    _eqtl_p_thresh = glob_processor.global_config['p-value_threshold']['eqtl']
     _genecode_file = glob_processor.global_config['input']['genecode']
     smr = Smr()
     smr.run(_working_dir,
@@ -292,7 +275,7 @@ if __name__ == '__main__':
             glob_processor.eqtl_output_report,
             glob_processor.eqtl_output_dir,
             glob_processor.eqtl_col_dict,
-            _eqtl_p_thresh,
+            glob_processor.config_holder.eqtl_p_threshold,
             _subset_vcf_dir,
             sys.argv[3],
             _ld_ref_dir,

@@ -196,11 +196,9 @@ class Coloc:
         logging.debug(f'Running coloc for significant SNP {range_lead_snp} on ',
                       f'GWAS input file {coloc_gwas_input_path} and eQTL input file {coloc_eqtl_input_path}')
         rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'coloc.R')
-        # p1, p2, p12 = self.__get_coloc_run_params()
         os.system(f'Rscript --no-save --no-restore {rscript_path} '
                   f'{output_file} {coloc_gwas_input_path} {coloc_eqtl_input_path} '
-                  f'{gwas_sample_size} {eqtl_sample_size} {gwas_type} {eqtl_type} '
-                  f'{gwas_range_file} {eqtl_gene_file} {p1} {p2} {p12}')
+                  f'{gwas_sample_size} {eqtl_sample_size} {gwas_type} {eqtl_type} {p1} {p2} {p12}')
         logging.info("{} completed".format(output_file))
 
         return output_file
@@ -230,9 +228,6 @@ class Coloc:
         report_df = pd.concat(single_result_list)
         report_df.sort_values(by=['overall_H4', 'SNP.PP.H4'], ascending=False, inplace=True)
         report_df.drop_duplicates(subset=['snp', 'SNP.PP.H4', 'gene_id'], inplace=True)
-        report_df = utils.mapping_var_id_to_rsid(report_df, 'snp', 'gene_id',
-                                                 gwas_preprocessed_file, var_id_col_name,
-                                                 gwas_col_dict, eqtl_col_dict)
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
 
     def get_output_file(self, working_dir):

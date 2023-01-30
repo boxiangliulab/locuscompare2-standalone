@@ -533,6 +533,17 @@
 			trans
 		) {
 			var data = JSON.parse(JSON.stringify(data_association))
+			let taget_item = null
+			data = data.filter((item) => {
+				if (item.category === 'target') {
+					taget_item = item
+					return false
+				} else {
+					return true
+				}
+			})
+			taget_item && data.unshift(taget_item)
+
 			data = data
 				.map((d, i, object) => {
 					if (d.chrom) {

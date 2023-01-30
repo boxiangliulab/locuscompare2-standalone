@@ -53,20 +53,14 @@ class Predixcan:
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
             return output_file
-        # add 2 columns: [gwas_path, eqtl_path] to result
         eqtl_summary_df = pd.read_table(eqtl_output_report, sep=const.column_spliter,
                                         usecols=['chrom', 'gene_file'],
                                         dtype={'chrom': 'string'})
         # gene column name should be the same as predixcan output gene column name
         eqtl_summary_df['gene'] = eqtl_summary_df['gene_file'].str.rstrip('.tsv.gz')
-        eqtl_summary_df['eqtl_path'] = eqtl_summary_df[['chrom', 'gene_file']].apply(
-            lambda row: os.path.join(eqtl_output_dir, *row), axis=1)
-        # 2 columns:[gene,eqtl_path] left after drop unused columns
         eqtl_summary_df.drop(columns=[ 'gene_file'], inplace=True)
         # predixcan output column sep is comma
         result_df = pd.read_table(output_file, sep=',')
-        result_df['gwas_path'] = gwas_preprocessed_file
-        result_df['rsid'] = ''
         result_df = pd.merge(left=result_df, right=eqtl_summary_df,
                              left_on='gene', right_on='gene',
                              how='left')

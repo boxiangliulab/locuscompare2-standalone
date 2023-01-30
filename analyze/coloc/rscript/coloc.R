@@ -11,18 +11,14 @@ gwas_sample_size = as.integer(args[4])
 eqtl_sample_size = as.integer(args[5])
 gwas_type = args[6]
 eqtl_type = args[7]
-# Original source gwas file path to be appended to result file, optional
-src_gwas_path = args[8]
-# Original source eqtl file path to be appended to result file, optional
-src_eqtl_path = args[9]
 # prior probability a SNP is associated with trait 1, default 1e-4
-tp1 = as.numeric(args[10])
+tp1 = as.numeric(args[8])
 # prior probability a SNP is associated with trait 2, default 1e-4
-tp2 = as.numeric(args[11])
+tp2 = as.numeric(args[9])
 # prior probability a SNP is associated with both traits, default 1e-5
-tp12 = as.numeric(args[12])
+tp12 = as.numeric(args[10])
 # The threshold to consider overall H4 is true, only when overall H4 is true, the SNP level H4 is considered as relevant, optional
-overall_h4_threshold = as.numeric(args[13])
+overall_h4_threshold = as.numeric(args[11])
 
 if (is.na(gwas_path) || !file.exists(gwas_path) || !file.info(gwas_path)$size > 0) {
   print("GWAS file does not exist or is empty!")
@@ -124,11 +120,5 @@ extra_info_df = input[, c("var_id_", "chrom_gwas", "gene_id")]
 colnames(extra_info_df)[which(colnames(extra_info_df) == "chrom_gwas")] = "chrom"
 detail_result = result$results
 detail_result$overall_H4 = summary_set["PP.H4.abf"]
-if (!is.na(src_gwas_path)) {
-  detail_result$gwas_path = src_gwas_path
-}
-if (!is.na(src_eqtl_path)) {
-  detail_result$eqtl_path = src_eqtl_path
-}
 detail_result_with_gene = merge(detail_result, extra_info_df, by.x = "snp", by.y = "var_id_", all.x = TRUE)
 write.table(detail_result_with_gene, if (endsWith(output_file_path, ".gz")) gzfile(output_file_path) else output_file_path, append = appendMode, sep = "\t", row.names = FALSE, col.names = !appendMode)

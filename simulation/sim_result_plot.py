@@ -7,7 +7,6 @@ import argparse
 from sklearn.metrics import roc_auc_score, roc_curve, average_precision_score, precision_recall_curve
 import ranking.birra as birra
 import ranking.rra as rra
-import ranking.ml as machine_learning
 import ranking.intact as intact
 
 prob_col_name = 'PROB'
@@ -43,6 +42,8 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
         reading_cols = [rpt_pval_col_name, 'gene_id']
         if tool == 'predixcan':
             reading_cols.append('zscore')
+        elif tool == 'twas':
+            reading_cols.append('TWAS.Z')
         elif tool == 'smr':
             reading_cols.append('b_SMR')
             reading_cols.append('se_SMR')
@@ -111,6 +112,7 @@ def plot_all_roc(generated_file_path,
                  h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
                  h1_predixcan_rpt=None, sec_predixcan_rpt=None,
                  h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
+                 h1_twas_rpt=None, sec_twas_rpt=None,
                  sec_causal_type=1,
                  output_figure_path=None):
     plt.figure().clear()
@@ -144,6 +146,10 @@ def plot_all_roc(generated_file_path,
         plot_single_roc(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
                         rpt_prob_col_name='clpp', rpt_pval_col_name=None,
                         tool='ecaviar')
+    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
+        plot_single_roc(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
+                        rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P',
+                        tool='twas')
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
@@ -210,6 +216,7 @@ def plot_all_against_ensemble_roc(generated_file_path,
                                   h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
                                   h1_predixcan_rpt=None, sec_predixcan_rpt=None,
                                   h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
+                                  h1_twas_rpt=None, sec_twas_rpt=None,
                                   sec_causal_type=1,
                                   output_figure_path=None, output_dir=''):
     plt.figure().clear()
@@ -261,7 +268,15 @@ def plot_all_against_ensemble_roc(generated_file_path,
     else:
         ecaviar_df = None
 
-    if coloc_df is None and smr_df is None and jlim_df is None and fastenloc_df is None and predixcan_df is None and ecaviar_df is None:
+    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
+        twas_df = prepare_plot_data(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
+                                    rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P', tool='twas')
+        plot_roc_curve(twas_df[is_positive_col_name], twas_df[prob_col_name], tool='TWAS')
+    else:
+        twas_df = None
+
+    if coloc_df is None and smr_df is None and jlim_df is None and fastenloc_df is None and \
+            predixcan_df is None and ecaviar_df is None and twas_df is None:
         print('all report is empty, nothing to do')
         return
 
@@ -298,6 +313,12 @@ def plot_all_against_ensemble_roc(generated_file_path,
     else:
         ecaviar_ranking_file = None
 
+    if twas_df is not None:
+        twas_ranking_file = os.path.join(output_dir, 'twas_result.tsv')
+        twas_df.to_csv(twas_ranking_file, sep='\t', header=True, index=False)
+    else:
+        twas_ranking_file = None
+
     ensemble_output_file = os.path.join(output_dir, 'birra.tsv')
     rpt_obj = {
         'coloc': coloc_ranking_file,
@@ -305,19 +326,20 @@ def plot_all_against_ensemble_roc(generated_file_path,
         'jlim': jlim_ranking_file,
         'fastenloc': fastenloc_ranking_file,
         'predixcan': predixcan_ranking_file,
-        'ecaviar': ecaviar_ranking_file
+        'ecaviar': ecaviar_ranking_file,
+        'twas': twas_ranking_file
     }
     birra.run_ranking(output_file_path=ensemble_output_file, rpt=rpt_obj)
     ranking_result_df = pd.read_table(ensemble_output_file, usecols=['gene_id', 'birra_ranking'])
     # Convert birra ranking to probability. TODO this method is not good
-    ranking_result_df[prob_col_name] = 1 - ranking_result_df['birra_ranking'] / ranking_result_df['birra_ranking'].max()
+    # ranking_result_df[prob_col_name] = 1 - ranking_result_df['birra_ranking'] / ranking_result_df['birra_ranking'].max()
     std_df = retrieve_std_df(generated_file_path, sec_causal_type)
-    ranking_result_df = pd.merge(left=ranking_result_df, right=std_df,
-                                 left_on='gene_id', right_on='gene_id',
-                                 how='left')
-    tp_na_bool_series = ranking_result_df[is_positive_col_name].isna()
-    ranking_result_df.loc[ranking_result_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(ranking_result_df[is_positive_col_name], ranking_result_df[prob_col_name], tool='birra_ranking')
+    # ranking_result_df = pd.merge(left=ranking_result_df, right=std_df,
+    #                              left_on='gene_id', right_on='gene_id',
+    #                              how='left')
+    # tp_na_bool_series = ranking_result_df[is_positive_col_name].isna()
+    # ranking_result_df.loc[ranking_result_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(ranking_result_df[is_positive_col_name], ranking_result_df[prob_col_name], tool='birra_ranking')
     # --------
     rra_geo_output_file = os.path.join(output_dir, 'rra_geo.tsv')
     rra.run_ranking(output_file_path=rra_geo_output_file, rpt=rpt_obj, sample_size=191647, method='GEO')
@@ -331,78 +353,78 @@ def plot_all_against_ensemble_roc(generated_file_path,
     rgeo_df.loc[rgeo_df[tp_na_bool_series].index, is_positive_col_name] = 0
     plot_roc_curve(rgeo_df[is_positive_col_name], rgeo_df[prob_col_name], tool='rGEO')
     # --------
-    rra_stuart_output_file = os.path.join(output_dir, 'rra_stuart.tsv')
-    rra.run_ranking(output_file_path=rra_stuart_output_file, rpt=rpt_obj, sample_size=191647, method='stuart')
-    stuart_df = pd.read_table(rra_stuart_output_file, usecols=['gene_id', 'stuart_p_value'])
-    # Convert rra p_value to probability. TODO this method is not good
-    stuart_df[prob_col_name] = 1 - stuart_df['stuart_p_value']
-    stuart_df = pd.merge(left=stuart_df, right=std_df,
-                         left_on='gene_id', right_on='gene_id',
-                         how='left')
-    tp_na_bool_series = stuart_df[is_positive_col_name].isna()
-    stuart_df.loc[stuart_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(stuart_df[is_positive_col_name], stuart_df[prob_col_name], tool='stuart')
+    # rra_stuart_output_file = os.path.join(output_dir, 'rra_stuart.tsv')
+    # rra.run_ranking(output_file_path=rra_stuart_output_file, rpt=rpt_obj, sample_size=191647, method='stuart')
+    # stuart_df = pd.read_table(rra_stuart_output_file, usecols=['gene_id', 'stuart_p_value'])
+    # # Convert rra p_value to probability. TODO this method is not good
+    # stuart_df[prob_col_name] = 1 - stuart_df['stuart_p_value']
+    # stuart_df = pd.merge(left=stuart_df, right=std_df,
+    #                      left_on='gene_id', right_on='gene_id',
+    #                      how='left')
+    # tp_na_bool_series = stuart_df[is_positive_col_name].isna()
+    # stuart_df.loc[stuart_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(stuart_df[is_positive_col_name], stuart_df[prob_col_name], tool='stuart')
     # --------xgboost lr
-    train_output_file = os.path.join(output_dir, 'train_xgb_lr.tsv')
-    machine_learning.run_ranking(rpt=rpt_obj, output_file_path=train_output_file)
-    train_df = pd.read_table(train_output_file, usecols=['gene_id', 'ml_probability'])
-    train_df = pd.merge(left=train_df, right=std_df,
-                        left_on='gene_id', right_on='gene_id',
-                        how='left')
-    tp_na_bool_series = train_df[is_positive_col_name].isna()
-    train_df.loc[train_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(train_df[is_positive_col_name], train_df['ml_probability'], tool='ensemble')
+    # train_output_file = os.path.join(output_dir, 'train_xgb_lr.tsv')
+    # machine_learning.run_ranking(rpt=rpt_obj, output_file_path=train_output_file)
+    # train_df = pd.read_table(train_output_file, usecols=['gene_id', 'ml_probability'])
+    # train_df = pd.merge(left=train_df, right=std_df,
+    #                     left_on='gene_id', right_on='gene_id',
+    #                     how='left')
+    # tp_na_bool_series = train_df[is_positive_col_name].isna()
+    # train_df.loc[train_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(train_df[is_positive_col_name], train_df['ml_probability'], tool='ensemble')
     # --------xgboost rf
-    train_xgb_rf_output_file = os.path.join(output_dir, 'train_xgb_rf.tsv')
-    machine_learning.run_ranking_xgb_rf(rpt=rpt_obj, output_file_path=train_xgb_rf_output_file)
-    train_xgb_rf_df = pd.read_table(train_xgb_rf_output_file, usecols=['gene_id', 'ml_probability'])
-    train_xgb_rf_df = pd.merge(left=train_xgb_rf_df, right=std_df,
-                               left_on='gene_id', right_on='gene_id',
-                               how='left')
-    tp_na_bool_series = train_xgb_rf_df[is_positive_col_name].isna()
-    train_xgb_rf_df.loc[train_xgb_rf_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(train_xgb_rf_df[is_positive_col_name], train_xgb_rf_df['ml_probability'], tool='ensemble xgb rf')
+    # train_xgb_rf_output_file = os.path.join(output_dir, 'train_xgb_rf.tsv')
+    # machine_learning.run_ranking_xgb_rf(rpt=rpt_obj, output_file_path=train_xgb_rf_output_file)
+    # train_xgb_rf_df = pd.read_table(train_xgb_rf_output_file, usecols=['gene_id', 'ml_probability'])
+    # train_xgb_rf_df = pd.merge(left=train_xgb_rf_df, right=std_df,
+    #                            left_on='gene_id', right_on='gene_id',
+    #                            how='left')
+    # tp_na_bool_series = train_xgb_rf_df[is_positive_col_name].isna()
+    # train_xgb_rf_df.loc[train_xgb_rf_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(train_xgb_rf_df[is_positive_col_name], train_xgb_rf_df['ml_probability'], tool='ensemble xgb rf')
     # --------scikit-learn svm
-    train_svm_output_file = os.path.join(output_dir, 'train_svm.tsv')
-    machine_learning.run_ranking_svm(rpt=rpt_obj, output_file_path=train_svm_output_file)
-    train_svm_df = pd.read_table(train_svm_output_file, usecols=['gene_id', 'ml_probability'])
-    train_svm_df = pd.merge(left=train_svm_df, right=std_df,
-                            left_on='gene_id', right_on='gene_id',
-                            how='left')
-    tp_na_bool_series = train_svm_df[is_positive_col_name].isna()
-    train_svm_df.loc[train_svm_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(train_svm_df[is_positive_col_name], train_svm_df['ml_probability'], tool='ensemble svm')
+    # train_svm_output_file = os.path.join(output_dir, 'train_svm.tsv')
+    # machine_learning.run_ranking_svm(rpt=rpt_obj, output_file_path=train_svm_output_file)
+    # train_svm_df = pd.read_table(train_svm_output_file, usecols=['gene_id', 'ml_probability'])
+    # train_svm_df = pd.merge(left=train_svm_df, right=std_df,
+    #                         left_on='gene_id', right_on='gene_id',
+    #                         how='left')
+    # tp_na_bool_series = train_svm_df[is_positive_col_name].isna()
+    # train_svm_df.loc[train_svm_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(train_svm_df[is_positive_col_name], train_svm_df['ml_probability'], tool='ensemble svm')
     # --------scikit-learn random forest
-    train_rf_output_file = os.path.join(output_dir, 'train_rf.tsv')
-    machine_learning.run_ranking_rf(rpt=rpt_obj, output_file_path=train_rf_output_file)
-    train_rf_df = pd.read_table(train_rf_output_file, usecols=['gene_id', 'ml_probability'])
-    train_rf_df = pd.merge(left=train_rf_df, right=std_df,
-                           left_on='gene_id', right_on='gene_id',
-                           how='left')
-    tp_na_bool_series = train_rf_df[is_positive_col_name].isna()
-    train_rf_df.loc[train_rf_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(train_rf_df[is_positive_col_name], train_rf_df['ml_probability'], tool='ensemble rf')
+    # train_rf_output_file = os.path.join(output_dir, 'train_rf.tsv')
+    # machine_learning.run_ranking_rf(rpt=rpt_obj, output_file_path=train_rf_output_file)
+    # train_rf_df = pd.read_table(train_rf_output_file, usecols=['gene_id', 'ml_probability'])
+    # train_rf_df = pd.merge(left=train_rf_df, right=std_df,
+    #                        left_on='gene_id', right_on='gene_id',
+    #                        how='left')
+    # tp_na_bool_series = train_rf_df[is_positive_col_name].isna()
+    # train_rf_df.loc[train_rf_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(train_rf_df[is_positive_col_name], train_rf_df['ml_probability'], tool='ensemble rf')
     # --------scikit-learn logistic regression
-    train_lr_output_file = os.path.join(output_dir, 'train_lr.tsv')
-    machine_learning.run_ranking_lr(rpt=rpt_obj, output_file_path=train_lr_output_file)
-    train_lr_df = pd.read_table(train_lr_output_file, usecols=['gene_id', 'ml_probability'])
-    train_lr_df = pd.merge(left=train_lr_df, right=std_df,
-                           left_on='gene_id', right_on='gene_id',
-                           how='left')
-    tp_na_bool_series = train_lr_df[is_positive_col_name].isna()
-    train_lr_df.loc[train_lr_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(train_lr_df[is_positive_col_name], train_lr_df['ml_probability'], tool='ensemble lr')
+    # train_lr_output_file = os.path.join(output_dir, 'train_lr.tsv')
+    # machine_learning.run_ranking_lr(rpt=rpt_obj, output_file_path=train_lr_output_file)
+    # train_lr_df = pd.read_table(train_lr_output_file, usecols=['gene_id', 'ml_probability'])
+    # train_lr_df = pd.merge(left=train_lr_df, right=std_df,
+    #                        left_on='gene_id', right_on='gene_id',
+    #                        how='left')
+    # tp_na_bool_series = train_lr_df[is_positive_col_name].isna()
+    # train_lr_df.loc[train_lr_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(train_lr_df[is_positive_col_name], train_lr_df['ml_probability'], tool='ensemble lr')
     # --------intact
-    intact_output_file = os.path.join(output_dir, 'intact_linear.tsv')
-    intact.run_ranking(rpt=rpt_obj, output_file_path=intact_output_file, prior_fun='linear')
-    intact_df = pd.read_table(intact_output_file, usecols=['gene_id', 'intact_probability'])
-    intact_df = pd.merge(left=intact_df, right=std_df,
-                         left_on='gene_id', right_on='gene_id',
-                         how='left')
-    tp_na_bool_series = intact_df[is_positive_col_name].isna()
-    intact_df.loc[intact_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    intact_df.loc[intact_df['intact_probability'].isna(), 'intact_probability'] = 0
-    plot_roc_curve(intact_df[is_positive_col_name], intact_df['intact_probability'], tool='intact linear')
+    # intact_output_file = os.path.join(output_dir, 'intact_linear.tsv')
+    # intact.run_ranking(rpt=rpt_obj, output_file_path=intact_output_file, prior_fun='linear')
+    # intact_df = pd.read_table(intact_output_file, usecols=['gene_id', 'intact_probability'])
+    # intact_df = pd.merge(left=intact_df, right=std_df,
+    #                      left_on='gene_id', right_on='gene_id',
+    #                      how='left')
+    # tp_na_bool_series = intact_df[is_positive_col_name].isna()
+    # intact_df.loc[intact_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # intact_df.loc[intact_df['intact_probability'].isna(), 'intact_probability'] = 0
+    # plot_roc_curve(intact_df[is_positive_col_name], intact_df['intact_probability'], tool='intact linear')
     # --------intact_hybrid
     intact_hybrid_output_file = os.path.join(output_dir, 'intact_hybrid.tsv')
     intact.run_ranking(rpt=rpt_obj, output_file_path=intact_hybrid_output_file, prior_fun='hybrid')
@@ -413,52 +435,53 @@ def plot_all_against_ensemble_roc(generated_file_path,
     tp_na_bool_series = intact_hybrid_df[is_positive_col_name].isna()
     intact_hybrid_df.loc[intact_hybrid_df[tp_na_bool_series].index, is_positive_col_name] = 0
     intact_hybrid_df.loc[intact_hybrid_df['intact_probability'].isna(), 'intact_probability'] = 0
-    plot_roc_curve(intact_hybrid_df[is_positive_col_name], intact_hybrid_df['intact_probability'], tool='intact hybrid')
+    plot_roc_curve(intact_hybrid_df[is_positive_col_name], intact_hybrid_df['intact_probability'], tool='intact')
     # --------intact_step
-    intact_step_output_file = os.path.join(output_dir, 'intact_step.tsv')
-    intact.run_ranking(rpt=rpt_obj, output_file_path=intact_step_output_file, prior_fun='step')
-    intact_step_df = pd.read_table(intact_step_output_file, usecols=['gene_id', 'intact_probability'])
-    intact_step_df = pd.merge(left=intact_step_df, right=std_df,
-                              left_on='gene_id', right_on='gene_id',
-                              how='left')
-    tp_na_bool_series = intact_step_df[is_positive_col_name].isna()
-    intact_step_df.loc[intact_step_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    intact_step_df.loc[intact_step_df['intact_probability'].isna(), 'intact_probability'] = 0
-    plot_roc_curve(intact_step_df[is_positive_col_name], intact_step_df['intact_probability'], tool='intact step')
+    # intact_step_output_file = os.path.join(output_dir, 'intact_step.tsv')
+    # intact.run_ranking(rpt=rpt_obj, output_file_path=intact_step_output_file, prior_fun='step')
+    # intact_step_df = pd.read_table(intact_step_output_file, usecols=['gene_id', 'intact_probability'])
+    # intact_step_df = pd.merge(left=intact_step_df, right=std_df,
+    #                           left_on='gene_id', right_on='gene_id',
+    #                           how='left')
+    # tp_na_bool_series = intact_step_df[is_positive_col_name].isna()
+    # intact_step_df.loc[intact_step_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # intact_step_df.loc[intact_step_df['intact_probability'].isna(), 'intact_probability'] = 0
+    # plot_roc_curve(intact_step_df[is_positive_col_name], intact_step_df['intact_probability'], tool='intact step')
     # --------intact_expit
-    intact_expit_output_file = os.path.join(output_dir, 'intact_expit.tsv')
-    intact.run_ranking(rpt=rpt_obj, output_file_path=intact_expit_output_file, prior_fun='expit')
-    intact_expit_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'intact_probability'])
-    intact_expit_df = pd.merge(left=intact_expit_df, right=std_df,
-                               left_on='gene_id', right_on='gene_id',
-                               how='left')
-    tp_na_bool_series = intact_expit_df[is_positive_col_name].isna()
-    intact_expit_df.loc[intact_expit_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    intact_expit_df.loc[intact_expit_df['intact_probability'].isna(), 'intact_probability'] = 0
-    plot_roc_curve(intact_expit_df[is_positive_col_name], intact_expit_df['intact_probability'], tool='intact expit')
+    # intact_expit_output_file = os.path.join(output_dir, 'intact_expit.tsv')
+    # intact.run_ranking(rpt=rpt_obj, output_file_path=intact_expit_output_file, prior_fun='expit')
+    # intact_expit_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'intact_probability'])
+    # intact_expit_df = pd.merge(left=intact_expit_df, right=std_df,
+    #                            left_on='gene_id', right_on='gene_id',
+    #                            how='left')
+    # tp_na_bool_series = intact_expit_df[is_positive_col_name].isna()
+    # intact_expit_df.loc[intact_expit_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # intact_expit_df.loc[intact_expit_df['intact_probability'].isna(), 'intact_probability'] = 0
+    # plot_roc_curve(intact_expit_df[is_positive_col_name], intact_expit_df['intact_probability'], tool='intact expit')
     # ---------simple ranking
-    simple_ranking_result_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'avg_ranking'])
-    # Convert simple mean ranking to probability. TODO this method is not good
-    simple_ranking_result_df[prob_col_name] = 1 - simple_ranking_result_df['avg_ranking'] / simple_ranking_result_df['avg_ranking'].max()
-    std_df = retrieve_std_df(generated_file_path, sec_causal_type)
-    simple_ranking_result_df = pd.merge(left=simple_ranking_result_df, right=std_df,
-                                        left_on='gene_id', right_on='gene_id',
-                                        how='left')
-    tp_na_bool_series = simple_ranking_result_df[is_positive_col_name].isna()
-    simple_ranking_result_df.loc[simple_ranking_result_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(simple_ranking_result_df[is_positive_col_name], simple_ranking_result_df[prob_col_name],
-                   tool='avg ranking')
+    # simple_ranking_result_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'avg_ranking'])
+    # # Convert simple mean ranking to probability. TODO this method is not good
+    # simple_ranking_result_df[prob_col_name] = 1 - simple_ranking_result_df['avg_ranking'] / simple_ranking_result_df[
+    #     'avg_ranking'].max()
+    # std_df = retrieve_std_df(generated_file_path, sec_causal_type)
+    # simple_ranking_result_df = pd.merge(left=simple_ranking_result_df, right=std_df,
+    #                                     left_on='gene_id', right_on='gene_id',
+    #                                     how='left')
+    # tp_na_bool_series = simple_ranking_result_df[is_positive_col_name].isna()
+    # simple_ranking_result_df.loc[simple_ranking_result_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(simple_ranking_result_df[is_positive_col_name], simple_ranking_result_df[prob_col_name],
+    #                tool='avg ranking')
     # --------
     # --------pu learning
-    pu_learning_output_file = os.path.join(output_dir, 'train_pu.tsv')
-    machine_learning.run_ranking_pu(rpt=rpt_obj, output_file_path=pu_learning_output_file)
-    pu_learning_df = pd.read_table(pu_learning_output_file, usecols=['gene_id', 'ml_probability'])
-    pu_learning_df = pd.merge(left=pu_learning_df, right=std_df,
-                              left_on='gene_id', right_on='gene_id',
-                              how='left')
-    tp_na_bool_series = pu_learning_df[is_positive_col_name].isna()
-    pu_learning_df.loc[pu_learning_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    plot_roc_curve(pu_learning_df[is_positive_col_name], pu_learning_df['ml_probability'], tool='pu learning')
+    # pu_learning_output_file = os.path.join(output_dir, 'train_pu.tsv')
+    # machine_learning.run_ranking_pu(rpt=rpt_obj, output_file_path=pu_learning_output_file)
+    # pu_learning_df = pd.read_table(pu_learning_output_file, usecols=['gene_id', 'ml_probability'])
+    # pu_learning_df = pd.merge(left=pu_learning_df, right=std_df,
+    #                           left_on='gene_id', right_on='gene_id',
+    #                           how='left')
+    # tp_na_bool_series = pu_learning_df[is_positive_col_name].isna()
+    # pu_learning_df.loc[pu_learning_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_roc_curve(pu_learning_df[is_positive_col_name], pu_learning_df['ml_probability'], tool='pu learning')
     # --------
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
@@ -482,6 +505,8 @@ if __name__ == '__main__':
                         help='H1 predixcan result file')
     parser.add_argument('--h1_ecaviar_rpt', dest='h1_ecaviar_rpt',
                         help='H1 ecaviar result file')
+    parser.add_argument('--h1_twas_rpt', dest='h1_twas_rpt',
+                        help='H1 twas result file')
 
     parser.add_argument('--sec_coloc_rpt', dest='sec_coloc_rpt',
                         help='H0/H2 coloc result file')
@@ -495,6 +520,8 @@ if __name__ == '__main__':
                         help='H0/H2 predixcan result file')
     parser.add_argument('--sec_ecaviar_rpt', dest='sec_ecaviar_rpt',
                         help='H0/H2 ecaviar result file')
+    parser.add_argument('--sec_twas_rpt', dest='sec_twas_rpt',
+                        help='H0/H2 twas result file')
 
     parser.add_argument('--sec_causal_type', dest='sec_causal_type', type=int, required=True, choices=range(0, 8),
                         help='H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9')
@@ -514,105 +541,76 @@ if __name__ == '__main__':
                  args.sec_causal_type, args.prc_output_figure_path)
 
     # ============testing============
-    # _output_dir = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948'
+    # _output_dir = '/Users/admin/Downloads/coloc_results'
     #
-    # _generated_file = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/generated_20220825131948.tsv'
-    # _h1_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h1/coloc_output_20220829095521.tsv'
+    # _generated_file = '/Users/admin/Downloads/coloc_results/generated_20221102031352.tsv'
+    # _h1_coloc_rpt = '/Users/admin/Downloads/coloc_results/h1/coloc_output_20221212140605.tsv.gz'
     # if _h1_coloc_rpt is not None and (_h1_coloc_rpt == '' or _h1_coloc_rpt.lower() == "none"):
     #     _h1_coloc_rpt = None
     #
-    # _h1_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h1/smr_output_20220829104131.tsv'
+    # _h1_smr_rpt = '/Users/admin/Downloads/coloc_results/h1/smr_output_20221212141459.tsv.gz'
     # if _h1_smr_rpt is not None and (_h1_smr_rpt == '' or _h1_smr_rpt.lower() == "none"):
     #     _h1_smr_rpt = None
     #
-    # _h1_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h1/jlim_output_20220829100507.tsv'
+    # _h1_jlim_rpt = None
     # if _h1_jlim_rpt is not None and (_h1_jlim_rpt == '' or _h1_jlim_rpt.lower() == "none"):
     #     _h1_jlim_rpt = None
     #
-    # _h1_fastenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h1/output_20220915165200.sig.tsv'
+    # _h1_fastenloc_rpt = '/Users/admin/Downloads/coloc_results/h1/fastenloc_output_20221212153042.tsv.gz'
     # if _h1_fastenloc_rpt is not None and (_h1_fastenloc_rpt == '' or _h1_fastenloc_rpt.lower() == "none"):
     #     _h1_fastenloc_rpt = None
     #
-    # _h1_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h1/predixcan_output_20221018145320.tsv'
+    # _h1_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h1/predixcan_output_20221212140610.tsv.gz'
     # if _h1_predixcan_rpt is not None and (_h1_predixcan_rpt == '' or _h1_predixcan_rpt.lower() == "none"):
     #     _h1_predixcan_rpt = None
     #
-    # _h1_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h1/report.tsv'
+    # _h1_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h1/ecaviar_output_20221212141418.tsv.gz'
     # if _h1_ecaviar_rpt is not None and (_h1_ecaviar_rpt == '' or _h1_ecaviar_rpt.lower() == "none"):
     #     _h1_ecaviar_rpt = None
-    # # ----------------
-    # _sec_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_004/coloc_output_20220829101230.tsv'
-    # _sec_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_004/smr_output_20220829105540.tsv'
-    # _sec_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_004/jlim_output_20220829102343.tsv'
-    # _sec_fasatenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_004/output_20220915122026.sig.tsv'
-    # _sec_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_004/predixcan_output_20221018142945.tsv'
-    # _sec_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_004/report.tsv'
+    #
+    # _h1_twas_rpt = '/Users/admin/Downloads/coloc_results/h1/twas_output_20221223222006.tsv.gz'
+    # if _h1_twas_rpt is not None and (_h1_twas_rpt == '' or _h1_twas_rpt.lower() == "none"):
+    #     _h1_twas_rpt = None
+    # ----------------
+    # _sec_coloc_rpt = '/Users/admin/Downloads/coloc_results/h2004/coloc_output_20221212141510.tsv.gz'
+    # _sec_smr_rpt = '/Users/admin/Downloads/coloc_results/h2004/smr_output_20221212142103.tsv.gz'
+    # _sec_jlim_rpt = None
+    # _sec_fasatenloc_rpt = '/Users/admin/Downloads/coloc_results/h2004/fastenloc_output_20221212153046.tsv.gz'
+    # _sec_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h2004/predixcan_output_20221212141515.tsv.gz'
+    # _sec_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h2004/ecaviar_output_20221212141934.tsv.gz'
+    # _sec_twas_rpt = '/Users/admin/Downloads/coloc_results/h2004/twas_output_20221223222921.tsv.gz'
     # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
     # _sec_causal_type = 2
-    # _roc_figure_ensemble_path = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/New_ROC_H1_H2_004.png'
+    # _roc_figure_ensemble_path = '/Users/admin/Downloads/coloc_results/ROC_H1_H2_004.png'
     #
     # ----------------
     # ----------------
-    # _sec_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0405/coloc_output_20220829101242.tsv'
-    # _sec_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0405/smr_output_20220829105854.tsv'
-    # _sec_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0405/jlim_output_20220829102331.tsv'
-    # _sec_fasatenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0405/output_20220915122036.sig.tsv'
-    # _sec_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0405/predixcan_output_20221018143001.tsv'
-    # _sec_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0405/report.tsv'
+    # _sec_coloc_rpt = '/Users/admin/Downloads/coloc_results/h20407/coloc_output_20221212142112.tsv.gz'
+    # _sec_smr_rpt = '/Users/admin/Downloads/coloc_results/h20407/smr_output_20221212142748.tsv.gz'
+    # _sec_jlim_rpt = None
+    # _sec_fasatenloc_rpt = '/Users/admin/Downloads/coloc_results/h20407/fastenloc_output_20221212153049.tsv.gz'
+    # _sec_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h20407/predixcan_output_20221212142115.tsv.gz'
+    # _sec_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h20407/ecaviar_output_20221212142707.tsv.gz'
+    # _sec_twas_rpt = '/Users/admin/Downloads/coloc_results/h20407/twas_output_20221223223832.tsv.gz'
     # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
     # _sec_causal_type = 3
     #
-    # _roc_figure_ensemble_path = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/New_ROC_H1_H2_0405.png'
+    # _roc_figure_ensemble_path = '/Users/admin/Downloads/coloc_results/ROC_H1_H2_0407.png'
     # ----------------
     # ----------------
-    # _sec_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0506/coloc_output_20220829110130.tsv'
-    # _sec_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0506/smr_output_20220829114611.tsv'
-    # _sec_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0506/jlim_output_20220829111151.tsv'
-    # _sec_fasatenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0506/output_20220915122104.sig.tsv'
-    # _sec_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0506/predixcan_output_20221018143014.tsv'
-    # _sec_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0506/report.tsv'
+    # _sec_coloc_rpt = '/Users/admin/Downloads/coloc_results/h20709/coloc_output_20221212142756.tsv.gz'
+    # _sec_smr_rpt = '/Users/admin/Downloads/coloc_results/h20709/smr_output_20221212143433.tsv.gz'
+    # _sec_jlim_rpt = None
+    # _sec_fasatenloc_rpt = '/Users/admin/Downloads/coloc_results/h20709/fastenloc_output_20221212153052.tsv.gz'
+    # _sec_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h20709/predixcan_output_20221212142800.tsv.gz'
+    # _sec_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h20709/ecaviar_output_20221212143404.tsv.gz'
+    # _sec_twas_rpt = '/Users/admin/Downloads/coloc_results/h20709/twas_output_20221223224746.tsv.gz'
     # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
     # _sec_causal_type = 4
     #
-    # _roc_figure_ensemble_path = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/New_ROC_H1_H2_0506.png'
+    # _roc_figure_ensemble_path = '/Users/admin/Downloads/coloc_results/ROC_H1_H2_0709.png'
     # ----------------
-    # ----------------
-    # _sec_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0607/coloc_output_20220829110141.tsv'
-    # _sec_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0607/smr_output_20220829114533.tsv'
-    # _sec_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0607/jlim_output_20220829111146.tsv'
-    # _sec_fasatenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0607/output_20220915122112.sig.tsv'
-    # _sec_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0607/predixcan_output_20221018143026.tsv'
-    # _sec_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0607/report.tsv'
-    # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
-    # _sec_causal_type = 5
     #
-    # _roc_figure_ensemble_path = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/New_ROC_H1_H2_0607.png'
-    # ----------------
-    # #----------------
-    # _sec_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0708/coloc_output_20220829124345.tsv'
-    # _sec_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0708/smr_output_20220829132730.tsv'
-    # _sec_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0708/jlim_output_20220829125341.tsv'
-    # _sec_fasatenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0708/output_20220915122119.sig.tsv'
-    # _sec_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0708/predixcan_output_20221018143037.tsv'
-    # _sec_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0708/report.tsv'
-    # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
-    # _sec_causal_type = 6
-    #
-    # _roc_figure_ensemble_path = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/New_ROC_H1_H2_0708.png'
-    # # ----------------
-    # ----------------
-    # _sec_coloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0809/coloc_output_20220829124356.tsv'
-    # _sec_smr_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0809/smr_output_20220829132824.tsv'
-    # _sec_jlim_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0809/jlim_output_20220829125359.tsv'
-    # _sec_fasatenloc_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0809/output_20220915122132.sig.tsv'
-    # _sec_predixcan_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0809/predixcan_output_20221018143047.tsv'
-    # _sec_ecaviar_rpt = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/h2_0809/report.tsv'
-    # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
-    # _sec_causal_type = 7
-    #
-    # _roc_figure_ensemble_path = '/Users/haiyue.meng/Downloads/output_20000_20000_20220825131948/New_ROC_H1_H2_0809.png'
-    # ----------------
-
     # plot_all_against_ensemble_roc(_generated_file,
     #                               _h1_coloc_rpt, _sec_coloc_rpt,
     #                               _h1_smr_rpt, _sec_smr_rpt,
@@ -620,5 +618,6 @@ if __name__ == '__main__':
     #                               h1_fastenloc_rpt=_h1_fastenloc_rpt, sec_fastenloc_rpt=_sec_fasatenloc_rpt,
     #                               h1_predixcan_rpt=_h1_predixcan_rpt, sec_predixcan_rpt=_sec_predixcan_rpt,
     #                               h1_ecaviar_rpt=_h1_ecaviar_rpt, sec_ecaviar_rpt=_sec_ecaviar_rpt,
+    #                               h1_twas_rpt=_h1_twas_rpt, sec_twas_rpt=_sec_twas_rpt,
     #                               sec_causal_type=_sec_causal_type,
     #                               output_figure_path=_roc_figure_ensemble_path, output_dir=_output_dir)

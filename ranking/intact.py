@@ -16,12 +16,16 @@ def read_tool_result(rpt, tool_name, sig_col_name):
     additional_reading_cols = []
     if tool_name == 'predixcan':
         additional_reading_cols = ['zscore']
+    if tool_name == 'twas':
+        additional_reading_cols = ['TWAS.Z']
     elif tool_name == 'smr':
         additional_reading_cols = ['b_SMR', 'se_SMR']
     report_df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, sig_col_name] + additional_reading_cols)
     report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
     if tool_name == 'predixcan':
         report_df.rename(columns={'zscore': f'{tool_name}_zscore'}, inplace=True)
+    if tool_name == 'twas':
+        report_df.rename(columns={'TWAS.Z': f'{tool_name}_zscore'}, inplace=True)
     elif tool_name == 'smr':
         report_df[f'{tool_name}_zscore'] = report_df['b_SMR'] / report_df['se_SMR']
         report_df.drop(columns=additional_reading_cols, inplace=True)

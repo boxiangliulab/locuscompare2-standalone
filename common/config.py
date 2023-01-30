@@ -26,10 +26,10 @@ class ConfigHolder:
 
         self.study_dir = os.path.join(self.output_processed_dir, study)
 
-        self.tool_parent_dir = os.path.join(self.study_dir, self.eqtl_tissue, self.gwas_trait, self.population)
+        self.tool_parent_dir = os.path.join(self.study_dir, self.gwas_trait, self.eqtl_tissue, self.population)
         Path(self.tool_parent_dir).mkdir(exist_ok=True, parents=True)
 
-        self.report_path = os.path.join(self.study_dir, self.eqtl_tissue)
+        self.report_path = os.path.join(self.study_dir)
 
         self.gwas_col_dict = self.global_config['input']['gwas']['col_name_mapping']
         self.eqtl_col_dict = self.global_config['input']['eqtl']['col_name_mapping']
@@ -52,3 +52,15 @@ class ConfigHolder:
         self.ref_vcf_dir = self.global_config['input']['vcf']
 
         self.parallel = parallel
+
+        # p-val threshold
+        self.gwas_p_threshold = self.global_config['p-value_threshold']['gwas']
+        if self.gwas_p_threshold <= 0:
+            self.gwas_p_threshold = 5.0E-8
+        elif self.gwas_p_threshold > 1.0E-7:
+            self.gwas_p_threshold = 1.0E-7
+        self.eqtl_p_threshold = self.global_config['p-value_threshold']['eqtl']
+        if self.eqtl_p_threshold <= 0:
+            self.eqtl_p_threshold = 1.0E-6
+        elif self.eqtl_p_threshold > 1.0E-5:
+            self.eqtl_p_threshold = 1.0E-5

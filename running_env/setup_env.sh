@@ -93,6 +93,10 @@ if [[ $? != 0 ]];then
 	exit 1
 fi
 unzip -q ${smr_file}
+if [[ $? != 0 ]];then
+	echo "error installing SMR"
+	exit 1
+fi
 cp ${smr_file_name} ${current_conda_bin}
 if [[ $? != 0 ]];then
 	echo "error installing SMR"
@@ -108,6 +112,10 @@ if [[ $? != 0 ]];then
 	exit 1
 fi
 unzip -q predixcan.zip
+if [[ $? != 0 ]];then
+	echo "error installing Predixcan"
+	exit 1
+fi
 ln -s $(pwd)/MetaXcan-master/software/SPrediXcan.py ${current_conda_bin}/SPrediXcan.py
 if [[ $? != 0 ]];then
 	echo "error installing Predixcan"
@@ -133,7 +141,15 @@ if [[ $? != 0 ]];then
 	exit 1
 fi
 unzip -q ${torus_file}
+if [[ $? != 0 ]];then
+	echo "error installing Fastenloc"
+	exit 1
+fi
 unzip -q ${fastenloc_file}
+if [[ $? != 0 ]];then
+	echo "error installing Fastenloc"
+	exit 1
+fi
 cp ${torus_file_name} ${fastenloc_file_name} ${current_conda_bin}
 if [[ $? != 0 ]];then
 	echo "error installing Fastenloc"
@@ -162,6 +178,47 @@ fi
 R CMD INSTALL ${intact_file}
 if [[ $? != 0 ]];then
 	echo "error installing INTACT"
+	exit
+fi
+
+#install twas
+echo "Installing TWAS..."
+twas_file="twas.zip"
+curl --connect-timeout 10 --retry 3 -o ${twas_file} https://codeload.github.com/gusevlab/fusion_twas/zip/refs/heads/master
+if [[ $? != 0 ]];then
+	echo "error downloading TWAS"
+	exit 1
+fi
+unzip -q ${twas_file}
+if [[ $? != 0 ]];then
+	echo "error installing TWAS"
+	exit
+fi
+chmod -R 755 fusion_twas-master
+ln -s $(pwd)/fusion_twas-master/FUSION.compute_weights.R ${current_conda_bin}/FUSION.compute_weights.R
+if [[ $? != 0 ]];then
+	echo "error installing TWAS"
+	exit
+fi
+ln -s $(pwd)/fusion_twas-master/FUSION.assoc_test.R ${current_conda_bin}/FUSION.assoc_test.R
+if [[ $? != 0 ]];then
+	echo "error installing TWAS"
+	exit
+fi
+twas_assoc_path=$(which FUSION.assoc_test.R)
+echo "TWAS assoc_test full path is ${twas_assoc_path}"
+
+#install plink2R
+echo "Installing plink2R..."
+plink2R_file="plink2R_1.1.tar.gz"
+curl --connect-timeout 10 --retry 3 -o ${plink2R_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/plink2r/${plink2R_file}
+if [[ $? != 0 ]];then
+	echo "error downloading plink2R"
+	exit 1
+fi
+R CMD INSTALL ${plink2R_file}
+if [[ $? != 0 ]];then
+	echo "error installing plink2R"
 	exit
 fi
 

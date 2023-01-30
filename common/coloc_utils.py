@@ -675,12 +675,15 @@ def remove_nan_from_ld(ld_file, header):
     return nan_cols
 
 
-def get_tools_params(tool_name, param_prefix='--'):
+def get_tools_params(tool_name, param_prefix='--', params_without_value=[]):
     params_str = ''
     param_dict = get_tools_params_dict(tool_name)
     if param_dict is not None:
         for pk, pv in param_dict.items():
-            if pv is not None:
+            if pv is None:
+                if pk in params_without_value:
+                    params_str += f'{param_prefix}{pk} '
+            else:
                 params_str += f'{param_prefix}{pk} {pv} '
     else:
         logging.info(f'No parameter config for {tool_name}, use default parameters')

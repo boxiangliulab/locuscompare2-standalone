@@ -23,7 +23,10 @@ class ECaviar:
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
         coros = []
         finemap_snp_files = []
-        finemap_params = utils.get_tools_params('finemap')
+        finemap_params = '--n-causal-max 1'
+        custom_params = utils.get_tools_params('finemap')
+        if custom_params and custom_params != '':
+            finemap_params = custom_params
         for gene_dir in os.listdir(candidate_data_dir):
             if not gene_dir.startswith('.'):
                 for causal_snp_dir in os.listdir(f'{candidate_data_dir}/{gene_dir}'):
@@ -51,7 +54,7 @@ class ECaviar:
     def generate_report(self, working_dir, finemap_reports, gwas_preprocessed_file, eqtl_grouped_dir,
                         var_id_col_name, gwas_col_dict, eqtl_col_dict):
         output_report_path = f'{working_dir}/analyzed/{self.ECAVIAR_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
-        var_ids, chroms, gene_ids, gwas_paths, eqtl_paths, gwas_pips, eqtl_pips, gene_clpps = [], [], [], [], [], [], [], []
+        var_ids, chroms, gene_ids , gwas_pips, eqtl_pips, gene_clpps = [], [], [], [], [], [],
         for gwas_snp, eqtl_snp in finemap_reports:
             if not utils.file_exists(gwas_snp) or not utils.file_exists(eqtl_snp):
                 logging.error(f'{gwas_snp} or {eqtl_snp} is not found.')
@@ -75,13 +78,10 @@ class ECaviar:
             chrom = var_id.split('_')[0]
             chrom_num = chrom.replace('chr', '')
             gene_id = gwas_snp_file.split('_')[3].split('.')[0]
-            eqtl_path = f'{eqtl_grouped_dir}/{chrom_num}/{gene_id}.tsv.gz'
 
             var_ids.append(var_id)
             chroms.append(chrom_num)
             gene_ids.append(gene_id)
-            gwas_paths.append(gwas_preprocessed_file)
-            eqtl_paths.append(eqtl_path)
             gwas_pips.append(gwas_clpp_sum)
             eqtl_pips.append(eqtl_clpp_sum)
             gene_clpps.append(gene_clpp_sum)
@@ -89,19 +89,9 @@ class ECaviar:
         report_df = pd.DataFrame({'var_id': var_ids,
                                   'chrom': chroms,
                                   'gene_id': gene_ids,
-                                  'gwas_path': gwas_paths,
-                                  'eqtl_path': eqtl_paths,
                                   'gwas_pip': gwas_pips,
                                   'eqtl_pip': eqtl_pips,
                                   'clpp': gene_clpps})
-
-        report_df = utils.mapping_var_id_to_rsid(result_df=report_df,
-                                                 result_df_var_id_col_name='var_id',
-                                                 result_df_gene_id_col_name='gene_id',
-                                                 gwas_preprocessed_file=gwas_preprocessed_file,
-                                                 ref_var_id_col_name=var_id_col_name,
-                                                 gwas_col_dict=gwas_col_dict,
-                                                 eqtl_col_dict=eqtl_col_dict)
 
         report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
         return output_report_path

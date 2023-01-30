@@ -270,14 +270,12 @@ class Jlim:
         os.system(str_com)
 
         if utils.file_exists(output_jlim_file):
-            # report file add chromesome\eqtl_path\gwas_path columns, and drop NAN data
+            # report file add chromesome columns, and drop NAN data
             if os.path.getsize(output_jlim_file):
                 output_jlim_df = pd.read_csv(output_jlim_file, sep=const.column_spliter).dropna(axis=0,
                                                                                                 how='any')
                 if len(output_jlim_df) > 0:
                     output_jlim_df['chrom'] = chrom
-                    output_jlim_df['eqtl_path'] = eqtl_gene_file
-                    output_jlim_df['gwas_path'] = gwas_range_file
                     jlim_output_columns_position = ' actualIdxBP'
                     merge_pd = output_jlim_df
                     be_merge_snp_df = None
