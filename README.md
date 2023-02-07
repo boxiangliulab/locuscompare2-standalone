@@ -171,7 +171,7 @@ input:
   # Required if you want to run TWAS
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
-  twas_weights_pos: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model/GTExv8.ALL.Spleen.nofilter.pos'
+  twas_model_dir: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model'
 
 p-value_threshold:
   # GWAS and eQTL significance P-value threshold. Coefficient type should be float. 

@@ -558,7 +558,7 @@ def merge_sum_stat_files(generated_file_list, output_suffix, eqtl_genetic_models
             [os.path.join(output_dir, f'eqtl_simu_{i}_{output_suffix}.tsv') for i in eqtl_genetic_models])
 
 
-def get_genes(all_gene_list, output_path, gene_per_chrom=5, chrom_list=None):
+def get_genes(all_gene_list, output_path, gene_per_chrom=20, chrom_list=None):
     if chrom_list is None:
         chrom_list = [str(i) for i in range(1, 23)]
     start_time = datetime.now()
@@ -571,7 +571,6 @@ def get_genes(all_gene_list, output_path, gene_per_chrom=5, chrom_list=None):
     gene_info_df.drop(index=gene_info_df[gene_info_df['r2_0_04_cnt'] == 0].index, inplace=True)
     gene_info_df.drop(index=gene_info_df[gene_info_df['r2_04_07_cnt'] == 0].index, inplace=True)
     gene_info_df.drop(index=gene_info_df[gene_info_df['r2_07_09_cnt'] == 0].index, inplace=True)
-    gene_info_df.drop(index=gene_info_df[gene_info_df['r2_09_1_cnt'] == 0].index, inplace=True)
     sample_df_list = []
     for _, grp in gene_info_df.groupby('chrom'):
         if grp.shape[0] > gene_per_chrom:

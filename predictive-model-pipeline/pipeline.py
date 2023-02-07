@@ -83,21 +83,21 @@ def run(rscript_path, input_geno_vcf=None, input_exp_bed=None, exp_gene_id_col_n
             geno_end = tss + cis_len * 1000
             if not os.path.exists(f'{input_geno_vcf}.tbi'):
                 os.system(f'tabix -f -p vcf {input_geno_vcf}')
-            subset_vcf = os.path.join(output_dir, f'{gene_id}_geno.vcf')
+            subset_vcf = os.path.join(output_dir, f'{gene_id}_{tissue_name}_geno.vcf')
             os.system(f'tabix -h {input_geno_vcf} {chrom}:{geno_start}-{geno_end} > {subset_vcf}'
                       f'&& bgzip -f {subset_vcf}')
             subset_genotype_file = f'{subset_vcf}.gz'
             if not os.path.exists(subset_genotype_file) or os.path.getsize(subset_genotype_file) <= 0:
                 logging.warning(f'Extracting genotypes for the cis locus of gene {gene_id} failed, skipping')
                 continue
-            phenotype_file = os.path.join(output_dir, f'{gene_id}_phen.tsv')
+            phenotype_file = os.path.join(output_dir, f'{gene_id}_{tissue_name}_phen.tsv')
             phenotype_df = bed_df.loc[[idx], individual_col_names].T
             phenotype_df['fid'] = phenotype_df.index
             phenotype_df['iid'] = phenotype_df.index
             phenotype_df = phenotype_df.reindex(
                 columns=['fid', 'iid'] + [col for col in phenotype_df.columns if col not in ['fid', 'iid']], copy=False)
             phenotype_df.to_csv(phenotype_file, sep='\t', index=False, header=False)
-            phen_bin_prefix = os.path.join(output_dir, f'{gene_id}_phen_bin')
+            phen_bin_prefix = os.path.join(output_dir, f'{gene_id}_{tissue_name}_phen_bin')
             os.system(f'plink --vcf {subset_genotype_file} --double-id '
                       f'--pheno {phenotype_file} --make-bed --out {phen_bin_prefix}')
             phen_bed = f'{phen_bin_prefix}.bed'

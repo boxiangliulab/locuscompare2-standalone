@@ -193,7 +193,7 @@ def __preprocess_and_run_twas(glob_processor):
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     if len(os.listdir(glob_processor.gwas_output_dir)) == 0:
         raise ValueError(f'Dependant GWAS files not found, did you run global_data_process?')
-    _weight_pos_file = glob_processor.global_config['input']['twas_weights_pos']
+    _weight_pos_file = util.get_twas_ref_files(glob_processor.global_config)
     pop = glob_processor.global_config.get('population', 'EUR').upper()
     twas = rt.TWAS()
     return twas.run(_working_dir,

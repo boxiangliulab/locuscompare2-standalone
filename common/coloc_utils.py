@@ -1,15 +1,16 @@
+import argparse
 import asyncio
-import sys
+import logging
 import os
 import re
 import shutil
+import subprocess
+import sys
 import warnings
 from pathlib import Path
-import argparse
+
 import pandas as pd
 import yaml
-import subprocess
-import logging
 
 sys.path.append(os.path.abspath(os.path.dirname(Path(__file__).resolve())))
 import constants as const
@@ -585,6 +586,13 @@ def get_predixcan_ref_files(global_config):
     model_db_path = f'{prediction_source_dir}/mashr_{eqtl_issue_name}.db'
     prediction_snp_covariance_path = f'{prediction_source_dir}/mashr_{eqtl_issue_name}.txt.gz'
     return model_db_path, prediction_snp_covariance_path
+
+
+def get_twas_ref_files(global_config, filtered_pos=False):
+    twas_model_dir = global_config['input']['twas_model_dir']
+    eqtl_issue_name = global_config['input']['eqtl']['tissue']
+    pos_file_name_filter_part = '' if filtered_pos else '.nofilter'
+    return os.path.join(twas_model_dir, f'GTExv8.ALL.{eqtl_issue_name}{pos_file_name_filter_part}.pos')
 
 
 def is_vcf_chrom_code_contains_chr(vcf_file):

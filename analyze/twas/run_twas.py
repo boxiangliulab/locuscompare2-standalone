@@ -30,7 +30,7 @@ class TWAS:
             population=None,
             parallel=False):
         start_time = datetime.now()
-        logging.info(f'run_coloc start at: {start_time}')
+        logging.info(f'run_twas start at: {start_time}')
         output_file = self.__get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
         input_dir = os.path.join(working_dir, 'input')
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     _gwas_chrom_group_dir = glob_processor.gwas_output_dir
     if len(os.listdir(_gwas_chrom_group_dir)) == 0:
         raise ValueError(f'Dependant files not found, did you run global_data_process?')
-    weight_pos_file = glob_processor.global_config['input']['twas_weights_pos']
+    weight_pos_file = utils.get_twas_ref_files(glob_processor.global_config)
     if not os.path.exists(weight_pos_file) or os.path.getsize(weight_pos_file) <= 0:
         raise ValueError(f'TWAS weight pos file not found')
     _working_dir = os.path.join(glob_processor.tool_parent_dir, TWAS.COLOC_TOOL_NAME)

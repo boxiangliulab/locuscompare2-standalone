@@ -47,7 +47,7 @@ def __before_run_ecaviar_tools_check(global_config):
 
 def __before_run_twas_tools_check(global_config):
     logging.info(f'start check TWAS')
-    utils.check_file_or_path_exist(global_config['input']['twas_weights_pos'])
+    utils.check_file_or_path_exist(utils.get_twas_ref_files(global_config))
     __check_vcf(global_config)
     __check_plink_binary(global_config)
 
