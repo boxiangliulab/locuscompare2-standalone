@@ -5,7 +5,7 @@ Colotools is an interactive visualization tool for genetic association analysis 
 ## Overview
 
 Colotools integrates 5 popular colocalization tools:
-+ Loci-level colocalization: [JLIM](https://github.com/cotsapaslab/jlim)
++ ~~Loci-level colocalization: [JLIM](https://github.com/cotsapaslab/jlim)~~
 + SNP-level colocalization: [coloc](https://github.com/chr1swallace/coloc) and [fastEnloc](https://github.com/xqwen/fastenloc)
 + Mendelian randomization: [SMR](https://yanglab.westlake.edu.cn/software/smr/#Overview)
 + Transcriptomic association: [PrediXcan](https://github.com/hakyimlab/PrediXcan) and [TWAS](http://gusevlab.org/projects/fusion/)
@@ -39,7 +39,7 @@ Specification of config file example:
 working_dir: '/Volumes/HD/biodata/colotools-tools'
 input:
   gwas:
-    # Required. Input GWAS file path, the position should base on hg38 or hg19
+    # Required. Input GWAS file path, the position should base on hg38
     file: '/raw/Eczema/EAGLE_AD_GWAS_results_2015_hg38.tsv.gz'
     # Required. Trait name
     trait: 'eczemas'
@@ -100,19 +100,18 @@ input:
   # Required if you want to run SMR/eCaviar/TWAS. The vcf files from 1000genomes.
   # NOTE that if you want to run TWAS, one more step: copy resource/convert_vcf_to_plink_binary.sh to vcf directory and run it to generate TWAS LDREF files
   # hg38 http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20190425_NYGC_GATK/
-  # hg19 http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/
-  # We split the vcf files by population EUR, EAS, SAS, AMR, AFR. Please download your research population vcf files from:
-  # EUR:
-  # EAS:
-  # SAS:
-  # AMR:
-  # AFR：
-  # After download the vcf files, set the file directory path here
+  # 
+  # We splitted the vcf files by population EUR, EAS, SAS, AFR, AMR. Please create the population folder and download your research population vcf and related tbi files from:
+  # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz  
+  # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz.tbi
+  # 'popluation' can be EUR, EAS, SAS, AFR, AMR; 'n' can be 1 to 22.
+  #
+  # After download the files, make sure the vcf and tbi files are in your created population folder. For exmaple: '/Volumes/HD/biodata/colocalization-tools/raw/vcf/hg38/EUR/chr1.vcf.gz'
+  # Then set the parent folder of the population folder path here.
   vcf: '/Volumes/HD/biodata/colocalization-tools/raw/vcf/hg38'
   
   # Required if you want to run SMR.
-  # If you want to use GTEx eQTL, download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.basic.annotation.gtf.gz for GTEx V8,
-  # or download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_19/gencode.v19.annotation.gtf.gz for GTEx V7.
+  # If you want to use GTEx eQTL, download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.basic.annotation.gtf.gz for GTEx V8
   # Then set the file's local path here.
   # If you want to use your own eQTL, set the eQTL reference gencode version path here.
   genecode: '/Volumes/HD//biodata/colocalization-tools/raw/genecode/gencode.v26.basic.annotation.gtf.gz'
@@ -123,10 +122,6 @@ input:
   # EUR: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/eur_hg38_ld_block.bed
   # EAS: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/eas_hg38_ld_block.bed
   # AFR: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/afr_hg38_ld_block.bed
-  # hg19
-  # EUR: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/eur_hg19_ld_block.bed
-  # EAS: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/eas_hg19_ld_block.bed
-  # AFR: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/afr_hg19_ld_block.bed
   # Then set the LD block reference path here.
   ld_block_loci_file: '/Volumes/HD/biodata/colocalization-tools/raw/loci/eur_ld.hg38.bed'
   
@@ -151,23 +146,6 @@ input:
   # and 'mashr_Cells_EBV-transformed_lymphocytes.txt.gz' in this directory.
   prediction_dir: '/Volumes/HD/biodata/colocalization-tools/raw/prediction_model_covariance'
 
-  # Required if you want to run JLIM.
-  # How to derive data:
-  # The reference genotype panels file is population-specific. Download and unpack the LD reference file by your research population: 
-  # hg38:
-  # EUR: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.nfe.b38.tar.gz
-  # EAS: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.eas.b38.tar.gz
-  # SAS: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.sas.b38.tar.gz
-  # AMR: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.amr.b38.tar.gz
-  # AFR：http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.afr.b38.tar.gz
-  # hg19:
-  # EUR: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.nfe.b37.tar.gz
-  # EAS: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.eas.b37.tar.gz
-  # SAS: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.sas.b37.tar.gz
-  # AMR: http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.amr.b37.tar.gz
-  # AFR：http://genetics.bwh.harvard.edu/wiki/sunyaevlab/_media/refld.1kg.afr.b37.tar.gz
-  # Then set the reference genotype panels file here.
-  reference_genotype_panel_ld_ref_file: '/Volumes/HD/biodata/colocalization-tools/raw/ldref/refld.1kg.nfe.b38'
   # Required if you want to run TWAS
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
@@ -218,7 +196,7 @@ python3 colotools --config config_yml_file [--tools tools_names]
 | Parameter | Description                                                                                                                                                                                                                                     |
 |-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | config    | Required. The config file path.                                                                                                                                                                                                                 |
-| tools     | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc srm jlim). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **jlim**. Run all of them by default. |
+| tools     | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**. Run all of them by default. |
 
 + Run Colotools in python project
 
