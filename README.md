@@ -5,7 +5,6 @@ Colotools is an interactive visualization tool for genetic association analysis 
 ## Overview
 
 Colotools integrates 5 popular colocalization tools:
-+ ~~Loci-level colocalization: [JLIM](https://github.com/cotsapaslab/jlim)~~
 + SNP-level colocalization: [coloc](https://github.com/chr1swallace/coloc) and [fastEnloc](https://github.com/xqwen/fastenloc)
 + Mendelian randomization: [SMR](https://yanglab.westlake.edu.cn/software/smr/#Overview)
 + Transcriptomic association: [PrediXcan](https://github.com/hakyimlab/PrediXcan) and [TWAS](http://gusevlab.org/projects/fusion/)
@@ -47,9 +46,13 @@ input:
     sample_size: 116863
     # Required. Study type, cc or quant
     type: cc
+    # Optional. seperator of the GWAS input file, can be one and only one char, if more chars are specified, tab will be used instead
+    sep: '	'
     # Tell colotools the field name in input GWAS file.
     col_name_mapping:
-      # Optional. The rs id field name in input GWAS file. If the input GWAS file does not contain rsid, remove this line
+      # Required. The rs id field name in input GWAS file.
+      # Can be other values(like variant_id), as long as they match the values of ID column in vcf file and the snp column in eQTL file,
+      # else clumping and TWAS won't work
       snp: 'rsID'
       # Required. The chromosome field name in input GWAS file.
       chrom: 'chr'
@@ -74,9 +77,12 @@ input:
     tissue: 'Spleen'
     # Required. eQTL sample size
     sample_size: 147
+    # Optional. seperator of the eQTL input file, can be one and only one char, if more chars are specified, tab will be used instead
+    sep: '	'
     # Tell colotools the field name in the input eQTL file.
     col_name_mapping:
-      # Optional. The rs id field name in input eQTL file. If the input eQTL file does not contain rsid, remove this line
+      # Required. The rs id field name in input eQTL file.
+      # Can be other values(like variant_id), as long as they match the snp column in GWAS file,
       snp: 'rsid'
       # Required. The chromosome field name in input eQTL file.
       chrom: 'chromosome'
@@ -110,7 +116,7 @@ input:
   # Then set the parent folder of the population folder path here.
   vcf: '/Volumes/HD/biodata/colocalization-tools/raw/vcf/hg38'
   
-  # Required if you want to run SMR.
+  # Required, must match the gene version in eQTL files
   # If you want to use GTEx eQTL, download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.basic.annotation.gtf.gz for GTEx V8
   # Then set the file's local path here.
   # If you want to use your own eQTL, set the eQTL reference gencode version path here.
@@ -189,21 +195,25 @@ The configuration example is in [/resource/tools_config.yml](/resource/tools_con
 
 ## 3. Run Colotools
 
++ We incorporate [INTACT](https://github.com/jokamoto97/INTACT/) to output an ensemble score based on the results of different tools. 
+It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run Colotools in command line
 ```shell
-python3 colotools --config config_yml_file [--tools tools_names] 
+python3 path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--parallel] [--log path_to_logfile]
 ```
-| Parameter | Description                                                                                                                                                                                                                                     |
-|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| config    | Required. The config file path.                                                                                                                                                                                                                 |
-| tools     | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**. Run all of them by default. |
+| Parameter | Description                                                                                                                                                                                                                                                                           |
+|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| config    | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        |
+| tools     | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **ecaviar**, **twas**. All tools will be run if this param is omitted. |
+| parallel  | Optional. Run in parallel mode, this requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                                                       |
+| log       | Optional. The path to log file                                                                                                                                                                                                                                                        |
 
 + Run Colotools in python project
 
 ```python
 import colotools
 
-colotools.run(config_yml_file, ['coloc','fastenloc']) # The tools name list. Run all tools by default.
+colotools.run(config_yml_file, ['coloc','fastenloc']) # The tools name list. All tools will be run by default.
 ```
 
 ### Output
@@ -213,7 +223,7 @@ After running Colotools, a summarized report and plot will be generated in the w
 <span style="color:red">**TODO Specification of the report and plot**</span>
 
 + Report
-  + TODO path
+  + Path: [working_dir specified in yml config]/processed/[value of --config if it's a directory else default]/figures/index.html
   + Content and description
 
 + Plot

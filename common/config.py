@@ -2,6 +2,7 @@ from pathlib import Path
 import os
 import common.constants
 from common import coloc_utils as utils
+import logging
 
 
 class ConfigHolder:
@@ -64,3 +65,16 @@ class ConfigHolder:
             self.eqtl_p_threshold = 1.0E-6
         elif self.eqtl_p_threshold > 1.0E-5:
             self.eqtl_p_threshold = 1.0E-5
+        # input sep
+        self.gwas_sep = self.global_config['input']['gwas'].get('sep', '\t')
+        if self.gwas_sep == '\\t':
+            self.gwas_sep = '\t'
+        elif (len(self.gwas_sep)) > 1:
+            logging.warning(f'GWAS file separator is too long (can only be one char), using tab instead')
+            self.gwas_sep = '\t'
+        self.eqtl_sep = self.global_config['input']['eqtl'].get('sep', '\t')
+        if self.eqtl_sep == '\\t':
+            self.eqtl_sep = '\t'
+        elif (len(self.eqtl_sep)) > 1:
+            logging.warning(f'eQTL file separator is too long (can only be one char), using tab instead')
+            self.eqtl_sep = '\t'

@@ -69,20 +69,6 @@ fi
 current_conda_bin="${CONDA_PREFIX}/bin"
 echo "current conda env bin path is ${current_conda_bin}"
 
-# install JLIM
-echo "Installing JLIM..."
-jlim_file="jlimR_2.5.0.tar.gz"
-curl --connect-timeout 10 --retry 3 -o ${jlim_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/jlim/${jlim_file}
-if [[ $? != 0 ]];then
-	echo "error downloading JLIM"
-	exit 1
-fi
-R CMD INSTALL ${jlim_file}
-if [[ $? != 0 ]];then
-	echo "error installing JLIM"
-	exit 1
-fi
-
 # install SMR
 echo "Installing SMR..."
 smr_file="smr.zip"

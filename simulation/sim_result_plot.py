@@ -426,16 +426,16 @@ def plot_all_against_ensemble_roc(generated_file_path,
     # intact_df.loc[intact_df['intact_probability'].isna(), 'intact_probability'] = 0
     # plot_roc_curve(intact_df[is_positive_col_name], intact_df['intact_probability'], tool='intact linear')
     # --------intact_hybrid
-    intact_hybrid_output_file = os.path.join(output_dir, 'intact_hybrid.tsv')
-    intact.run_ranking(rpt=rpt_obj, output_file_path=intact_hybrid_output_file, prior_fun='hybrid')
-    intact_hybrid_df = pd.read_table(intact_hybrid_output_file, usecols=['gene_id', 'intact_probability'])
-    intact_hybrid_df = pd.merge(left=intact_hybrid_df, right=std_df,
-                                left_on='gene_id', right_on='gene_id',
-                                how='left')
-    tp_na_bool_series = intact_hybrid_df[is_positive_col_name].isna()
-    intact_hybrid_df.loc[intact_hybrid_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    intact_hybrid_df.loc[intact_hybrid_df['intact_probability'].isna(), 'intact_probability'] = 0
-    plot_roc_curve(intact_hybrid_df[is_positive_col_name], intact_hybrid_df['intact_probability'], tool='intact')
+    # intact_hybrid_output_file = os.path.join(output_dir, 'intact_hybrid.tsv')
+    # intact.run_ranking(rpt=rpt_obj, output_file_path=intact_hybrid_output_file, prior_fun='hybrid')
+    # intact_hybrid_df = pd.read_table(intact_hybrid_output_file, usecols=['gene_id', 'intact_probability'])
+    # intact_hybrid_df = pd.merge(left=intact_hybrid_df, right=std_df,
+    #                             left_on='gene_id', right_on='gene_id',
+    #                             how='left')
+    # tp_na_bool_series = intact_hybrid_df[is_positive_col_name].isna()
+    # intact_hybrid_df.loc[intact_hybrid_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # intact_hybrid_df.loc[intact_hybrid_df['intact_probability'].isna(), 'intact_probability'] = 0
+    # plot_roc_curve(intact_hybrid_df[is_positive_col_name], intact_hybrid_df['intact_probability'], tool='intact')
     # --------intact_step
     # intact_step_output_file = os.path.join(output_dir, 'intact_step.tsv')
     # intact.run_ranking(rpt=rpt_obj, output_file_path=intact_step_output_file, prior_fun='step')
@@ -448,16 +448,16 @@ def plot_all_against_ensemble_roc(generated_file_path,
     # intact_step_df.loc[intact_step_df['intact_probability'].isna(), 'intact_probability'] = 0
     # plot_roc_curve(intact_step_df[is_positive_col_name], intact_step_df['intact_probability'], tool='intact step')
     # --------intact_expit
-    # intact_expit_output_file = os.path.join(output_dir, 'intact_expit.tsv')
-    # intact.run_ranking(rpt=rpt_obj, output_file_path=intact_expit_output_file, prior_fun='expit')
-    # intact_expit_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'intact_probability'])
-    # intact_expit_df = pd.merge(left=intact_expit_df, right=std_df,
-    #                            left_on='gene_id', right_on='gene_id',
-    #                            how='left')
-    # tp_na_bool_series = intact_expit_df[is_positive_col_name].isna()
-    # intact_expit_df.loc[intact_expit_df[tp_na_bool_series].index, is_positive_col_name] = 0
-    # intact_expit_df.loc[intact_expit_df['intact_probability'].isna(), 'intact_probability'] = 0
-    # plot_roc_curve(intact_expit_df[is_positive_col_name], intact_expit_df['intact_probability'], tool='intact expit')
+    intact_expit_output_file = os.path.join(output_dir, 'intact_expit.tsv')
+    intact.run_ranking(rpt=rpt_obj, output_file_path=intact_expit_output_file, prior_fun='expit')
+    intact_expit_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'intact_probability'])
+    intact_expit_df = pd.merge(left=intact_expit_df, right=std_df,
+                               left_on='gene_id', right_on='gene_id',
+                               how='left')
+    tp_na_bool_series = intact_expit_df[is_positive_col_name].isna()
+    intact_expit_df.loc[intact_expit_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    intact_expit_df.loc[intact_expit_df['intact_probability'].isna(), 'intact_probability'] = 0
+    plot_roc_curve(intact_expit_df[is_positive_col_name], intact_expit_df['intact_probability'], tool='intact expit')
     # ---------simple ranking
     # simple_ranking_result_df = pd.read_table(intact_expit_output_file, usecols=['gene_id', 'avg_ranking'])
     # # Convert simple mean ranking to probability. TODO this method is not good

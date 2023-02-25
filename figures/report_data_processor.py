@@ -119,16 +119,16 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
                 for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
                     if tool_name == tool:
                         col_name = sig_column
+                if utils.file_exists(report_file_path) and os.path.getsize(report_file_path) > 0:
+                    report_df = pd.read_csv(report_file_path, sep=const.column_spliter,
+                                            usecols=['gene_id', col_name])
+                    report_df.drop_duplicates(
+                        'gene_id', keep='first', inplace=True)
 
-                report_df = pd.read_csv(report_file_path, sep=const.column_spliter,
-                                        usecols=['gene_id', col_name])
-                report_df.drop_duplicates(
-                    'gene_id', keep='first', inplace=True)
-
-                report_df[tool_name] = report_df[col_name]
-                report_df[tool_name].fillna('-1', inplace=True)
-                ranking_mg = pd.merge(left=ranking_mg, right=report_df[['gene_id', tool_name]],
-                                      how='left', on='gene_id')
+                    report_df[tool_name] = report_df[col_name]
+                    report_df[tool_name].fillna('-1', inplace=True)
+                    ranking_mg = pd.merge(left=ranking_mg, right=report_df[['gene_id', tool_name]],
+                                          how='left', on='gene_id')
 
         # create genes file
         create_gene_file(ranking_mg, gwas_preprocessed_file, gwas_col_dict, tissue_trait_path,

@@ -302,6 +302,7 @@
 			headers,
 			timeout
 		) {
+			url = window.location.origin
 			var response = Q.defer()
 			var xhr = new XMLHttpRequest()
 			if ('withCredentials' in xhr) {
@@ -4026,8 +4027,6 @@ Implements a standard scatter plot
 							return match
 						}
 					})
-
-					console.log('filtered_data', filtered_data)
 					// Render label groups
 					this.label_groups = this.svg.group
 						.selectAll('g.lz-data_layer-scatter-label')

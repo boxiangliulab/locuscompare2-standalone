@@ -66,7 +66,7 @@ class Processor:
         Path(self.eqtl_output_dir).mkdir(exist_ok=True, parents=True)
         utils.split_file_by_col_name(self.eqtl_output_dir, f'{self.global_config["input"]["eqtl"]["file"]}',
                                      self.eqtl_col_dict['chrom'], self.eqtl_col_dict['gene_id'],
-                                     readonly_cols=self.eqtl_col_dict.values())
+                                     readonly_cols=self.eqtl_col_dict.values(), sep=self.config_holder.eqtl_sep)
         logging.info('finish split eQTL file')
         # drop na or no significant snp gene file, sort by position
         total_gene_file_count = 0
@@ -137,11 +137,14 @@ class Processor:
         utils.delete_dir(self.gwas_preprocessed_dir)
         Path(self.gwas_preprocessed_dir).mkdir(exist_ok=True, parents=True)
         gwas_file_path = self.global_config['input']['gwas']['file']
-        # print(f'Reading GWAS file {gwas_file_path}, time: {datetime.datetime.now()}')
         logging.info(f'Reading GWAS file {gwas_file_path}')
-        gwas_df = pd.read_table(gwas_file_path, sep=const.column_spliter, header=0, usecols=self.gwas_col_dict.values(),
-                                dtype={self.gwas_col_dict['chrom']: 'category',
-                                       self.gwas_col_dict['position']: 'Int64'})
+        gwas_df = pd.read_table(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
+                                usecols=self.gwas_col_dict.values(),
+                                dtype={self.gwas_col_dict['position']: 'Int64'})
+        gwas_df[self.gwas_col_dict['chrom']] = gwas_df[self.gwas_col_dict['chrom']].astype(str).str.lower().str.strip(
+            'chr')
+        gwas_df[self.gwas_col_dict['chrom']].astype('category')
+
         logging.info(f'GWAS data dropping non-autosome data, time: {datetime.datetime.now()}')
         gwas_df.drop(labels=gwas_df[~gwas_df[self.gwas_col_dict['chrom']].isin([str(i) for i in range(1, 23)])].index,
                      inplace=True)

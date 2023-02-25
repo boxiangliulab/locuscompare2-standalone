@@ -3,6 +3,7 @@
   trait: 'eczemas'
   sample_size: 116863
   type: cc
+  sep: '	' #optional
   col_name_mapping:
     snp: 'hm_rsid' #optional
     chrom: 'hm_chrom'

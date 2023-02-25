@@ -3,6 +3,7 @@
   tissue: 'Cells_EBV-transformed_lymphocytes'
   sample_size: 147
   type: quant
+  sep: '	' #optional
   col_name_mapping:
     snp: 'rsid'
     chrom: 'chromosome'

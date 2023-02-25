@@ -19,7 +19,8 @@ shell_command_write_vcf_header = 'tabix -H {} > {}'
 shell_command_get_vcf_data_by_position = 'tabix {} chr{}:{}-{}'
 
 
-def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefix_col, readonly_cols=None, dtype=None):
+def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefix_col, readonly_cols=None, dtype=None,
+                           sep='\t'):
     """
 
     output file names: {working_dir}/{by_dir_col}/{by_file_prefix_col}.tsv.gz
@@ -28,7 +29,7 @@ def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefi
         warnings.warn(
             f'Input file {src_file_path} does not exist or size is 0, nothing to split')
     Path(working_dir).mkdir(parents=True, exist_ok=True)
-    with pd.read_table(src_file_path, sep=const.column_spliter, iterator=True, chunksize=100000, header=0,
+    with pd.read_table(src_file_path, sep=sep, iterator=True, chunksize=100000, header=0,
                        usecols=readonly_cols, dtype=dtype) as reader:
         for chunk in reader:
             grouped = chunk.groupby(by_file_prefix_col)

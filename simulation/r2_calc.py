@@ -53,6 +53,9 @@ def calc_for_chrom(full_gene_list_file, chrom, input_vcf, maf_thresh=0.1):
     gene_info_df = pd.read_table(full_gene_list_file,
                                  dtype={'start': 'Int64', 'end': 'Int64', 'position': 'Int64', 'chrom': 'string'})
     gene_info_df = gene_info_df[gene_info_df['chrom'] == str(chrom)]
+    gene_info_df.drop(
+        labels=gene_info_df[~gene_info_df['gene_type'].isin(['protein_coding', 'pseudogene', 'lincRNA'])].index,
+        inplace=True)
     gene_info_df['chrom'] = gene_info_df['chrom'].astype(int)
     gene_info_df.sort_values(['chrom', 'start'], inplace=True)
     gene_info_df['center_snp'] = 'NA'

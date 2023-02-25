@@ -162,6 +162,8 @@ class TWAS:
             return
         report_df.replace(to_replace=r'^\s*NA\s*$', value=pd.NA, inplace=True, regex=True)
         report_df.dropna(subset='TWAS.P', inplace=True)
+        if report_df.shape[0] == 0:
+            return
         report_df['TWAS.P'] = report_df['TWAS.P'].astype(float)
         gene_df = report_df['ID'].str.split('.', n=2, expand=True)
         report_df['ID'] = gene_df[0]

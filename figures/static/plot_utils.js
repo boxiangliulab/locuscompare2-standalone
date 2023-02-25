@@ -533,17 +533,6 @@
 			trans
 		) {
 			var data = JSON.parse(JSON.stringify(data_association))
-			let taget_item = null
-			data = data.filter((item) => {
-				if (item.category === 'target') {
-					taget_item = item
-					return false
-				} else {
-					return true
-				}
-			})
-			taget_item && data.unshift(taget_item)
-
 			data = data
 				.map((d, i, object) => {
 					if (d.chrom) {
@@ -570,8 +559,6 @@
 						return d
 					} else {
 						//some association don't have chromosome information
-						// console.warn('no location information available for association:')
-						// console.warn(d);
 						return false
 					}
 				})
@@ -652,7 +639,6 @@
 	}
 
 	function manhattanPlot(dom_id, data, clickCallback, plotType) {
-		console.log('manhattanPlot', data)
 		reloadlz(dom_id, data, 'manhattan', null, plotType, null, clickCallback)
 	}
 
@@ -664,7 +650,6 @@
 		profile,
 		clickCallback
 	) {
-		console.log('colocPlot')
 		data = data.sort((a, b) => {
 			return a.position - b.position
 		})
