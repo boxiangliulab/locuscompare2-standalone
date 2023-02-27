@@ -140,10 +140,8 @@ class Processor:
         logging.info(f'Reading GWAS file {gwas_file_path}')
         gwas_df = pd.read_table(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
                                 usecols=self.gwas_col_dict.values(),
-                                dtype={self.gwas_col_dict['position']: 'Int64'})
-        gwas_df[self.gwas_col_dict['chrom']] = gwas_df[self.gwas_col_dict['chrom']].astype(str).str.lower().str.strip(
-            'chr')
-        gwas_df[self.gwas_col_dict['chrom']].astype('category')
+                                dtype={self.gwas_col_dict['position']: 'Int64', self.gwas_col_dict['chrom']: 'string'})
+        gwas_df[self.gwas_col_dict['chrom']].astype(str).str.lower().str.strip('chr')
 
         logging.info(f'GWAS data dropping non-autosome data, time: {datetime.datetime.now()}')
         gwas_df.drop(labels=gwas_df[~gwas_df[self.gwas_col_dict['chrom']].isin([str(i) for i in range(1, 23)])].index,

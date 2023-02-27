@@ -100,12 +100,9 @@ def __preprocess_and_run_predixcan(glob_processor):
     return predixcan.run(_working_dir,
                          _model_db_path,
                          _prediction_snp_covariance_path,
-                         glob_processor.gwas_preprocessed_file,
                          _gwas_processed_file,
                          glob_processor.gwas_col_dict,
-                         glob_processor.eqtl_output_report,
-                         glob_processor.eqtl_output_dir,
-                         glob_processor.eqtl_col_dict)
+                         glob_processor.eqtl_output_report)
 
 
 def __preprocess_and_run_smr(glob_processor):
@@ -144,7 +141,6 @@ def __preprocess_and_run_smr(glob_processor):
                    _genecode_file,
                    glob_processor.gwas_filter_file,
                    glob_processor.gwas_output_dir,
-                   glob_processor.gwas_preprocessed_file,
                    glob_processor.gwas_col_dict,
                    _gwas_sample_size,
                    glob_processor.eqtl_output_report,

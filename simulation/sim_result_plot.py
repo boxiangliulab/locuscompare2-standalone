@@ -1,13 +1,16 @@
-from pathlib import Path
-import os
-import sys
-import matplotlib.pyplot as plt
-import pandas as pd
 import argparse
+import os
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from sklearn.metrics import roc_auc_score, roc_curve, average_precision_score, precision_recall_curve
+
 import ranking.birra as birra
-import ranking.rra as rra
 import ranking.intact as intact
+import ranking.rra as rra
+from ranking.constants import TOOL_SIG_COL_INFO, GENE_ID_COL_NAME, RESULT_TYPE_PVAL
 
 prob_col_name = 'PROB'
 is_positive_col_name = 'IS_POSITIVE'
@@ -47,6 +50,7 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
         elif tool == 'smr':
             reading_cols.append('b_SMR')
             reading_cols.append('se_SMR')
+            reading_cols.append('p_HEIDI')
         h1_report_df = pd.read_table(h1_report, usecols=reading_cols)
         h1_report_df.drop_duplicates(subset='gene_id', inplace=True)
         h1_report_df[prob_col_name] = 1 - h1_report_df[rpt_pval_col_name]
@@ -70,6 +74,7 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
     h1_report_df['gene_id'] = h1_report_df['gene_id'] + '_1'
     sec_report_df['gene_id'] = sec_report_df['gene_id'] + f'_{sec_causal_type}'
     report_df = pd.concat([h1_report_df, sec_report_df])
+    # TODO MHY is it right to use how as outer?
     result_df = pd.merge(left=std_df, right=report_df,
                          left_on='gene_id', right_on='gene_id',
                          how='outer')
@@ -486,6 +491,143 @@ def plot_all_against_ensemble_roc(generated_file_path,
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
+
+
+def plot_bar(generated_file_path,
+             h1_coloc_rpt, sec_coloc_rpt,
+             h1_smr_rpt, sec_smr_rpt,
+             h1_jlim_rpt, sec_jlim_rpt,
+             h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
+             h1_predixcan_rpt=None, sec_predixcan_rpt=None,
+             h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
+             h1_twas_rpt=None, sec_twas_rpt=None,
+             sec_causal_type=1,
+             output_figure_path=None):
+    if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
+        coloc_df = prepare_plot_data(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
+                                     rpt_prob_col_name='overall_H4', rpt_pval_col_name=None, tool='coloc')
+    else:
+        coloc_df = None
+    if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
+        smr_df = prepare_plot_data(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
+                                   rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
+    else:
+        smr_df = None
+    if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
+        jlim_df = prepare_plot_data(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
+                                    rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
+    else:
+        jlim_df = None
+    if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
+        fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
+                                         rpt_prob_col_name='RCP', rpt_pval_col_name=None, tool='fastenloc')
+    else:
+        fastenloc_df = None
+
+    if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
+        predixcan_df = prepare_plot_data(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
+                                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
+    else:
+        predixcan_df = None
+
+    if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
+        ecaviar_df = prepare_plot_data(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
+                                       rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='ecaviar')
+    else:
+        ecaviar_df = None
+
+    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
+        twas_df = prepare_plot_data(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
+                                    rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P', tool='twas')
+    else:
+        twas_df = None
+
+    all_tool_df_list = [coloc_df, smr_df, jlim_df, predixcan_df, fastenloc_df, ecaviar_df, twas_df]
+    df_list = [df for df in all_tool_df_list if df is not None and df.shape[0] > 0]
+    if len(df_list) == 0:
+        print('all report is empty, nothing to do')
+        return
+    ranking_df = None
+    for rpt_df in df_list:
+        rpt_df.drop(columns=[is_positive_col_name, prob_col_name], inplace=True)
+        if ranking_df is None:
+            ranking_df = rpt_df
+        else:
+            ranking_df = pd.merge(left=ranking_df, right=rpt_df,
+                                  left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                                  how='outer')
+    std_df = retrieve_std_df(generated_file_path, sec_causal_type)
+    ranking_df = pd.merge(left=std_df, right=ranking_df,
+                          left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                          how='outer')
+    tool_positive_cols = []
+    tool_sensitivity = []
+    tool_specificity = []
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        if sig_column not in ranking_df.columns:
+            continue
+        ranking_df.rename(columns={sig_column: tool}, inplace=True)
+        if tool == 'smr':
+            ranking_df[f'{tool}_positive'] = (ranking_df[tool] < 1E-6) & (ranking_df['p_HEIDI'] > 0.05)
+        elif tool == 'ecaviar':
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] > 0.01
+        elif tool == 'fastenloc':
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] > 0.5
+        elif tool == 'coloc':
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] > 0.8
+        elif sig_type == RESULT_TYPE_PVAL:
+            ranking_df[f'{tool}_positive'] = (ranking_df[tool] < 1E-6)
+        else:
+            raise ValueError(f'Tool {tool} is not recognized, what is its threshold for it?')
+        tp = ranking_df[ranking_df[f'{tool}_positive'] & (ranking_df[is_positive_col_name] == 1)].shape[0]
+        # fn = ranking_df[~ranking_df[f'{tool}_positive'] & (ranking_df[is_positive_col_name] == 1)].shape[0]
+        p = ranking_df[ranking_df[is_positive_col_name] == 1].shape[0]
+        # TPR = tp/p = tp/(tp+fn)
+        tn = ranking_df[(~ranking_df[f'{tool}_positive']) & (ranking_df[is_positive_col_name] == 0)].shape[0]
+        n = ranking_df[ranking_df[is_positive_col_name] == 0].shape[0]
+        tool_sensitivity.append(tp / p)
+        # TNR = tn/n = tn/(tn+fp)
+        tool_specificity.append(tn / n)
+        positive_series = ranking_df[f'{tool}_positive']
+        negative_series = ~ positive_series
+        ranking_df[f'{tool}_positive'].mask(positive_series, 1, inplace=True)
+        ranking_df[f'{tool}_positive'].mask(negative_series, 0, inplace=True)
+        tool_positive_cols.append(f'{tool}_positive')
+    # TODO MHY: what is the name here?
+    ranking_df['overall_positive'] = ranking_df[tool_positive_cols].sum(axis=1) >= 3
+    bar_plot_result = os.path.join(os.path.dirname(output_figure_path), f'bar_result.tsv')
+    ranking_df.to_csv(bar_plot_result, sep='\t', header=True, index=False, na_rep='NA')
+    tools = [tool[:-9] for tool in tool_positive_cols]
+    overall_tp = ranking_df[ranking_df['overall_positive'] & (ranking_df[is_positive_col_name] == 1)].shape[0]
+    overall_p = ranking_df[ranking_df[is_positive_col_name] == 1].shape[0]
+    overall_tn = ranking_df[(~ ranking_df['overall_positive']) & (ranking_df[is_positive_col_name] == 0)].shape[0]
+    overall_n = ranking_df[ranking_df[is_positive_col_name] == 0].shape[0]
+    tools.append('overall')
+    tool_sensitivity.append(overall_tp / overall_p)
+    tool_specificity.append(overall_tn / overall_n)
+    print(f'Tools: {tools}\nSensitivities: {tool_sensitivity}')
+    print(f'Specificities: {tool_specificity}')
+    plt.figure().clear()
+    fig, ax = plt.subplots()
+    x = np.arange(len(tool_sensitivity))
+    bar_width = 0.4
+    rects = ax.bar(x - bar_width / 2, tool_sensitivity, bar_width, label='Sensitivity')
+    ax.bar_label(rects, fmt='{:0.3f}')
+    rects = ax.bar(x + bar_width / 2, tool_specificity, bar_width, label='Specificity')
+    ax.bar_label(rects, fmt='{:0.3f}')
+    ax.set_ylabel('Sensitivity/Specificity')
+    ax.set_title('Sensitivity/Specificity of different tools')
+    ax.set_xticks(x, tools)
+    ax.legend(loc='upper left', ncols=2)
+    ax.set_ylim(0, 1.2)
+    # bar_container = ax.bar(tools, tool_sensitivity)
+    # ax.set(ylabel='Sensitivity', xlabel='Colocalization tools', title='Sensitivity of different tools', ylim=(0, 1.1))
+    # plt.bar(tools, tool_sensitivity)
+    # plt.xlabel("Colocalization tools")
+    # plt.ylabel("Sensitivity")
+    # plt.title("Sensitivity/Specificity of different tools")
+    if output_figure_path is not None:
+        plt.savefig(output_figure_path)
 
 
 if __name__ == '__main__':

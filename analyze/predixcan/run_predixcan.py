@@ -23,12 +23,9 @@ class Predixcan:
             working_dir=None,
             model_db_path=None,
             prediction_snp_covariance_path=None,
-            gwas_preprocessed_file=None,
             gwas_processed_file=None,
             gwas_col_dict=None,
-            eqtl_output_report=None,
-            eqtl_output_dir=None,
-            eqtl_col_dict=None):
+            eqtl_output_report=None):
         start_time = datetime.now()
         output_file = self.__get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
@@ -112,9 +109,6 @@ if __name__ == '__main__':
     predixcan.run(_working_dir,
                   _model_db_path,
                   _prediction_snp_covariance_path,
-                  glob_processor.gwas_preprocessed_file,
                   _gwas_processed_file,
                   glob_processor.gwas_col_dict,
-                  glob_processor.eqtl_output_report,
-                  glob_processor.eqtl_output_dir,
-                  glob_processor.eqtl_col_dict)
+                  glob_processor.eqtl_output_report)

@@ -19,7 +19,7 @@ def read_tool_result(rpt, tool_name, sig_col_name):
     if tool_name == 'twas':
         additional_reading_cols = ['TWAS.Z']
     elif tool_name == 'smr':
-        additional_reading_cols = ['b_SMR', 'se_SMR']
+        additional_reading_cols = ['b_SMR', 'se_SMR', 'p_HEIDI']
     report_df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, sig_col_name] + additional_reading_cols)
     report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
     if tool_name == 'predixcan':
@@ -28,7 +28,7 @@ def read_tool_result(rpt, tool_name, sig_col_name):
         report_df.rename(columns={'TWAS.Z': f'{tool_name}_zscore'}, inplace=True)
     elif tool_name == 'smr':
         report_df[f'{tool_name}_zscore'] = report_df['b_SMR'] / report_df['se_SMR']
-        report_df.drop(columns=additional_reading_cols, inplace=True)
+        report_df.drop(columns=['b_SMR', 'se_SMR'], inplace=True)
     report_df.rename(columns={sig_col_name: tool_name}, inplace=True)
     return report_df
     # result_df has 2 or more columns: [GENE_ID_COL_NAME, tool, tool_zscore], tool col means tool result value
