@@ -129,10 +129,12 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
                     report_df[tool_name].fillna('-1', inplace=True)
                     ranking_mg = pd.merge(left=ranking_mg, right=report_df[['gene_id', tool_name]],
                                           how='left', on='gene_id')
-
-        # create genes file
-        create_gene_file(ranking_mg, gwas_preprocessed_file, gwas_col_dict, tissue_trait_path,
+        if ranking_mg is not None and len(ranking_mg) > 0:
+            # create genes file
+            create_gene_file(ranking_mg, gwas_preprocessed_file, gwas_col_dict, tissue_trait_path,
                          eqtl_col_dict, population, gene_code_file, eqtl_file_path)
+        else:
+            logging.warning('this colocalization result no report data !!! so has no offline report')
     return output_base_dir, report_list_pd
 
 
