@@ -44,14 +44,14 @@ class Fastenloc:
         report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
 
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
-        # sort sig file rcp(colocalization probability)
+        # sort sig file LCP(locus-level colocalization probability)
         if utils.file_exists(report_output_sig_file):
             df_output_sig = pd.read_csv(report_output_sig_file, sep='\s+')
             if len(df_output_sig) > 0:
                 df_output_sig.columns = ['Signal', 'Num_SNP', 'CPIP_qtl', 'CPIP_gwas_marginal',
                                          'CPIP_gwas_qtl_prior',
                                          'RCP', 'LCP']
-                df_output_sig.sort_values(by='RCP', ascending=False, inplace=True)
+                df_output_sig.sort_values(by='LCP', ascending=False, inplace=True)
                 df_output_sig['gene_id'] = df_output_sig['Signal'].str.split(':').str[0]
 
                 filtered_gene = pd.read_csv(eqtl_output_report, sep=const.column_spliter)

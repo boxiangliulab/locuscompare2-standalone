@@ -1,5 +1,5 @@
-import logging
 import concurrent
+import logging
 import os
 import re
 import shutil
@@ -122,7 +122,7 @@ class TWAS:
         #  NOTE!! TWAS input must contain SNP column,
         #  and values in this column must match values in the 2nd column of .bim file (indicated by --ref_ld_chr)
         gwas_chrom_df.rename({gwas_col_dict['snp']: 'SNP', gwas_col_dict['effect_allele']: 'A1',
-                              gwas_col_dict['other_allele']: 'A2'}, inplace=True)
+                              gwas_col_dict['other_allele']: 'A2'}, axis='columns', inplace=True)
         gwas_chrom_df = gwas_chrom_df.reindex(columns=['SNP', 'A1', 'A2', 'Z'], copy=False)
         gwas_chrom_input = os.path.join(input_dir, f'chr{chrom}.tsv.gz')
         gwas_chrom_df.to_csv(gwas_chrom_input, sep=const.column_spliter, header=True, index=False)

@@ -13,4 +13,3 @@
     other_allele: 'hm_other_allele'
     pvalue: 'p_value'
     se: 'standard_error'
-    eaf: 'hm_effect_allele_frequency'

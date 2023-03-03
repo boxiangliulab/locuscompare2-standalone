@@ -6,7 +6,6 @@ input:
   ld_block_loci_file: '/ebs2/linyi/00_data/locuscompare2/raw/ld_block/eur_hg38_ld_block.bed'
   eqtl_finemapping_file: '/ebs2/linyi/00_data/locuscompare2/raw/eqtl/gtex_v8/finemapping/gtex_v8.eqtl_annot_rsid.vcf.gz'
   prediction_dir: '/ebs2/linyi/00_data/locuscompare2/raw/pred_model_cov/eqtl/mashr'
-  reference_genotype_panel_ld_ref_file: '/ebs2/linyi/00_data/locuscompare2/raw/ld_ref/refld.1kg.nfe.b38'
   twas_model_dir: '/ebs2/linyi/00_data/locuscompare2/raw/twas_model'
 p-value_threshold:
   gwas: 5.0E-8

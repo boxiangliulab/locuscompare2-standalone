@@ -1,12 +1,14 @@
 import ast
+import logging
 import os
-import sys
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
-import logging
+
 import pandas as pd
 import pyranges as pr
+
 import analyze.smr.eqtl_data_processor as edp
 
 sys.path.append(
@@ -76,7 +78,8 @@ class Smr:
                 continue
             if not pval_filtered_gwas_df[pval_filtered_gwas_df[gwas_col_dict['chrom']] == chrom].loc[
                    :, gwas_col_dict['position']].isin(eqtl_positions).any():
-                logging.debug(f'No intersection between gwas risk SNPs and eqtl risk SNPs for gene {gene_id}: {datetime.now()}')
+                logging.debug(
+                    f'No intersection between gwas risk SNPs and eqtl risk SNPs for gene {gene_id}: {datetime.now()}')
                 continue
             gwas_file = gwas_files[chrom]
             candidate_gwas_df = pd.read_table(gwas_file, sep=const.column_spliter, dtype=gwas_type_dict)
@@ -128,11 +131,24 @@ class Smr:
                     f'{output_ld_ref_path}.bed') or not os.path.exists(f'{output_ld_ref_path}.fam'):
                 logging.warning(f'No generated ld ref file for gene {gene_id}')
                 continue
+            # Adjust allele order and then set GWAS eaf to NA
+            utils.adjust_allele_order(candidate_gwas_df,
+                                      gwas_col_dict['effect_allele'],
+                                      gwas_col_dict['other_allele'],
+                                      gwas_col_dict['chrom'],
+                                      gwas_col_dict['position'],
+                                      candidate_eqtl_trait_df,
+                                      ref_df_chrom_col_name=eqtl_col_dict['chrom'],
+                                      ref_df_pos_col_name=eqtl_col_dict['position'],
+                                      ref_df_alt_allele_col_name=eqtl_col_dict['alt'],
+                                      ref_df_ref_allele_col_name=eqtl_col_dict['ref'],
+                                      gbeta_col_name=gwas_col_dict['beta'])
             # Keep only SMR recognized COJO format columns
+            candidate_gwas_df['eaf'] = 'NA'
             candidate_gwas_df = candidate_gwas_df[
                 [var_id_col_name, gwas_col_dict['effect_allele'],
                  gwas_col_dict['other_allele'],
-                 gwas_col_dict['eaf'], gwas_col_dict['beta'], gwas_col_dict['se'],
+                 'eaf', gwas_col_dict['beta'], gwas_col_dict['se'],
                  gwas_col_dict['pvalue']]]
             candidate_gwas_df['N'] = gwas_sample_size
             gwas_col = {v: k for k, v in gwas_col_dict.items()}
@@ -169,8 +185,8 @@ class Smr:
                 logging.warning(f'No generated besd file for gene {gene_id}')
                 continue
             logging.debug(f'Running SMR on ',
-                  f'GWAS input file {gwas_input_path} and eQTL input file {eqtl_besd_file}',
-                  f' and LD ref file: {output_ld_ref_path}')
+                          f'GWAS input file {gwas_input_path} and eQTL input file {eqtl_besd_file}',
+                          f' and LD ref file: {output_ld_ref_path}')
             gene_out_result = os.path.join(output_dir, f'{gene_id}_out')
             smr_cmd = f'smr --bfile {output_ld_ref_path} --gwas-summary {gwas_input_path} --beqtl-summary {eqtl_besd_file} --peqtl-smr {eqtl_p_thresh} --out {gene_out_result}'
             cmd_params = '--diff-freq-prop 0.99 --cis-wind 200'

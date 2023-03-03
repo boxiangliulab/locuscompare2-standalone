@@ -142,7 +142,7 @@ def plot_all_roc(generated_file_path,
                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
         plot_single_roc(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                        rpt_prob_col_name='RCP', rpt_pval_col_name=None,
+                        rpt_prob_col_name='LCP', rpt_pval_col_name=None,
                         tool='fastenloc')
     if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
         plot_single_roc(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
@@ -190,7 +190,7 @@ def plot_all_prc(generated_file_path,
                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
         plot_single_prc(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                        rpt_prob_col_name='RCP', rpt_pval_col_name=None, tool='fastenloc')
+                        rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
     if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
         plot_single_prc(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
@@ -254,7 +254,7 @@ def plot_all_against_ensemble_roc(generated_file_path,
         jlim_df = None
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
         fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                                         rpt_prob_col_name='RCP', rpt_pval_col_name=None, tool='fastenloc')
+                                         rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
         plot_roc_curve(fastenloc_df[is_positive_col_name], fastenloc_df[prob_col_name], tool='fastenloc')
     else:
         fastenloc_df = None
@@ -520,7 +520,7 @@ def plot_bar(generated_file_path,
         jlim_df = None
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
         fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                                         rpt_prob_col_name='RCP', rpt_pval_col_name=None, tool='fastenloc')
+                                         rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
     else:
         fastenloc_df = None
 

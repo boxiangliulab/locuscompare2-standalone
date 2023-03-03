@@ -68,8 +68,6 @@ input:
       pvalue: 'p.value'
       # Required. The se field name in input GWAS file. 
       se: 'se'
-      # Required. The effect allele frequency field name in input GWAS file. 
-      eaf: 'eaf'
   eqtl:
     # Required. Input eQTL file path, the position should base on hg38
     file: '/raw/eqtl/Spleen.tsv.gz'
@@ -222,13 +220,14 @@ After running Colotools, a summarized report and plot will be generated in the w
 
 <span style="color:red">**TODO Specification of the report and plot**</span>
 
-+ Report
-  + Path: [working_dir specified in yml config]/processed/[value of --config if it's a directory else default]/figures/index.html
-  + Content and description
+working_dir, trait, tissue, population are specified in config.yml.
 
-+ Plot
-  + TODO path
-  + How to use
++ Report
+  + Path: [working_dir]/processed/[study (value of --config if it's a directory else default)]/figures/index.html
+  + Open index.html via Chrome. 
+
++ Report data
+  + Path: [working_dir]/processed/[study (value of --config if it's a directory else default)]/[trait]/[tissue]/[population]/[tool_name]/analyzed/
 
 ## License
 <span style="color:red">**TODO Choose an appropriate license.**</span>

@@ -15,7 +15,6 @@ input:
       other_allele: 'hm_other_allele'
       pvalue: 'p_value'
       se: 'standard_error'
-      eaf: 'hm_effect_allele_frequency'
   eqtl:
     file: '/Volumes/HD/biodata/colocalization-tools/raw/eqtl/Whole_Blood.tsv.gz'
     tissue: 'Whole_Blood'
@@ -37,7 +36,6 @@ input:
   ld_block_loci_file: '/Volumes/HD/biodata/colocalization-tools/raw/loci/eur_hg38_ld_block.bed'
   eqtl_finemapping_file: '/Volumes/HD/biodata/colocalization-tools/raw/eqtl/finemapping/v8/v8.vcf.gz'
   prediction_dir: '/Volumes/HD/biodata/colocalization-tools/raw/prediction_model_covariance/mashr'
-  reference_genotype_panel_ld_ref_file: '/Volumes/HD/biodata/colocalization-tools/raw/ldref/refld.1kg.nfe.b38'
   twas_model_dir: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model'
 p-value_threshold:
   gwas: 5.0E-8

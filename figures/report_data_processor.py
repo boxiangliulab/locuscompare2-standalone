@@ -70,7 +70,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         eqtl_col_dict = processor.eqtl_col_dict
         population = processor.global_config.get('population', 'EUR').upper()
         report_list_pd.loc[(report_list_pd['trait'] == trait_name) & (
-                    report_list_pd['tissue'] == tissue_name), 'population'] = population
+                report_list_pd['tissue'] == tissue_name), 'population'] = population
 
         eqtl_file_path = processor.eqtl_output_dir
         gene_code_file = processor.global_config['input']['genecode']
@@ -86,7 +86,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
             rpt[f'{tool_row["tool_name"]}'] = tool_row['report_path']
         ranking_output_file_path = sc.run_ranking(
             output_file_path=os.path.join(tissue_trait_path,
-                                          f'emsemble_ranking_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv'),
+                                          f'ensemble_ranking_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv'),
             rpt_obj=rpt, sample_size=processor.global_config['input']['gwas']['sample_size'])
         report_gene_ranking = const.default_report_gene_ranking
 
@@ -108,7 +108,8 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
                                       on='gene_id', how='outer')
             else:
                 ranking_output_file_pd['intact_probability'] = -1
-                ranking_mg = ranking_output_file_pd
+                ranking_mg = ranking_output_file_pd.sort_values(by='geo_p_value', ascending=True, inplace=False).head(
+                    report_gene_ranking)
             ranking_mg.fillna('-1', inplace=True)
             # gene ranking mapping every tool info
             for tool_index, tool_row in trait_df.iterrows():
@@ -132,7 +133,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         if ranking_mg is not None and len(ranking_mg) > 0:
             # create genes file
             create_gene_file(ranking_mg, gwas_preprocessed_file, gwas_col_dict, tissue_trait_path,
-                         eqtl_col_dict, population, gene_code_file, eqtl_file_path)
+                             eqtl_col_dict, population, gene_code_file, eqtl_file_path)
         else:
             logging.warning('this colocalization result no report data !!! so has no offline report')
     return output_base_dir, report_list_pd

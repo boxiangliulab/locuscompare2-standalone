@@ -101,7 +101,7 @@ if __name__ == '__main__':
     eCaviar = ECaviar()
     _gwas_col_dict = {'snp': 'oldID', 'chrom': 'hm_chrom', 'position': 'hm_pos', 'beta': 'hm_beta',
                                         'effect_allele': 'hm_effect_allele', 'other_allele': 'hm_other_allele', 'pvalue': 'p_value',
-                                        'se': 'standard_error', 'eaf': 'hm_effect_allele_frequency'}
+                                        'se': 'standard_error'}
     _eqtl_col_dict = {'snp': 'rsid', 'chrom': 'chromosome', 'position': 'position', 'beta': 'beta', 'alt': 'alt',
                                         'ref': 'ref', 'pvalue': 'pvalue', 'se': 'se', 'gene_id': 'molecular_trait_id', 'maf': 'maf'}
 

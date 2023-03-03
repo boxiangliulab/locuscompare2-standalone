@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
     _gwas_col_dict = {'snp': 'oldID', 'chrom': 'chr', 'position': 'hm_pos', 'beta': 'beta',
                       'effect_allele': 'a1', 'other_allele': 'a2', 'pvalue': 'pval',
-                      'se': 'se', 'eaf': 'eaf'}
+                      'se': 'se'}
     _eqtl_col_dict = {'snp': 'rsid', 'chrom': 'chromosome', 'position': 'position', 'beta': 'beta', 'alt': 'alt',
                       'ref': 'ref', 'pvalue': 'pvalue', 'se': 'se', 'gene_id': 'molecular_trait_id', 'maf': 'maf'}
 
