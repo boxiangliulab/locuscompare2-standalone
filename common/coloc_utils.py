@@ -584,16 +584,33 @@ def mapping_var_id_to_rsid(result_df, result_df_var_id_col_name,
 def get_predixcan_ref_files(global_config):
     prediction_source_dir = global_config['input']['prediction_dir']
     eqtl_issue_name = global_config['input']['eqtl']['tissue']
-    model_db_path = f'{prediction_source_dir}/mashr_{eqtl_issue_name}.db'
-    prediction_snp_covariance_path = f'{prediction_source_dir}/mashr_{eqtl_issue_name}.txt.gz'
+    model_db_path = None
+    prediction_snp_covariance_path = None
+    for filename in os.listdir(prediction_source_dir):
+        if model_db_path is not None and prediction_snp_covariance_path is not None:
+            break
+        if re.search(rf'^(.*){eqtl_issue_name}(.*)\.db$', filename):
+            model_db_path = os.path.join(prediction_source_dir, filename)
+        elif re.search(rf'^(.*){eqtl_issue_name}(.*)\.txt.gz$', filename):
+            prediction_snp_covariance_path = os.path.join(prediction_source_dir, filename)
     return model_db_path, prediction_snp_covariance_path
 
 
 def get_twas_ref_files(global_config, filtered_pos=False):
     twas_model_dir = global_config['input']['twas_model_dir']
     eqtl_issue_name = global_config['input']['eqtl']['tissue']
-    pos_file_name_filter_part = '' if filtered_pos else '.nofilter'
-    return os.path.join(twas_model_dir, f'GTExv8.ALL.{eqtl_issue_name}{pos_file_name_filter_part}.pos')
+    pos_name = None
+    no_filter_pos_name = None
+    for filename in os.listdir(twas_model_dir):
+        if pos_name is not None and no_filter_pos_name is not None:
+            break
+        if re.search(rf'^(.*){eqtl_issue_name}(.*)\.pos$', filename):
+            if 'nofilter' in filename:
+                no_filter_pos_name = filename
+            else:
+                pos_name = filename
+    pos_file_name = pos_name if filtered_pos else no_filter_pos_name
+    return os.path.join(twas_model_dir, pos_file_name)
 
 
 def is_vcf_chrom_code_contains_chr(vcf_file):

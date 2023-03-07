@@ -30,6 +30,8 @@ def __before_run_coloc_tools_check(global_config):
 def __before_run_predixcan_tools_check(global_config):
     logging.info(f'start check predixcan')
     _model_db_path, _prediction_snp_covariance_path = utils.get_predixcan_ref_files(global_config)
+    logging.info(f'Predixcan model db path: {_model_db_path}')
+    logging.info(f'Predixcan SNP covariance path: {_prediction_snp_covariance_path}')
     utils.check_file_or_path_exist(_model_db_path)
     utils.check_file_or_path_exist(_prediction_snp_covariance_path)
 
@@ -47,7 +49,9 @@ def __before_run_ecaviar_tools_check(global_config):
 
 def __before_run_twas_tools_check(global_config):
     logging.info(f'start check TWAS')
-    utils.check_file_or_path_exist(utils.get_twas_ref_files(global_config))
+    twas_pos_path = utils.get_twas_ref_files(global_config)
+    logging.info(f'TWAS pos file path: {twas_pos_path}')
+    utils.check_file_or_path_exist(twas_pos_path)
     __check_vcf(global_config)
     __check_plink_binary(global_config)
 

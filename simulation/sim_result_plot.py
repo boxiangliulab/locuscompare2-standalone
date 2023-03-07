@@ -10,7 +10,7 @@ from sklearn.metrics import roc_auc_score, roc_curve, average_precision_score, p
 import ranking.birra as birra
 import ranking.intact as intact
 import ranking.rra as rra
-from ranking.constants import TOOL_SIG_COL_INFO, GENE_ID_COL_NAME, RESULT_TYPE_PVAL
+from ranking.constants import TOOL_SIG_COL_INFO, GENE_ID_COL_NAME, RESULT_TYPE_PVAL, RESULT_TYPE_PROB
 
 prob_col_name = 'PROB'
 is_positive_col_name = 'IS_POSITIVE'
@@ -503,42 +503,57 @@ def plot_bar(generated_file_path,
              h1_twas_rpt=None, sec_twas_rpt=None,
              sec_causal_type=1,
              output_figure_path=None):
+    tool_thresholds = {}
     if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
         coloc_df = prepare_plot_data(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
                                      rpt_prob_col_name='overall_H4', rpt_pval_col_name=None, tool='coloc')
+        fpr, tpr, thresholds = roc_curve(coloc_df[is_positive_col_name], coloc_df[prob_col_name])
+        tool_thresholds['coloc'] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         coloc_df = None
     if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
         smr_df = prepare_plot_data(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
                                    rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
+        fpr, tpr, thresholds = roc_curve(smr_df[is_positive_col_name], smr_df[prob_col_name])
+        tool_thresholds['smr'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         smr_df = None
     if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
         jlim_df = prepare_plot_data(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
                                     rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
+        fpr, tpr, thresholds = roc_curve(jlim_df[is_positive_col_name], jlim_df[prob_col_name])
+        tool_thresholds['jlim'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         jlim_df = None
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
         fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
                                          rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
+        fpr, tpr, thresholds = roc_curve(fastenloc_df[is_positive_col_name], fastenloc_df[prob_col_name])
+        tool_thresholds['fastenloc'] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         fastenloc_df = None
 
     if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
         predixcan_df = prepare_plot_data(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
                                          rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
+        fpr, tpr, thresholds = roc_curve(predixcan_df[is_positive_col_name], predixcan_df[prob_col_name])
+        tool_thresholds['predixcan'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         predixcan_df = None
 
     if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
         ecaviar_df = prepare_plot_data(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
                                        rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='ecaviar')
+        fpr, tpr, thresholds = roc_curve(ecaviar_df[is_positive_col_name], ecaviar_df[prob_col_name])
+        tool_thresholds['ecaviar'] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         ecaviar_df = None
 
     if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
         twas_df = prepare_plot_data(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
                                     rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P', tool='twas')
+        fpr, tpr, thresholds = roc_curve(twas_df[is_positive_col_name], twas_df[prob_col_name])
+        tool_thresholds['twas'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
     else:
         twas_df = None
 
@@ -563,20 +578,19 @@ def plot_bar(generated_file_path,
     tool_positive_cols = []
     tool_sensitivity = []
     tool_specificity = []
+    tools = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         if sig_column not in ranking_df.columns:
             continue
         ranking_df.rename(columns={sig_column: tool}, inplace=True)
+        # thresholds are covert to tool specific!
         if tool == 'smr':
-            ranking_df[f'{tool}_positive'] = (ranking_df[tool] < 1E-6) & (ranking_df['p_HEIDI'] > 0.05)
-        elif tool == 'ecaviar':
-            ranking_df[f'{tool}_positive'] = ranking_df[tool] > 0.01
-        elif tool == 'fastenloc':
-            ranking_df[f'{tool}_positive'] = ranking_df[tool] > 0.5
-        elif tool == 'coloc':
-            ranking_df[f'{tool}_positive'] = ranking_df[tool] > 0.8
+            ranking_df[f'{tool}_positive'] = (ranking_df[tool] < tool_thresholds[tool]) & (
+                    ranking_df['p_HEIDI'] > 0.05)
+        elif sig_type == RESULT_TYPE_PROB:
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] > tool_thresholds[tool]
         elif sig_type == RESULT_TYPE_PVAL:
-            ranking_df[f'{tool}_positive'] = (ranking_df[tool] < 1E-6)
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] < tool_thresholds[tool]
         else:
             raise ValueError(f'Tool {tool} is not recognized, what is its threshold for it?')
         tp = ranking_df[ranking_df[f'{tool}_positive'] & (ranking_df[is_positive_col_name] == 1)].shape[0]
@@ -593,23 +607,24 @@ def plot_bar(generated_file_path,
         ranking_df[f'{tool}_positive'].mask(positive_series, 1, inplace=True)
         ranking_df[f'{tool}_positive'].mask(negative_series, 0, inplace=True)
         tool_positive_cols.append(f'{tool}_positive')
-    # TODO MHY: what is the name here?
-    ranking_df['overall_positive'] = ranking_df[tool_positive_cols].sum(axis=1) >= 3
+        tools.append(f'{tool}\n{"{:0.3f}".format(tool_thresholds[tool])}')
+    ranking_df['mvote_positive'] = ranking_df[tool_positive_cols].sum(axis=1) >= 3
     bar_plot_result = os.path.join(os.path.dirname(output_figure_path), f'bar_result.tsv')
     ranking_df.to_csv(bar_plot_result, sep='\t', header=True, index=False, na_rep='NA')
-    tools = [tool[:-9] for tool in tool_positive_cols]
-    overall_tp = ranking_df[ranking_df['overall_positive'] & (ranking_df[is_positive_col_name] == 1)].shape[0]
-    overall_p = ranking_df[ranking_df[is_positive_col_name] == 1].shape[0]
-    overall_tn = ranking_df[(~ ranking_df['overall_positive']) & (ranking_df[is_positive_col_name] == 0)].shape[0]
-    overall_n = ranking_df[ranking_df[is_positive_col_name] == 0].shape[0]
-    tools.append('overall')
-    tool_sensitivity.append(overall_tp / overall_p)
-    tool_specificity.append(overall_tn / overall_n)
+    mv_tp = ranking_df[ranking_df['mvote_positive'] & (ranking_df[is_positive_col_name] == 1)].shape[0]
+    mv_p = ranking_df[ranking_df[is_positive_col_name] == 1].shape[0]
+    mv_tn = ranking_df[(~ ranking_df['mvote_positive']) & (ranking_df[is_positive_col_name] == 0)].shape[0]
+    mv_n = ranking_df[ranking_df[is_positive_col_name] == 0].shape[0]
+    tools.append('m_vote\ncount>=3')
+    # tools.append('majority_vote')
+    tool_sensitivity.append(mv_tp / mv_p)
+    tool_specificity.append(mv_tn / mv_n)
+    print(f'Thresholds:  {tool_thresholds}')
     print(f'Tools: {tools}\nSensitivities: {tool_sensitivity}')
     print(f'Specificities: {tool_specificity}')
     plt.figure().clear()
     fig, ax = plt.subplots()
-    x = np.arange(len(tool_sensitivity))
+    x = np.arange(len(tools))
     bar_width = 0.4
     rects = ax.bar(x - bar_width / 2, tool_sensitivity, bar_width, label='Sensitivity')
     ax.bar_label(rects, fmt='{:0.3f}')
@@ -620,6 +635,16 @@ def plot_bar(generated_file_path,
     ax.set_xticks(x, tools)
     ax.legend(loc='upper left', ncols=2)
     ax.set_ylim(0, 1.2)
+
+    # -----rendering thresholds start
+    # tool_count = len(tools)
+    # ax.set_xlim(-bar_width - 0.2, tool_count + 4)
+    # for idx, tool in enumerate(tools):
+    #     ax.text(tool_count - bar_width, (tool_count - idx) * 0.1,
+    #             f'{tool}:{tool_thresholds[tool] if tool in tool_thresholds.keys() else "count>=3"}')
+    # -----rendering thresholds end
+
+    # -----plot without label
     # bar_container = ax.bar(tools, tool_sensitivity)
     # ax.set(ylabel='Sensitivity', xlabel='Colocalization tools', title='Sensitivity of different tools', ylim=(0, 1.1))
     # plt.bar(tools, tool_sensitivity)

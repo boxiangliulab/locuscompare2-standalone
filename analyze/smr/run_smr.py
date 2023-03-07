@@ -191,7 +191,7 @@ class Smr:
             smr_cmd = f'smr --bfile {output_ld_ref_path} --gwas-summary {gwas_input_path} --beqtl-summary {eqtl_besd_file} --peqtl-smr {eqtl_p_thresh} --out {gene_out_result}'
             cmd_params = '--diff-freq-prop 0.99 --cis-wind 200'
             if smr_custom_params and smr_custom_params != '':
-                cmd_params = smr_custom_params
+                cmd_params += smr_custom_params
             os.system(f'{smr_cmd} {cmd_params}')
             gene_out_result_file = f'{gene_out_result}.smr'
             if not utils.file_exists(gene_out_result_file):

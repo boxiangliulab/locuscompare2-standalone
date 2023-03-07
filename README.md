@@ -141,10 +141,10 @@ input:
   # How to derive data:
   # * PrediXcan provides the prediction model and covariance file by their prediction strategies on GTEx v8 release data.
   #   You could download and unzip the data from https://zenodo.org/record/3518299/files/mashr_eqtl.tar
-  # * If you have your own eQTL data or other version of GTEx, please refer https://github.com/hakyimlab/PredictDB-Tutorial to build the prediction 
+  # * If you have your own eQTL data or other version of GTEx, please refer to predictdb-pipeline module to build the prediction 
   #   model and covariance.
   # Then set the prediction model and covariance based directory here.
-  # Colotools will find the model and covariance in this directory by the configured eQTL tissue name.
+  # Colotools will find the model and covariance in this directory by the configured eQTL tissue name. Note that the db file name must end with .db and the covariance must end with .txt.gz 
   # The model and covariance file name format should be 'mashr_{tissue_name}.db' and 'mashr_{tissue_name}.txt.gz'.
   # For example, if the eQTL name is 'Cells_EBV-transformed_lymphocytes', Colotools will find 'mashr_Cells_EBV-transformed_lymphocytes.db' 
   # and 'mashr_Cells_EBV-transformed_lymphocytes.txt.gz' in this directory.
@@ -153,6 +153,8 @@ input:
   # Required if you want to run TWAS
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
+  # Colotools will find the pos file in this directory by the configured eQTL tissue name. Note that the post file name must end with .pos
+  # **IMPORTANT** : DO NOT forget to copy resource/convert_vcf_to_plink_binary.sh to vcf directory and run it to generate TWAS LDREF files as already mentioned above!
   twas_model_dir: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model'
 
 p-value_threshold:

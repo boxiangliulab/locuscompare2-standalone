@@ -35,10 +35,17 @@ class ConfigHolder:
         self.gwas_col_dict = self.global_config['input']['gwas']['col_name_mapping']
         self.eqtl_col_dict = self.global_config['input']['eqtl']['col_name_mapping']
 
-        # eqtl output path
-        self.eqtl_output_dir = os.path.join(self.output_preprocessed_dir, 'eqtl', self.eqtl_tissue, 'grouped')
-        self.eqtl_output_report = os.path.join(self.output_preprocessed_dir, 'eqtl', self.eqtl_tissue,
-                                               'filtered_gene.tsv.gz')
+        if ('eqtl_preprocessed_dir' in self.global_config['input']['eqtl']) and self.global_config['input']['eqtl']['eqtl_preprocessed_dir']:
+            # use custom eqtl preprocessed file
+            custom_preprocess_eqlt_path = self.global_config['input']['eqtl']['eqtl_preprocessed_dir']
+            self.eqtl_output_dir = os.path.join(custom_preprocess_eqlt_path, 'eqtl', self.eqtl_tissue, 'grouped')
+            self.eqtl_output_report = os.path.join(custom_preprocess_eqlt_path, 'eqtl', self.eqtl_tissue,
+                                                   'filtered_gene.tsv.gz')
+        else:
+            # set eqtl output path
+            self.eqtl_output_dir = os.path.join(self.output_preprocessed_dir, 'eqtl', self.eqtl_tissue, 'grouped')
+            self.eqtl_output_report = os.path.join(self.output_preprocessed_dir, 'eqtl', self.eqtl_tissue,
+                                                   'filtered_gene.tsv.gz')
 
         # gwas output path
         self.gwas_preprocessed_dir = os.path.join(self.output_preprocessed_dir, 'gwas', self.gwas_trait)
