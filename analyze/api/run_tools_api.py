@@ -176,12 +176,7 @@ def __preprocess_and_run_ecaviar(glob_processor):
 
     ecaviar = run_e.ECaviar()
     return asyncio.run(ecaviar.run(working_dir=_working_dir,
-                                   candidate_data_dir=preproc_rst_dir,
-                                   gwas_preprocessed_file=glob_processor.gwas_preprocessed_file,
-                                   eqtl_grouped_dir=glob_processor.eqtl_output_dir,
-                                   var_id_col_name=gdp.Processor.VAR_ID_COL_NAME,
-                                   gwas_col_dict=glob_processor.gwas_col_dict,
-                                   eqtl_col_dict=glob_processor.eqtl_col_dict))
+                                   candidate_data_dir=preproc_rst_dir))
 
 
 def __preprocess_and_run_twas(glob_processor):

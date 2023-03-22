@@ -55,7 +55,7 @@ class Predixcan:
                                         dtype={'chrom': 'string'})
         # gene column name should be the same as predixcan output gene column name
         eqtl_summary_df['gene'] = eqtl_summary_df['gene_file'].str.rstrip('.tsv.gz')
-        eqtl_summary_df.drop(columns=[ 'gene_file'], inplace=True)
+        eqtl_summary_df.drop(columns=['gene_file'], inplace=True)
         # predixcan output column sep is comma
         result_df = pd.read_table(output_file, sep=',')
         result_df = pd.merge(left=result_df, right=eqtl_summary_df,
@@ -81,7 +81,7 @@ class Predixcan:
         return actual_predixcan_path
 
     def __analyze_result(self, output_file_path):
-        report_df = pd.read_table(output_file_path)
+        report_df = pd.read_table(output_file_path, dtype={'chrom': 'category'})
         report_df.dropna(subset='pvalue', inplace=True)
         report_df.sort_values(by='pvalue', ascending=True, inplace=True)
         if report_df.shape[0] == 0:

@@ -1,15 +1,17 @@
+import logging
 import os
+import sys
+import uuid
+from datetime import datetime
 from multiprocessing import Pool
 
-from common import coloc_utils as utils, global_data_process as gdp
-from analyze.api import run_tools_api
-from figures import report_data_processor as redp
-from datetime import datetime
+import pandas as pd
+
 import common.config
 import common.constants
-import uuid
-import logging
-import sys
+from analyze.api import run_tools_api
+from common import coloc_utils as utils, global_data_process as gdp
+from figures import report_data_processor as redp
 
 
 # def __before_run_jlim_tools_check(global_config):
@@ -143,6 +145,9 @@ def run(config_file=None, tools_list=None, log_file=None, parallel=False):
         #     utils.cleanup_output(config_holder.tool_parent_dir)
         # except:
         #     logging.warning(f'failed to clean {config_holder.tool_parent_dir}')
+    if len(report_list) == 0:
+        logging.warning(f'No results of specified tools found')
+        return
     redp.report_data_process(report_list)
 
 
@@ -196,9 +201,20 @@ def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, stu
     processor = gdp.Processor(config_holder)
     if not utils.file_exists(processor.gwas_preprocessed_file):
         processor.preprocess_gwas()
+    gwas_sig_df = pd.read_table(config_holder.gwas_filter_file, nrows=2)
+    if gwas_sig_df.shape[0] == 0:
+        gwas_file = config_holder.global_config['input']['gwas']['file']
+        logging.warning(f'No significant records found in GWAS file {gwas_file} '
+                        f'by threshold {config_holder.gwas_p_threshold}')
+        return
     if not utils.file_exists(processor.eqtl_output_report):
         processor.preprocess_eqtl()
-
+    eqtl_sig_df = pd.read_table(config_holder.eqtl_output_report, nrows=2)
+    if eqtl_sig_df.shape[0] == 0:
+        eql_file = config_holder.global_config['input']['eqtl']['file']
+        logging.warning(f'No significant records found in eQTL file {eql_file} '
+                        f'by threshold {config_holder.eqtl_p_threshold}')
+        return
     # check preprocess file is exist
     utils.check_path_exist_and_has_size(processor.eqtl_output_report)
     utils.check_path_exist_and_has_size(processor.gwas_preprocessed_file)

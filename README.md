@@ -101,14 +101,14 @@ input:
       # Required. The minor allele frequency field name in input eQTL file.
       maf: 'maf'
       
-  # Required if you want to run SMR/eCaviar/TWAS. The vcf files from 1000genomes.
-  # NOTE that if you want to run TWAS, one more step: copy resource/convert_vcf_to_plink_binary.sh to vcf directory and run it to generate TWAS LDREF files
+  # Required. The vcf files from 1000genomes.
+  # NOTE that if you want to run TWAS, one more step: copy resource/convert_vcf_to_plink_binary.sh to vcf file directory and run it to generate TWAS LDREF files
   # hg38 http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20190425_NYGC_GATK/
   # 
   # We splitted the vcf files by population EUR, EAS, SAS, AFR, AMR. Please create the population folder and download your research population vcf and related tbi files from:
   # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz  
   # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz.tbi
-  # 'popluation' can be EUR, EAS, SAS, AFR, AMR; 'n' can be 1 to 22.
+  # 'population' can be EUR, EAS, SAS, AFR, AMR; 'n' can be 1 to 22.
   #
   # After download the files, make sure the vcf and tbi files are in your created population folder. For exmaple: '/Volumes/HD/biodata/colocalization-tools/raw/vcf/hg38/EUR/chr1.vcf.gz'
   # Then set the parent folder of the population folder path here.

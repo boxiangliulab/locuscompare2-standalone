@@ -34,8 +34,8 @@ class PredixcanGwasProcessor:
                 chunk[PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME] = \
                     'chr' + chunk[gwas_col_dict['chrom']].astype(str) \
                     + '_' + chunk[gwas_col_dict['position']].astype(str) \
-                    + '_' + chunk[gwas_col_dict['other_allele']] \
-                    + '_' + chunk[gwas_col_dict['effect_allele']] \
+                    + '_' + chunk['ref'] \
+                    + '_' + chunk['alt'] \
                     + '_b38'
                 if os.path.exists(output_processed_file) and os.path.getsize(output_processed_file) > 0:
                     mode = 'a'

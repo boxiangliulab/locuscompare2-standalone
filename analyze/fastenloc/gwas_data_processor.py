@@ -1,9 +1,11 @@
-import pandas as pd
-from common import global_data_process as gdp, constants as const
-import os
-from pathlib import Path
-from datetime import datetime
 import logging
+import os
+from datetime import datetime
+from pathlib import Path
+
+import pandas as pd
+
+from common import global_data_process as gdp, constants as const, coloc_utils as utils
 
 
 class FastenlocGwasProcessor:
@@ -40,7 +42,7 @@ class FastenlocGwasProcessor:
                        gwas_col_dict['se'],
                        gwas_col_dict['position'], gwas_col_dict['chrom'],
                        gwas_col_dict['effect_allele'],
-                       gwas_col_dict['other_allele']]
+                       gwas_col_dict['other_allele'], 'ref', 'alt']
 
         shell_command_torus_execute = 'torus -d {} --load_zval -dump_pip {}'
         shell_compress_file = 'gzip -k -f {}'
@@ -49,13 +51,26 @@ class FastenlocGwasProcessor:
         Path(output_torus_output_dir).mkdir(parents=True, exist_ok=True)
 
         df_gwas_file = pd.read_table(gwas_preprocessed_file, sep=const.column_spliter, usecols=dap_use_col)
-
+        # Adjust allele order
+        ref_df = df_gwas_file[[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt', 'ref']]
+        utils.adjust_allele_order(df_gwas_file,
+                                  gwas_col_dict['effect_allele'],
+                                  gwas_col_dict['other_allele'],
+                                  gwas_col_dict['chrom'],
+                                  gwas_col_dict['position'],
+                                  ref_df,
+                                  ref_df_chrom_col_name=gwas_col_dict['chrom'],
+                                  ref_df_pos_col_name=gwas_col_dict['position'],
+                                  ref_df_alt_allele_col_name='alt',
+                                  ref_df_ref_allele_col_name='ref',
+                                  gbeta_col_name=gwas_col_dict['beta'],
+                                  drop_ref_df_non_intersect_items=False)
+        del ref_df
         df_gwas_file['zscore'] = df_gwas_file[gwas_col_dict['beta']] / df_gwas_file[gwas_col_dict['se']]
         # chr1_13550_G_A_b38
         df_gwas_file['variant_id'] = 'chr' + df_gwas_file[gwas_col_dict['chrom']].astype(str) + '_' + \
-                                     df_gwas_file[gwas_col_dict['position']].map(
-                                         str) + '_' + df_gwas_file[gwas_col_dict['other_allele']] + '_' + \
-                                     df_gwas_file[gwas_col_dict['effect_allele']]
+                                     df_gwas_file[gwas_col_dict['position']].map(str) + '_' + \
+                                     df_gwas_file['ref'] + '_' + df_gwas_file['alt']
 
         # get loc range in eur_ld.hg38.bed for loc column
         df_ld_bed_loc = pd.read_csv(ld_block_loci_file, sep=const.column_spliter,

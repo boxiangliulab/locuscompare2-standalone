@@ -1,10 +1,11 @@
-import sys
-from pathlib import Path
-import os
-import pandas as pd
 import datetime
 import logging
+import os
 import re
+import sys
+from pathlib import Path
+
+import pandas as pd
 
 sys.path.append(os.path.abspath(os.path.dirname(Path(__file__).resolve())))
 import coloc_utils as utils
@@ -137,6 +138,8 @@ class Processor:
         utils.delete_dir(self.gwas_preprocessed_dir)
         Path(self.gwas_preprocessed_dir).mkdir(exist_ok=True, parents=True)
         gwas_file_path = self.global_config['input']['gwas']['file']
+        population = self.global_config.get('population', 'EUR').upper()
+        ref_vcf_dir = self.global_config['input']['vcf']
         logging.info(f'Reading GWAS file {gwas_file_path}')
         gwas_df = pd.read_table(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
                                 usecols=self.gwas_col_dict.values(),
@@ -162,6 +165,30 @@ class Processor:
             gwas_df['varbeta'] = gwas_df[self.gwas_col_dict['se']] ** 2
         gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper()
         gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper()
+        logging.info(f'Merging alt,ref from vcf into GWAS data')
+        # Merge alt/ref from vcf into gwas file for later use
+        gwas_df['alt'] = pd.NA
+        gwas_df['ref'] = pd.NA
+        chroms = gwas_df[self.gwas_col_dict['chrom']].unique()
+        for chrom in chroms:
+            input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
+            vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4],
+                                   dtype={0: 'category', 1: 'Int64', 3: 'category', 4: 'category'})
+            vcf_df.columns = [self.gwas_col_dict['chrom'], self.gwas_col_dict['position'], 'ref', 'alt']
+            utils.drop_indel_snp(vcf_df, 'ref', 'alt')
+            gwas_df = pd.merge(left=gwas_df,
+                               right=vcf_df,
+                               left_on=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
+                               right_on=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
+                               how='left',
+                               suffixes=(None, '__vcf'))
+            gwas_df['ref'].mask(gwas_df['ref'].isna(), gwas_df['ref__vcf'], inplace=True)
+            gwas_df['alt'].mask(gwas_df['alt'].isna(), gwas_df['alt__vcf'], inplace=True)
+            gwas_df.drop(columns=[col for col in gwas_df.columns if col.endswith('__vcf')], inplace=True)
+        gwas_df.drop_duplicates(subset=Processor.VAR_ID_COL_NAME, keep=False, inplace=True)
+        # Fill SNP ref/alt by other_allele/effect_allele if the SNP is not in vcf
+        gwas_df['ref'].mask(gwas_df['ref'].isna(), gwas_df[self.gwas_col_dict['other_allele']], inplace=True)
+        gwas_df['alt'].mask(gwas_df['alt'].isna(), gwas_df[self.gwas_col_dict['effect_allele']], inplace=True)
         logging.info(
             f'Writing GWAS preprocessed data to {self.gwas_preprocessed_file}, time: {datetime.datetime.now()}')
         gwas_df.to_csv(self.gwas_preprocessed_file, sep=const.output_spliter, header=True, index=False)
@@ -186,8 +213,6 @@ class Processor:
         Path(self.gwas_output_dir).mkdir(exist_ok=True, parents=True)
         utils.delete_dir(self.gwas_cluster_output_dir)
         Path(self.gwas_cluster_output_dir).mkdir(exist_ok=True, parents=True)
-        population = self.global_config.get('population', 'EUR').upper()
-        ref_vcf_dir = self.global_config['input']['vcf']
         chrom_list = []
         range_lead_list = []
         positions_list = []
