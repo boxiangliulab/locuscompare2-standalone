@@ -27,15 +27,19 @@ class PredixcanGwasProcessor:
         output_processed_file = self.__get_output_file(working_dir)
         utils.delete_file_if_exists(output_processed_file)
         with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter,
-                           dtype={gwas_col_dict['chrom']: 'category',
-                                  gwas_col_dict['position']: 'Int64'},
+                           dtype={gwas_col_dict['position']: 'Int64',
+                                  gwas_col_dict['chrom']: 'category',
+                                  gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                  gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                  'ref': pd.CategoricalDtype(const.SNP_ALLELE),
+                                  'alt': pd.CategoricalDtype(const.SNP_ALLELE)},
                            iterator=True, chunksize=500000, header=0) as reader:
             for chunk in reader:
                 chunk[PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME] = \
                     'chr' + chunk[gwas_col_dict['chrom']].astype(str) \
                     + '_' + chunk[gwas_col_dict['position']].astype(str) \
-                    + '_' + chunk['ref'] \
-                    + '_' + chunk['alt'] \
+                    + '_' + chunk['ref'].astype(str) \
+                    + '_' + chunk['alt'].astype(str) \
                     + '_b38'
                 if os.path.exists(output_processed_file) and os.path.getsize(output_processed_file) > 0:
                     mode = 'a'
@@ -51,7 +55,7 @@ class PredixcanGwasProcessor:
                        PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME]
                 ].to_csv(output_processed_file, mode=mode, sep=const.output_spliter, header=header, index=False)
         logging.info(f'Preparing gwas file {output_processed_file} completed at {datetime.now()},'
-              f'duration {datetime.now() - start_time}')
+                     f'duration {datetime.now() - start_time}')
         return output_processed_file
 
     def __get_output_file(self, working_dir):

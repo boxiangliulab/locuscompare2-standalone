@@ -4,8 +4,8 @@ Colotools is an interactive visualization tool for genetic association analysis 
 
 ## Overview
 
-Colotools integrates 5 popular colocalization tools:
-+ SNP-level colocalization: [coloc](https://github.com/chr1swallace/coloc) and [fastEnloc](https://github.com/xqwen/fastenloc)
+Colotools integrates 6 popular colocalization tools:
++ SNP-level colocalization: [coloc](https://github.com/chr1swallace/coloc), [fastEnloc](https://github.com/xqwen/fastenloc), [finemap](http://christianbenner.com/)
 + Mendelian randomization: [SMR](https://yanglab.westlake.edu.cn/software/smr/#Overview)
 + Transcriptomic association: [PrediXcan](https://github.com/hakyimlab/PrediXcan) and [TWAS](http://gusevlab.org/projects/fusion/)
 
@@ -15,7 +15,7 @@ the significant SNPs and genes.
 ## 1. Setup Environment
 We provide a shell to set up the running environment for colotools.
 1) Install [miniconda](https://docs.conda.io/en/latest/miniconda.html)
-2) Clone colotools from [github](colotools github repo)
+2) Clone locuscompare-v2 from [github](https://github.com/boxiangliulab/locuscompare-v2.git)
 3) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
 ```shell
 cd running_env
@@ -131,11 +131,11 @@ input:
   
   # Required if you want to run fastEnloc.
   # How to derive data:
-  # * You could use the pre-computed GTEx V8 multi-tissue eQTL annotation here, download from https://drive.google.com/open?id=1kfH_CffxyCtZcx3z7k63rIARNidLv1_P
+  # * You could use the pre-computed GTEx V8 multi-tissue eQTL annotation here, download from https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/eqtl_finemapping/v8.vcf.gz
   # * If you have your own eQTL data or other version of GTEx, please refer https://github.com/xqwen/fastenloc/tree/master/tutorial#derive-annotations-based-on-your-own-eqtl-data 
   #   to derive the eQTL annotation file.
   # Then set the eQTL annotation path here.
-  eqtl_finemapping_file: '/Volumes/HD/biodata/colocalization-tools/raw/eqtl/finemapping/gtex_v8.eqtl_annot.vcf.gz'
+  eqtl_finemapping_file: '/Volumes/HD/biodata/colocalization-tools/raw/eqtl/finemapping/v8.vcf.gz'
   
   # Required if you want to run PrediXcan.
   # How to derive data:
@@ -181,8 +181,8 @@ The [config generator](/common/config_generator.py) is a tool to generate config
 2. Create a eQTL config list yaml file. [Sample](/resource/eqtl_config.yml)
 3. Create a global config yaml file. [Sample](/resource/config_template.yml)
 4. Run python script
-```python
-python3 colotools_project_path/common/config_generator.py --out output_dir 
+```shell
+python colotools_project_path/common/config_generator.py --out output_dir 
 [--global_cfg global_config_path] [--gwas_cfg gwas_configs_path] [--eqtl_cfg eqtl_configs_path]
 ```
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
@@ -199,7 +199,7 @@ The configuration example is in [/resource/tools_config.yml](/resource/tools_con
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run Colotools in command line
 ```shell
-python3 path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--parallel] [--log path_to_logfile]
+python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--parallel] [--log path_to_logfile]
 ```
 | Parameter | Description                                                                                                                                                                                                                                                                           |
 |-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

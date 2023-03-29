@@ -41,7 +41,6 @@ def __preprocess_and_run_fastenloc(processor):
     fastenloc_gwas_result = fgdp_obj.prepare_gwas_data(working_dir=_working_dir,
                                                        gwas_preprocessed_file=processor.gwas_preprocessed_file,
                                                        gwas_col_dict=processor.gwas_col_dict,
-                                                       var_id_col_name=gdp.Processor.VAR_ID_COL_NAME,
                                                        ld_block_loci_file=processor.global_config['input'][
                                                            'ld_block_loci_file'])
 
@@ -49,12 +48,7 @@ def __preprocess_and_run_fastenloc(processor):
     return rf_obj.run(eqtl_tissue=processor.eqtl_tissue,
                       working_dir=_working_dir,
                       eqtl_finemapping_file=processor.global_config['input']['eqtl_finemapping_file'],
-                      gwas_preprocessed_file=processor.gwas_preprocessed_file,
-                      eqtl_output_dir=processor.eqtl_output_dir,
-                      var_id_col_name=gdp.Processor.VAR_ID_COL_NAME,
-                      gwas_col_dict=processor.gwas_col_dict,
                       eqtl_output_report=processor.eqtl_output_report,
-                      eqtl_col_dict=processor.eqtl_col_dict,
                       output_torus_output_file=fastenloc_gwas_result)
 
 
@@ -70,7 +64,6 @@ def __preprocess_and_run_coloc(glob_processor):
     return coloc.run(_working_dir,
                      gdp.Processor.VAR_ID_COL_NAME,
                      glob_processor.gwas_cluster_output_dir,
-                     glob_processor.gwas_preprocessed_file,
                      glob_processor.gwas_col_dict,
                      _gwas_sample_size,
                      glob_processor.eqtl_output_report,

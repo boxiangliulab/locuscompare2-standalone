@@ -1,9 +1,11 @@
-import pandas as pd
-from common import global_data_process as gdp, coloc_utils as utils, constants as const
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
-import logging
+
+import pandas as pd
+
+from common import global_data_process as gdp, coloc_utils as utils, constants as const
 
 
 class Fastenloc:
@@ -13,10 +15,9 @@ class Fastenloc:
         logging.info('init Fastenloc')
 
     def run(self, eqtl_tissue=None, working_dir=None,
-            eqtl_finemapping_file=None, gwas_preprocessed_file=None,
-            eqtl_output_dir=None, var_id_col_name=None,
-            gwas_col_dict=None, eqtl_output_report=None,
-            eqtl_col_dict=None, output_torus_output_file=None):
+            eqtl_finemapping_file=None,
+            eqtl_output_report=None,
+            output_torus_output_file=None):
         start_time = datetime.now()
         logging.info(f'fastenloc start at: {start_time}')
 
@@ -31,16 +32,12 @@ class Fastenloc:
                                                          f'{output_analyze_output_dir}/{eqtl_tissue}',
                                                          fastenloc_params)
         os.system(com_str)
-        report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue,
-                                                           gwas_preprocessed_file, eqtl_output_dir,
-                                                           var_id_col_name, gwas_col_dict, eqtl_output_report,
-                                                           eqtl_col_dict)
+        report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue, eqtl_output_report)
 
         logging.info(f'fastenloc complete at: {datetime.now()},duration: {datetime.now() - start_time}')
         return report_output_snp_tsv_file
 
-    def __analyze_result(self, output_dir, final_report_file, gwas_preprocessed_file, eqtl_output_dir, var_id_col_name,
-                         gwas_col_dict, eqtl_output_report, eqtl_col_dict):
+    def __analyze_result(self, output_dir, final_report_file, eqtl_output_report):
         report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
 
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
@@ -70,9 +67,4 @@ if __name__ == '__main__':
     fastenloc.run(eqtl_tissue=processor.eqtl_tissue,
                   working_dir=_working_dir,
                   eqtl_finemapping_file=processor.global_config['input']['eqtl_finemapping_file'],
-                  gwas_preprocessed_file=processor.gwas_preprocessed_file,
-                  eqtl_output_dir=processor.eqtl_output_dir,
-                  var_id_col_name=processor.VAR_ID_COL_NAME,
-                  gwas_col_dict=processor.gwas_col_dict,
-                  eqtl_output_report=processor.eqtl_output_report,
-                  eqtl_col_dict=processor.eqtl_col_dict)
+                  eqtl_output_report=processor.eqtl_output_report)

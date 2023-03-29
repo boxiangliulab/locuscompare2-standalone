@@ -30,6 +30,11 @@ class ConfigHolder:
         self.tool_parent_dir = os.path.join(self.study_dir, self.gwas_trait, self.eqtl_tissue, self.population)
         Path(self.tool_parent_dir).mkdir(exist_ok=True, parents=True)
 
+        self.rank_dir = os.path.join(self.tool_parent_dir, 'rank')
+        Path(self.rank_dir).mkdir(exist_ok=True, parents=True)
+
+        self.threshold_path = os.path.join(self.tool_parent_dir, 'thresholds.json')
+
         self.report_path = os.path.join(self.study_dir)
 
         self.gwas_col_dict = self.global_config['input']['gwas']['col_name_mapping']

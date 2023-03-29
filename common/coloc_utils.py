@@ -7,6 +7,7 @@ import shutil
 import subprocess
 import sys
 import warnings
+from itertools import combinations
 from pathlib import Path
 
 import pandas as pd
@@ -428,7 +429,7 @@ def union_range(subset_df, target_df, snp_col_name, chrom_col_name, pos_col_name
 def adjust_allele_order(gwas_df, ea_col_name, oa_col_name, gwas_chrom_col_name, gwas_pos_col_name,
                         ref_df, ref_df_chrom_col_name='chromosome', ref_df_pos_col_name='position',
                         ref_df_alt_allele_col_name='alt', ref_df_ref_allele_col_name='ref',
-                        gbeta_col_name='beta', geaf_col_name=None, gz_col_name=None,
+                        gbeta_col_name=None, geaf_col_name=None, gz_col_name=None,
                         drop_ref_df_non_intersect_items=True):
     """
         Adjust gwas_df beta/zscore sign and eaf value according a reference df allele order,
@@ -466,34 +467,42 @@ def adjust_allele_order(gwas_df, ea_col_name, oa_col_name, gwas_chrom_col_name, 
             whether to drop non-intersect records in eqtl_df
         """
     merged_alt_col_name = f'{ref_df_alt_allele_col_name}_eqtl' \
-        if ref_df_alt_allele_col_name in gwas_df.columns else ref_df_alt_allele_col_name
+        if ref_df_alt_allele_col_name in [ea_col_name, oa_col_name] else ref_df_alt_allele_col_name
     merged_ref_col_name = f'{ref_df_ref_allele_col_name}_eqtl' \
-        if ref_df_ref_allele_col_name in gwas_df.columns else ref_df_ref_allele_col_name
-    merged = pd.merge(left=gwas_df, right=ref_df[
+        if ref_df_ref_allele_col_name in [ea_col_name, oa_col_name] else ref_df_ref_allele_col_name
+    merged = pd.merge(left=gwas_df[[gwas_chrom_col_name, gwas_pos_col_name, ea_col_name, oa_col_name, ]], right=ref_df[
         [ref_df_chrom_col_name, ref_df_pos_col_name, ref_df_alt_allele_col_name, ref_df_ref_allele_col_name]],
                       left_on=[gwas_chrom_col_name, gwas_pos_col_name],
                       right_on=[ref_df_chrom_col_name, ref_df_pos_col_name], how='left', suffixes=(None, '_eqtl'))
+    # align index to gwas_df index
+    merged.index = gwas_df.index.copy()
+    merged.drop(columns=[col for col in merged.columns if
+                         col not in [ea_col_name, oa_col_name, merged_alt_col_name, merged_ref_col_name]], inplace=True)
     # set element ignores order, so:
     # (gwas.ea = eqtl.alt & gwas.oa = eqtl.ref) or (gwas.ea = eqtl.ref & gwas.oa = eqtl.alt)
     # will result true in eq_bool_series
-    # align index to gwas_df index
-    merged.index = gwas_df.index.copy()
-    gwas_alleles = pd.Series([set(e) for e in zip(merged[ea_col_name], merged[oa_col_name])],
-                             index=gwas_df.index.copy())
-    ref_panel_alleles = pd.Series([set(e) for e in zip(merged[merged_alt_col_name], merged[merged_ref_col_name])],
-                                  index=gwas_df.index.copy())
+    # set is unhashable, can not be used as CategoricalDtype, use frozenset instead.
+    # category dtype will drastically reduce memory use.
+    allele_cat = pd.CategoricalDtype([frozenset(e) for e in combinations(const.SNP_ALLELE, 2)])
+    gwas_alleles = pd.Series([frozenset(e) for e in zip(merged[ea_col_name], merged[oa_col_name])],
+                             index=gwas_df.index.copy(), dtype=allele_cat)
+    ref_panel_alleles = pd.Series([frozenset(e) for e in zip(merged[merged_alt_col_name], merged[merged_ref_col_name])],
+                                  index=gwas_df.index.copy(), dtype=allele_cat)
     eq_bool_series = gwas_alleles == ref_panel_alleles
+    del gwas_alleles, ref_panel_alleles
     gwas_flipped_bool_series = merged[ea_col_name] != merged[merged_alt_col_name]
     eq_flipped_list = (eq_bool_series & gwas_flipped_bool_series).to_list()
+    del gwas_flipped_bool_series
     gwas_df.loc[eq_flipped_list, ea_col_name] = merged.loc[eq_flipped_list, merged_alt_col_name]
     gwas_df.loc[eq_flipped_list, oa_col_name] = merged.loc[eq_flipped_list, merged_ref_col_name]
+    del merged
     if gbeta_col_name is not None:
         gwas_df.loc[eq_flipped_list, gbeta_col_name] = - gwas_df.loc[eq_flipped_list, gbeta_col_name]
     if gz_col_name is not None:
         gwas_df.loc[eq_flipped_list, gz_col_name] = - gwas_df.loc[eq_flipped_list, gz_col_name]
     if geaf_col_name is not None:
         gwas_df.loc[eq_flipped_list, geaf_col_name] = 1 - gwas_df.loc[eq_flipped_list, geaf_col_name]
-    gwas_df.drop(labels=gwas_df[(~eq_bool_series).to_list()].index, inplace=True)
+    gwas_df.drop(index=gwas_df[~eq_bool_series].index, inplace=True)
     if drop_ref_df_non_intersect_items:
         ref_df_inter_bool_series = ref_df[ref_df_chrom_col_name].isin(gwas_df[gwas_chrom_col_name]) & ref_df[
             ref_df_pos_col_name].isin(gwas_df[gwas_pos_col_name])

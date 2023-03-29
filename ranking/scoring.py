@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pandas as pd
 
@@ -7,8 +8,11 @@ import ranking.rra as rra
 
 
 def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size=None):
-    geo_output_file = os.path.join(os.path.dirname(output_file_path), 'geo.tsv')
-    intact_output_file = os.path.join(os.path.dirname(output_file_path), 'intact.tsv')
+    out_dir = os.path.dirname(output_file_path)
+    if not os.path.exists(out_dir):
+        Path(out_dir).mkdir(parents=True, exist_ok=True)
+    geo_output_file = os.path.join(out_dir, 'geo.tsv')
+    intact_output_file = os.path.join(out_dir, 'intact.tsv')
     geo_result = rra.run_ranking(output_file_path=geo_output_file, rpt=rpt_obj, sample_size=sample_size, method='GEO')
     intact_result = intact.run_ranking(rpt_obj, intact_output_file, prior_fun)
 

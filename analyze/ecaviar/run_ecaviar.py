@@ -40,7 +40,7 @@ class ECaviar:
                         finemap_snp_files.append((f'{candidate_dir}/gwas_{finemap_file_name}.snp',
                                                   f'{candidate_dir}/eqtl_{finemap_file_name}.snp'))
 
-        await utils.gather_with_limit(50, *coros)
+        await utils.gather_with_limit(20, *coros)
         logging.info(f'finish eCaviar process.')
         logging.info(f'generate eCaviar report.')
         return self.generate_report(working_dir=working_dir, finemap_reports=finemap_snp_files)

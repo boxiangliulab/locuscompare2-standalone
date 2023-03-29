@@ -1,11 +1,12 @@
 import ast
 import concurrent
+import logging
 import os
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-import logging
+
 import pandas as pd
 
 sys.path.append(
@@ -23,7 +24,6 @@ class Coloc:
             working_dir=None,
             var_id_col_name=None,
             gwas_cluster_output_dir=None,
-            gwas_preprocessed_file=None,
             gwas_col_dict=None,
             gwas_sample_size=None,
             eqtl_output_report=None,
@@ -62,7 +62,7 @@ class Coloc:
         _p1, _p2, _p12 = self.__get_coloc_run_params()
 
         if parallel:
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=20) as executor:
                 futures = []
                 for _, row in eqtl_summary_df.iterrows():
                     chrom = str(row.loc['chrom'])
@@ -97,11 +97,7 @@ class Coloc:
                                       var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                                       eqtl_sample_size, gwas_type, eqtl_type, _p1, _p2, _p12)
 
-        self.__analyze_result(self.__get_output_dir(working_dir), output_file,
-                              gwas_preprocessed_file,
-                              var_id_col_name,
-                              gwas_col_dict,
-                              eqtl_col_dict)
+        self.__analyze_result(self.__get_output_dir(working_dir), output_file)
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
@@ -185,8 +181,14 @@ class Coloc:
 
         # Now gwas/eqtl/vcf have the same num of rows, write candidate data to file
         # Reverse GWAS&eQTL column mapping key-value and pass to R so that dataframe in R has fixed column names
+        if ('varbeta' not in eqtl_col_dict.keys() or eqtl_col_dict.get('varbeta') is None) and (
+                'se' in eqtl_col_dict.keys() and eqtl_col_dict.get('se') is not None):
+            candidate_eqtl_trait_df['varbeta'] = candidate_eqtl_trait_df[eqtl_col_dict['se']] ** 2
         candidate_eqtl_trait_df.rename({v: k for k, v in eqtl_col_dict.items()}, axis='columns',
                                        inplace=True)
+        if ('varbeta' not in gwas_col_dict.keys() or gwas_col_dict.get('varbeta') is None) and (
+                'se' in gwas_col_dict.keys() and gwas_col_dict.get('se') is not None):
+            candidate_gwas_df['varbeta'] = candidate_gwas_df[gwas_col_dict['se']] ** 2
         candidate_gwas_df.rename({v: k for k, v in gwas_col_dict.items()}, axis='columns',
                                  inplace=True)
         candidate_eqtl_trait_df.to_csv(coloc_eqtl_input_path, sep=const.output_spliter, header=True,
@@ -213,11 +215,7 @@ class Coloc:
         _p12 = 1.0E-5 if params.get('p12') is None else params['p12']
         return _p1, _p2, _p12
 
-    def __analyze_result(self, output_dir, final_result_file,
-                         gwas_preprocessed_file=None,
-                         var_id_col_name=None,
-                         gwas_col_dict=None,
-                         eqtl_col_dict=None):
+    def __analyze_result(self, output_dir, final_result_file):
         single_result_list = []
         for single_result in os.listdir(output_dir):
             if not (single_result.endswith('.tsv') or single_result.endswith('.tsv.gz')):
@@ -250,7 +248,6 @@ if __name__ == '__main__':
     coloc.run(_working_dir,
               gdp.Processor.VAR_ID_COL_NAME,
               glob_processor.gwas_cluster_output_dir,
-              glob_processor.gwas_preprocessed_file,
               glob_processor.gwas_col_dict,
               _gwas_sample_size,
               glob_processor.eqtl_output_report,

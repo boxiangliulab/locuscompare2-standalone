@@ -38,7 +38,8 @@ def report_data_process(report_list):
 def create_tissue_file(report_list=None, ):
     logging.info('create_tissue_file ')
     report_list_pd = pd.DataFrame(list(report_list),
-                                  columns=['trait', 'study1', 'tool_name', 'tissue', 'report_path', 'cfg_pro'])
+                                  columns=['trait', 'study1', 'tool_name', 'tissue', 'report_path', 'cfg_pro',
+                                           'rank_output_file'])
     df_tissue_list = list(report_list_pd.groupby('tissue'))
     output_base_dir = None
 
@@ -65,6 +66,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         trait_df = trait_item[1]
         # every trait init config param
         processor = trait_df['cfg_pro'].iloc[0]
+        ranking_output_file_path = trait_df['rank_output_file'].iloc[0]
         gwas_preprocessed_file = processor.gwas_preprocessed_file
         gwas_col_dict = processor.gwas_col_dict
         eqtl_col_dict = processor.eqtl_col_dict
@@ -80,14 +82,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         Path(tissue_trait_path).mkdir(parents=True, exist_ok=True)
 
         report_html_handler(os.path.join(processor.report_path, 'figures'))
-        # get ranking info
-        rpt = {}
-        for tool_index, tool_row in trait_df.iterrows():
-            rpt[f'{tool_row["tool_name"]}'] = tool_row['report_path']
-        ranking_output_file_path = sc.run_ranking(
-            output_file_path=os.path.join(tissue_trait_path,
-                                          f'ensemble_ranking_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv'),
-            rpt_obj=rpt, sample_size=processor.global_config['input']['gwas']['sample_size'])
+
         report_gene_ranking = const.default_report_gene_ranking
 
         ranking_mg = None
@@ -285,9 +280,9 @@ def filter_data_frame_by_p_value(input_df, p_value, pval_max_count, pvalue_col_n
         bind_data_df = utils.filter_data_frame_by_p_value(bind_data_df, p_value, p_value_col_name, inplace)
         bins_list.insert(0, p_value)
 
-    # 根据上面截取数据的pvalue，随机获取大于pvalue的1w条数据作为画图数据
+    # 根据上面截取数据的pvalue，随机获取大于pvalue的5000条数据作为画图数据
     # 这1w条数据根据数组 bins_list 分段随机获取等比例的数据，这样在manhattan图上下面的点就不会出现断层
-    # 例如 bins_list= [0.0005, 0.005, 0.05, 0.5] ,则在0～0.0005、0.0005~0.005、0.005~0.05、0.05~0.5四个区间分别随机拿2.5k条组成1w条用于填充图下方空白区域
+    # 例如 bins_list= [0.0005, 0.005, 0.05, 0.5] ,则在0～0.0005、0.0005~0.005、0.005~0.05、0.05~0.5四个区间分别随机拿1250条组成5000条用于填充图下方空白区域
     logging.debug(f'sample data params :  {p_value} {bins_list}')
     unbind_data_df = input_df.drop(
         input_df[(input_df[p_value_col_name] < p_value) | (input_df[p_value_col_name] == 0.0)].index,

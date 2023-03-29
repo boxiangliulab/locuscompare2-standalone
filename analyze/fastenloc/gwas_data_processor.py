@@ -27,7 +27,7 @@ class FastenlocGwasProcessor:
         return f'{output_torus_output_dir}/tours_output.pip'
 
     def prepare_gwas_data(self, working_dir=None, gwas_preprocessed_file=None,
-                          gwas_col_dict=None, var_id_col_name=None, ld_block_loci_file=None):
+                          gwas_col_dict=None, ld_block_loci_file=None):
         start_time = datetime.now()
         logging.info(f'Grouping fastenloc preprocessed gwas file at {start_time}')
 
@@ -35,10 +35,11 @@ class FastenlocGwasProcessor:
         output_gwas_dir = self.get_output_gwas_dir(output_base_dir)
         output_torus_input_dir = f'{output_gwas_dir}/torus_input'
         output_torus_input_file = f'{output_torus_input_dir}/tours_input'
+        utils.delete_file_if_exists(output_torus_input_file)
         output_torus_output_dir = self.get_output_torus_output(output_gwas_dir)
         output_torus_output_file = self.get_output_torus_output_file(output_torus_output_dir)
 
-        dap_use_col = [var_id_col_name, gwas_col_dict['beta'],
+        dap_use_col = [gwas_col_dict['beta'],
                        gwas_col_dict['se'],
                        gwas_col_dict['position'], gwas_col_dict['chrom'],
                        gwas_col_dict['effect_allele'],
@@ -49,58 +50,74 @@ class FastenlocGwasProcessor:
 
         Path(output_torus_input_dir).mkdir(parents=True, exist_ok=True)
         Path(output_torus_output_dir).mkdir(parents=True, exist_ok=True)
+        with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter, usecols=dap_use_col,
+                           dtype={gwas_col_dict['position']: 'Int64',
+                                  gwas_col_dict['chrom']: 'category',
+                                  gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                  gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                  'ref': pd.CategoricalDtype(const.SNP_ALLELE),
+                                  'alt': pd.CategoricalDtype(const.SNP_ALLELE)},
+                           iterator=True, chunksize=500000) as reader:
+            for chunk in reader:
+                chunk['zscore'] = chunk[gwas_col_dict['beta']] / chunk[gwas_col_dict['se']]
+                chunk.drop(columns=[gwas_col_dict['beta'], gwas_col_dict['se']], inplace=True)
+                logging.info(f'Reading GWAS file completed, memory usage: {chunk.memory_usage(deep=True)}')
+                # Adjust allele order
+                ref_df = chunk[[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt', 'ref']]
+                logging.info(f'Aligning allele order')
+                utils.adjust_allele_order(chunk,
+                                          gwas_col_dict['effect_allele'],
+                                          gwas_col_dict['other_allele'],
+                                          gwas_col_dict['chrom'],
+                                          gwas_col_dict['position'],
+                                          ref_df,
+                                          ref_df_chrom_col_name=gwas_col_dict['chrom'],
+                                          ref_df_pos_col_name=gwas_col_dict['position'],
+                                          ref_df_alt_allele_col_name='alt',
+                                          ref_df_ref_allele_col_name='ref',
+                                          gz_col_name='zscore',
+                                          drop_ref_df_non_intersect_items=False)
+                logging.info(f'Align allele order completed')
+                del ref_df
+                # chr1_13550_G_A_b38
+                chunk['variant_id'] = 'chr' + chunk[gwas_col_dict['chrom']].astype(str) + '_' + \
+                                      chunk[gwas_col_dict['position']].astype(str) + '_' + \
+                                      chunk['ref'].astype(str) + '_' + chunk['alt'].astype(str)
+                chunk.drop(columns=[gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'], 'ref', 'alt'],
+                           inplace=True)
+                logging.info(f'Adding zscore/variant_id completed, memory usage: {chunk.memory_usage(deep=True)}')
+                # get loc range in eur_ld.hg38.bed for loc column
+                df_ld_bed_loc = pd.read_csv(ld_block_loci_file, sep=const.column_spliter,
+                                            dtype={'start': 'Int64', 'stop': 'Int64'})
+                df_ld_bed_loc.chr = df_ld_bed_loc.chr.apply(lambda x: int(x.replace('chr', '')))
 
-        df_gwas_file = pd.read_table(gwas_preprocessed_file, sep=const.column_spliter, usecols=dap_use_col)
-        # Adjust allele order
-        ref_df = df_gwas_file[[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt', 'ref']]
-        utils.adjust_allele_order(df_gwas_file,
-                                  gwas_col_dict['effect_allele'],
-                                  gwas_col_dict['other_allele'],
-                                  gwas_col_dict['chrom'],
-                                  gwas_col_dict['position'],
-                                  ref_df,
-                                  ref_df_chrom_col_name=gwas_col_dict['chrom'],
-                                  ref_df_pos_col_name=gwas_col_dict['position'],
-                                  ref_df_alt_allele_col_name='alt',
-                                  ref_df_ref_allele_col_name='ref',
-                                  gbeta_col_name=gwas_col_dict['beta'],
-                                  drop_ref_df_non_intersect_items=False)
-        del ref_df
-        df_gwas_file['zscore'] = df_gwas_file[gwas_col_dict['beta']] / df_gwas_file[gwas_col_dict['se']]
-        # chr1_13550_G_A_b38
-        df_gwas_file['variant_id'] = 'chr' + df_gwas_file[gwas_col_dict['chrom']].astype(str) + '_' + \
-                                     df_gwas_file[gwas_col_dict['position']].map(str) + '_' + \
-                                     df_gwas_file['ref'] + '_' + df_gwas_file['alt']
-
-        # get loc range in eur_ld.hg38.bed for loc column
-        df_ld_bed_loc = pd.read_csv(ld_block_loci_file, sep=const.column_spliter,
-                                    dtype={'start': 'Int64', 'stop': 'Int64'})
-        df_ld_bed_loc.chr = df_ld_bed_loc.chr.apply(lambda x: int(x.replace('chr', '')))
-
-        df_gwas_chr_list = list(df_gwas_file.groupby(gwas_col_dict['chrom']))
-        df_gwas_list = []
-        for gwas_chr in df_gwas_chr_list:
-            chr_num = int(gwas_chr[0])
-            gwas_chr_df = gwas_chr[1]
-            bins_list = df_ld_bed_loc[df_ld_bed_loc['chr'] == chr_num].loc[:, 'start'] - 1
-            gwas_chr_df['loc'] = pd.cut(x=gwas_chr_df[gwas_col_dict['position']],
-                                        bins=list(bins_list),
-                                        labels=self.__loc_array_init(chr_num, len(bins_list) - 1))
-            df_gwas_list.append(gwas_chr_df)
-        df_input_torus = pd.concat(df_gwas_list)
+                df_gwas_chr_list = list(chunk.groupby(gwas_col_dict['chrom']))
+                df_gwas_list = []
+                for gwas_chr in df_gwas_chr_list:
+                    chr_num = int(gwas_chr[0])
+                    gwas_chr_df = gwas_chr[1]
+                    bins_list = df_ld_bed_loc[df_ld_bed_loc['chr'] == chr_num].loc[:, 'start'] - 1
+                    gwas_chr_df['loc'] = pd.cut(x=gwas_chr_df[gwas_col_dict['position']],
+                                                bins=list(bins_list),
+                                                labels=self.__loc_array_init(chr_num, len(bins_list) - 1))
+                    gwas_chr_df.drop(columns=[gwas_col_dict['chrom'], gwas_col_dict['position']], inplace=True)
+                    df_gwas_list.append(gwas_chr_df)
+                if os.path.exists(output_torus_input_file) and os.path.getsize(output_torus_input_file) > 0:
+                    mode = 'a'
+                    header = False
+                else:
+                    mode = 'w'
+                    header = True
+                df_input_torus = pd.concat(df_gwas_list)
+                # torus input file include columns variant_id、loc、zscore
+                df_input_torus.to_csv(output_torus_input_file, columns=['variant_id', 'loc', 'zscore'],
+                                      sep=const.output_spliter, mode=mode, header=header, index=False)
         logging.info(f'prepare fastenloc gwas file all columns duration {datetime.now() - start_time}')
-
-        # torus input file include columns variant_id、loc、zscore
-        df_input_torus.to_csv(output_torus_input_file, columns=['variant_id', 'loc', 'zscore'],
-                              sep=const.output_spliter, header=False, index=False)
         os.system(shell_compress_file.format(output_torus_input_file))
-
         #
         os.system(shell_command_torus_execute.format(f'{output_torus_input_file}.gz', output_torus_output_file))
         os.system(shell_compress_file.format(output_torus_output_file))
-
         logging.info(f'prepare fastenloc gwas file at: {datetime.now()}, duration： {datetime.now() - start_time}')
-
         return output_torus_output_file
         # clean temp file folder
         # utils.delete_dir(output_torus_input_dir)
@@ -113,5 +130,4 @@ if __name__ == '__main__':
     fastenloc_gwas_pro.prepare_gwas_data(working_dir=_working_dir,
                                          gwas_preprocessed_file=processor.gwas_preprocessed_file,
                                          gwas_col_dict=processor.gwas_col_dict,
-                                         var_id_col_name=gdp.Processor.VAR_ID_COL_NAME,
                                          ld_block_loci_file=processor.global_config['input']['ld_block_loci_file'])

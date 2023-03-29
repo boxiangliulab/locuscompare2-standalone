@@ -13,6 +13,7 @@ from venn import pseudovenn
 import ranking.intact as intact
 import ranking.rra as rra
 from ranking.constants import TOOL_SIG_COL_INFO, GENE_ID_COL_NAME, RESULT_TYPE_PVAL, RESULT_TYPE_PROB
+from threshold import calc
 
 prob_col_name = 'PROB'
 is_positive_col_name = 'IS_POSITIVE'
@@ -231,16 +232,9 @@ def plot_prc_curve(true_y, y_prob, tool):
     plt.legend(loc='upper right')
 
 
-def plot_all_against_ensemble_roc(generated_file_path,
-                                  h1_coloc_rpt, sec_coloc_rpt,
-                                  h1_smr_rpt, sec_smr_rpt,
-                                  h1_jlim_rpt, sec_jlim_rpt,
-                                  h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-                                  h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-                                  h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-                                  h1_twas_rpt=None, sec_twas_rpt=None,
-                                  sec_causal_type=1,
-                                  output_figure_path=None, output_dir=''):
+def plot_all_against_ensemble_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1,
+                                  output_figure_path=None,
+                                  output_dir=''):
     plt.figure().clear()
     xlocs, xlabels = plt.xticks()
     for idx, loc in enumerate(xlocs):
@@ -251,106 +245,24 @@ def plot_all_against_ensemble_roc(generated_file_path,
     plt.ylabel('Sensitivity')
     plt.xlabel('Specificity')
     plt.plot([0, 1], [0, 1], color='grey', linewidth=1, linestyle='-')
-    if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
-        coloc_df = prepare_plot_data(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
-                                     rpt_prob_col_name='overall_H4', rpt_pval_col_name=None, tool='coloc')
-        plot_roc_curve(coloc_df[is_positive_col_name], coloc_df[prob_col_name], tool='coloc')
-    else:
-        coloc_df = None
-    if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
-        smr_df = prepare_plot_data(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
-                                   rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
-        plot_roc_curve(smr_df[is_positive_col_name], smr_df[prob_col_name], tool='SMR')
-    else:
-        smr_df = None
-    if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
-        jlim_df = prepare_plot_data(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
-                                    rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
-        plot_roc_curve(jlim_df[is_positive_col_name], jlim_df[prob_col_name], tool='JLIM')
-    else:
-        jlim_df = None
-    if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
-        fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                                         rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
-        plot_roc_curve(fastenloc_df[is_positive_col_name], fastenloc_df[prob_col_name], tool='fastenloc')
-    else:
-        fastenloc_df = None
-
-    if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
-        predixcan_df = prepare_plot_data(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
-                                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
-        plot_roc_curve(predixcan_df[is_positive_col_name], predixcan_df[prob_col_name], tool='predixcan')
-    else:
-        predixcan_df = None
-
-    if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
-        ecaviar_df = prepare_plot_data(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                                       rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='ecaviar')
-        plot_roc_curve(ecaviar_df[is_positive_col_name], ecaviar_df[prob_col_name], tool='eCaviar')
-    else:
-        ecaviar_df = None
-
-    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
-        twas_df = prepare_plot_data(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
-                                    rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P', tool='twas')
-        plot_roc_curve(twas_df[is_positive_col_name], twas_df[prob_col_name], tool='TWAS')
-    else:
-        twas_df = None
-
-    if coloc_df is None and smr_df is None and jlim_df is None and fastenloc_df is None and \
-            predixcan_df is None and ecaviar_df is None and twas_df is None:
+    rpt_obj = {}
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        if h1_rpt is not None and Path(h1_rpt).exists() and os.path.getsize(h1_rpt) > 0:
+            tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                        rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                        rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                        tool=tool)
+            if tool_df.empty:
+                continue
+            plot_roc_curve(tool_df[is_positive_col_name], tool_df[prob_col_name], tool=tool)
+            tool_output = os.path.join(output_dir, f'{tool}_result.tsv')
+            tool_df.to_csv(tool_output, sep='\t', header=True, index=False)
+            rpt_obj[tool] = tool_output
+    if len(rpt_obj) == 0:
         print('all report is empty, nothing to do')
         return
-
-    if coloc_df is not None:
-        coloc_ranking_file = os.path.join(output_dir, 'coloc_result.tsv')
-        coloc_df.to_csv(coloc_ranking_file, sep='\t', header=True, index=False)
-    else:
-        coloc_ranking_file = None
-    if smr_df is not None:
-        smr_ranking_file = os.path.join(output_dir, 'smr_result.tsv')
-        smr_df.to_csv(smr_ranking_file, sep='\t', header=True, index=False)
-    else:
-        smr_ranking_file = None
-    if jlim_df is not None:
-        jlim_ranking_file = os.path.join(output_dir, 'jlim_result.tsv')
-        jlim_df.to_csv(jlim_ranking_file, sep='\t', header=True, index=False)
-    else:
-        jlim_ranking_file = None
-    if fastenloc_df is not None:
-        fastenloc_ranking_file = os.path.join(output_dir, 'fastenloc_result.tsv')
-        fastenloc_df.to_csv(fastenloc_ranking_file, sep='\t', header=True, index=False)
-    else:
-        fastenloc_ranking_file = None
-
-    if predixcan_df is not None:
-        predixcan_ranking_file = os.path.join(output_dir, 'predixcan_result.tsv')
-        predixcan_df.to_csv(predixcan_ranking_file, sep='\t', header=True, index=False)
-    else:
-        predixcan_ranking_file = None
-
-    if ecaviar_df is not None:
-        ecaviar_ranking_file = os.path.join(output_dir, 'ecaviar_result.tsv')
-        ecaviar_df.to_csv(ecaviar_ranking_file, sep='\t', header=True, index=False)
-    else:
-        ecaviar_ranking_file = None
-
-    if twas_df is not None:
-        twas_ranking_file = os.path.join(output_dir, 'twas_result.tsv')
-        twas_df.to_csv(twas_ranking_file, sep='\t', header=True, index=False)
-    else:
-        twas_ranking_file = None
-
-    # ensemble_output_file = os.path.join(output_dir, 'birra.tsv')
-    rpt_obj = {
-        'coloc': coloc_ranking_file,
-        'smr': smr_ranking_file,
-        'jlim': jlim_ranking_file,
-        'fastenloc': fastenloc_ranking_file,
-        'predixcan': predixcan_ranking_file,
-        'ecaviar': ecaviar_ranking_file,
-        'twas': twas_ranking_file
-    }
     # birra.run_ranking(output_file_path=ensemble_output_file, rpt=rpt_obj)
     # ranking_result_df = pd.read_table(ensemble_output_file, usecols=[GENE_ID_COL_NAME, 'birra_ranking'])
     # Convert birra ranking to probability. TODO this method is not good
@@ -510,73 +422,23 @@ def plot_all_against_ensemble_roc(generated_file_path,
     # plt.show()
 
 
-def plot_bar(generated_file_path,
-             h1_coloc_rpt, sec_coloc_rpt,
-             h1_smr_rpt, sec_smr_rpt,
-             h1_jlim_rpt, sec_jlim_rpt,
-             h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-             h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-             h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-             h1_twas_rpt=None, sec_twas_rpt=None,
-             sec_causal_type=1,
-             output_figure_path=None):
-    tool_thresholds = calc_threshold(generated_file_path,
-                                     h1_coloc_rpt, sec_coloc_rpt,
-                                     h1_smr_rpt, sec_smr_rpt,
-                                     h1_jlim_rpt=None, sec_jlim_rpt=None,
-                                     h1_fastenloc_rpt=h1_fastenloc_rpt,
-                                     sec_fastenloc_rpt=sec_fastenloc_rpt,
-                                     h1_predixcan_rpt=h1_predixcan_rpt,
-                                     sec_predixcan_rpt=sec_predixcan_rpt,
-                                     h1_ecaviar_rpt=h1_ecaviar_rpt,
-                                     sec_ecaviar_rpt=sec_ecaviar_rpt,
-                                     h1_twas_rpt=h1_twas_rpt,
-                                     sec_twas_rpt=sec_twas_rpt,
-                                     sec_causal_type=sec_causal_type)
-    if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
-        coloc_df = prepare_plot_data(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
-                                     rpt_prob_col_name='overall_H4', rpt_pval_col_name=None, tool='coloc')
-    else:
-        coloc_df = None
-    if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
-        smr_df = prepare_plot_data(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
-                                   rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
-    else:
-        smr_df = None
-    if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
-        jlim_df = prepare_plot_data(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
-                                    rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
-    else:
-        jlim_df = None
-    if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
-        fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                                         rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
-    else:
-        fastenloc_df = None
-
-    if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
-        predixcan_df = prepare_plot_data(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
-                                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
-    else:
-        predixcan_df = None
-
-    if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
-        ecaviar_df = prepare_plot_data(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                                       rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='ecaviar')
-    else:
-        ecaviar_df = None
-
-    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
-        twas_df = prepare_plot_data(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
-                                    rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P', tool='twas')
-    else:
-        twas_df = None
-
-    all_tool_df_list = [coloc_df, smr_df, jlim_df, predixcan_df, fastenloc_df, ecaviar_df, twas_df]
-    df_list = [df for df in all_tool_df_list if df is not None and df.shape[0] > 0]
+def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
+    df_list = []
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        if h1_rpt is not None and Path(h1_rpt).exists() and os.path.getsize(h1_rpt) > 0:
+            coloc_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                         rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                         rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                         tool=tool)
+            if coloc_df.empty:
+                continue
+            df_list.append(coloc_df)
     if len(df_list) == 0:
         print('all report is empty, nothing to do')
         return
+    tool_thresholds = calc.calc_threshold(rpt_obj=h1_rpt_obj, work_dir=os.path.dirname(output_figure_path))
     ranking_df = None
     for rpt_df in df_list:
         rpt_df.drop(columns=[is_positive_col_name, prob_col_name], inplace=True)
@@ -676,55 +538,18 @@ def plot_bar(generated_file_path,
         plt.savefig(output_figure_path)
 
 
-def calc_threshold(generated_file_path=None,
-                   h1_coloc_rpt=None, sec_coloc_rpt=None,
-                   h1_smr_rpt=None, sec_smr_rpt=None,
-                   h1_jlim_rpt=None, sec_jlim_rpt=None,
-                   h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-                   h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-                   h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-                   h1_twas_rpt=None, sec_twas_rpt=None,
-                   sec_causal_type=1):
-    tool_thresholds = {}
-    if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
-        coloc_df = prepare_plot_data(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
-                                     rpt_prob_col_name='overall_H4', rpt_pval_col_name=None, tool='coloc')
-        fpr, tpr, thresholds = roc_curve(coloc_df[is_positive_col_name], coloc_df[prob_col_name])
-        tool_thresholds['coloc'] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-    if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
-        smr_df = prepare_plot_data(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
-                                   rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
-        fpr, tpr, thresholds = roc_curve(smr_df[is_positive_col_name], smr_df[prob_col_name])
-        tool_thresholds['smr'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-    if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
-        jlim_df = prepare_plot_data(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
-                                    rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
-        fpr, tpr, thresholds = roc_curve(jlim_df[is_positive_col_name], jlim_df[prob_col_name])
-        tool_thresholds['jlim'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-    if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
-        fastenloc_df = prepare_plot_data(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                                         rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
-        fpr, tpr, thresholds = roc_curve(fastenloc_df[is_positive_col_name], fastenloc_df[prob_col_name])
-        tool_thresholds['fastenloc'] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-
-    if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
-        predixcan_df = prepare_plot_data(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
-                                         rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
-        fpr, tpr, thresholds = roc_curve(predixcan_df[is_positive_col_name], predixcan_df[prob_col_name])
-        tool_thresholds['predixcan'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-
-    if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
-        ecaviar_df = prepare_plot_data(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                                       rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='ecaviar')
-        fpr, tpr, thresholds = roc_curve(ecaviar_df[is_positive_col_name], ecaviar_df[prob_col_name])
-        tool_thresholds['ecaviar'] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-
-    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
-        twas_df = prepare_plot_data(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
-                                    rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P', tool='twas')
-        fpr, tpr, thresholds = roc_curve(twas_df[is_positive_col_name], twas_df[prob_col_name])
-        tool_thresholds['twas'] = 1 - pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-    return tool_thresholds
+# def calc_threshold(generated_file_path=None, h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1):
+#     tool_thresholds = {}
+#     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+#         h1_rpt = h1_rpt_obj.get(tool)
+#         sec_rpt = sec_rpt_obj.get(tool)
+#         tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+#                                     rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+#                                     rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+#                                     tool=tool)
+#         fpr, tpr, thresholds = roc_curve(tool_df[is_positive_col_name], tool_df[prob_col_name])
+#         tool_thresholds[tool] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
+#     return tool_thresholds
 
 
 def plot_single_venn(
@@ -806,48 +631,33 @@ def plot_single_venn(
 
 
 def plot_venn(generated_file_path=None,
-              h1_coloc_rpt=None, sec_coloc_rpt=None,
-              h1_smr_rpt=None, sec_smr_rpt=None,
-              h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-              h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-              h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-              h1_twas_rpt=None, sec_twas_rpt=None,
+              h1_rpt_obj=None, sec_rpt_obj=None,
               sec_causal_type=1,
               genetic_model=None,
               h1_figure_path=None,
               hgm_figure_path=None):
-    tool_thresholds = calc_threshold(generated_file_path,
-                                     h1_coloc_rpt, sec_coloc_rpt,
-                                     h1_smr_rpt, sec_smr_rpt,
-                                     h1_jlim_rpt=None, sec_jlim_rpt=None,
-                                     h1_fastenloc_rpt=h1_fastenloc_rpt,
-                                     sec_fastenloc_rpt=sec_fastenloc_rpt,
-                                     h1_predixcan_rpt=h1_predixcan_rpt,
-                                     sec_predixcan_rpt=sec_predixcan_rpt,
-                                     h1_ecaviar_rpt=h1_ecaviar_rpt,
-                                     sec_ecaviar_rpt=sec_ecaviar_rpt,
-                                     h1_twas_rpt=h1_twas_rpt,
-                                     sec_twas_rpt=sec_twas_rpt,
-                                     sec_causal_type=sec_causal_type)
-    print(f'Thresholds: {tool_thresholds}')
+    h1_tool_thresholds = calc.calc_threshold(rpt_obj=h1_rpt_obj, work_dir=os.path.dirname(h1_figure_path))
+    sec_tool_thresholds = calc.calc_threshold(rpt_obj=sec_rpt_obj, work_dir=os.path.dirname(h1_figure_path))
+    print(f'H1 Thresholds: {h1_tool_thresholds}')
+    print(f'SEC Thresholds: {sec_tool_thresholds}')
     plot_single_venn(generated_file_path,
-                     tool_thresholds,
-                     coloc_rpt=h1_coloc_rpt,
-                     smr_rpt=h1_smr_rpt,
-                     fastenloc_rpt=h1_fastenloc_rpt,
-                     predixcan_rpt=h1_predixcan_rpt,
-                     ecaviar_rpt=h1_ecaviar_rpt,
-                     twas_rpt=h1_twas_rpt,
+                     h1_tool_thresholds,
+                     coloc_rpt=h1_rpt_obj.get('coloc'),
+                     smr_rpt=h1_rpt_obj.get('smr'),
+                     fastenloc_rpt=h1_rpt_obj.get('fastenloc'),
+                     predixcan_rpt=h1_rpt_obj.get('predixcan'),
+                     ecaviar_rpt=h1_rpt_obj.get('ecaviar'),
+                     twas_rpt=h1_rpt_obj.get('twas'),
                      out_data_prefix='h1',
                      output_figure_path=h1_figure_path)
     plot_single_venn(generated_file_path,
-                     tool_thresholds,
-                     coloc_rpt=sec_coloc_rpt,
-                     smr_rpt=sec_smr_rpt,
-                     fastenloc_rpt=sec_fastenloc_rpt,
-                     predixcan_rpt=sec_predixcan_rpt,
-                     ecaviar_rpt=sec_ecaviar_rpt,
-                     twas_rpt=sec_twas_rpt,
+                     sec_tool_thresholds,
+                     coloc_rpt=sec_rpt_obj.get('coloc'),
+                     smr_rpt=sec_rpt_obj.get('smr'),
+                     fastenloc_rpt=sec_rpt_obj.get('fastenloc'),
+                     predixcan_rpt=sec_rpt_obj.get('predixcan'),
+                     ecaviar_rpt=sec_rpt_obj.get('ecaviar'),
+                     twas_rpt=sec_rpt_obj.get('twas'),
                      out_data_prefix=genetic_model,
                      output_figure_path=hgm_figure_path)
 
@@ -903,28 +713,12 @@ def __merge_tool_gene_id(generated_file_path, coloc_df, smr_df, fastenloc_df, pr
 
 def plot_mean_sd_combinations_bar(
         generated_file_path=None,
-        h1_coloc_rpt=None, sec_coloc_rpt=None,
-        h1_smr_rpt=None, sec_smr_rpt=None,
-        h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-        h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-        h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-        h1_twas_rpt=None, sec_twas_rpt=None,
+        h1_rpt_obj=None, sec_rpt_obj=None,
         sec_causal_type=1,
         output_figure_path=None):
-    tool_thresholds = calc_threshold(generated_file_path,
-                                     h1_coloc_rpt, sec_coloc_rpt,
-                                     h1_smr_rpt, sec_smr_rpt,
-                                     h1_jlim_rpt=None, sec_jlim_rpt=None,
-                                     h1_fastenloc_rpt=h1_fastenloc_rpt,
-                                     sec_fastenloc_rpt=sec_fastenloc_rpt,
-                                     h1_predixcan_rpt=h1_predixcan_rpt,
-                                     sec_predixcan_rpt=sec_predixcan_rpt,
-                                     h1_ecaviar_rpt=h1_ecaviar_rpt,
-                                     sec_ecaviar_rpt=sec_ecaviar_rpt,
-                                     h1_twas_rpt=h1_twas_rpt,
-                                     sec_twas_rpt=sec_twas_rpt,
-                                     sec_causal_type=sec_causal_type)
+    tool_thresholds = calc.calc_threshold(rpt_obj=h1_rpt_obj, work_dir=os.path.dirname(output_figure_path))
     print(f'Thresholds: {tool_thresholds}')
+    h1_coloc_rpt = h1_rpt_obj.get('coloc')
     if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
         coloc_df = pd.read_table(h1_coloc_rpt, usecols=[GENE_ID_COL_NAME, 'overall_H4'])
         coloc_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -932,6 +726,7 @@ def plot_mean_sd_combinations_bar(
         coloc_df.drop(columns=[col for col in coloc_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         coloc_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
+    h1_smr_rpt = h1_rpt_obj.get('smr')
     if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
         smr_df = pd.read_table(h1_smr_rpt, usecols=[GENE_ID_COL_NAME, 'p_SMR', 'p_HEIDI'])
         smr_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -940,6 +735,7 @@ def plot_mean_sd_combinations_bar(
         smr_df.drop(columns=[col for col in smr_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         smr_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
+    h1_fastenloc_rpt = h1_rpt_obj.get('fastenloc')
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
         fastenloc_df = pd.read_table(h1_fastenloc_rpt, usecols=[GENE_ID_COL_NAME, 'LCP'])
         fastenloc_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -947,7 +743,7 @@ def plot_mean_sd_combinations_bar(
         fastenloc_df.drop(columns=[col for col in fastenloc_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         fastenloc_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
-
+    h1_predixcan_rpt = h1_rpt_obj.get('predixcan')
     if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
         predixcan_df = pd.read_table(h1_predixcan_rpt, usecols=[GENE_ID_COL_NAME, 'pvalue'])
         predixcan_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -956,7 +752,7 @@ def plot_mean_sd_combinations_bar(
         predixcan_df.drop(columns=[col for col in predixcan_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         predixcan_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
-
+    h1_ecaviar_rpt = h1_rpt_obj.get('ecaviar')
     if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
         ecaviar_df = pd.read_table(h1_ecaviar_rpt, usecols=[GENE_ID_COL_NAME, 'clpp'])
         ecaviar_df.sort_values(by='clpp', ascending=False, inplace=True)
@@ -965,7 +761,7 @@ def plot_mean_sd_combinations_bar(
         ecaviar_df.drop(columns=[col for col in ecaviar_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         ecaviar_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
-
+    h1_twas_rpt = h1_rpt_obj.get('twas')
     if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
         twas_df = pd.read_table(h1_twas_rpt, usecols=[GENE_ID_COL_NAME, 'TWAS.P'])
         twas_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)

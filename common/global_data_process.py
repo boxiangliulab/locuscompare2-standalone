@@ -1,8 +1,10 @@
+import concurrent
 import datetime
 import logging
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pandas as pd
@@ -39,6 +41,7 @@ class Processor:
         self.eqtl_tissue = self.config_holder.eqtl_tissue
 
         self.tool_parent_dir = self.config_holder.tool_parent_dir
+        self.rank_dir = self.config_holder.rank_dir
         self.report_path = self.config_holder.report_path
 
         self.gwas_col_dict = self.config_holder.gwas_col_dict
@@ -125,70 +128,98 @@ class Processor:
                 utils.delete_file_if_exists(eqtl_trait_file_path)
                 return None, None
             else:
-                if ('varbeta' not in self.eqtl_col_dict.keys() or self.eqtl_col_dict.get(
-                        'varbeta') is None) and (
-                        'se' in self.eqtl_col_dict.keys() and self.eqtl_col_dict.get('se') is not None):
-                    eqtl_trait_df['varbeta'] = eqtl_trait_df[self.eqtl_col_dict['se']] ** 2
                 eqtl_trait_df.sort_values([self.eqtl_col_dict['chrom'], self.eqtl_col_dict['position']],
                                           inplace=True)
                 eqtl_trait_df.to_csv(eqtl_trait_file_path, sep=const.output_spliter, index=False)
                 return eqtl_trait_df, pval_filter_eqtl_df
+
+    def __merge_alt_ref(self, gwas_df, chrom, population):
+        logging.info(f'Merging alt ref for chrom {chrom}')
+        input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
+        vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4],
+                               dtype={0: 'category', 1: 'Int64', 3: pd.CategoricalDtype(const.SNP_ALLELE),
+                                      4: pd.CategoricalDtype(const.SNP_ALLELE)})
+        vcf_df.columns = [self.gwas_col_dict['chrom'], self.gwas_col_dict['position'], 'ref', 'alt']
+        vcf_df.dropna(subset=['ref', 'alt'], inplace=True)
+        vcf_df.reset_index(drop=True, inplace=True)
+        merged_vcf_col_suffix = f'_{chrom}_vcf'
+        gwas_df = pd.merge(left=gwas_df,
+                           right=vcf_df,
+                           left_on=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
+                           right_on=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
+                           how='left',
+                           suffixes=(None, merged_vcf_col_suffix))
+        del vcf_df
+        gwas_df['ref'].mask((gwas_df[self.gwas_col_dict['chrom']] == chrom) & gwas_df['ref'].isna(),
+                            gwas_df[f'ref{merged_vcf_col_suffix}'], inplace=True)
+        gwas_df['alt'].mask((gwas_df[self.gwas_col_dict['chrom']] == chrom) & gwas_df['alt'].isna(),
+                            gwas_df[f'alt{merged_vcf_col_suffix}'], inplace=True)
+        gwas_df.drop(columns=[col for col in gwas_df.columns if col.endswith(merged_vcf_col_suffix)], inplace=True)
+        logging.info(f'Merge alt ref for chrom {chrom} completed')
+
+    def __gwas_clumping(self, gwas_chrom_file, chrom, population):
+        logging.info(f'Clumping for chrom {chrom}')
+        input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
+        clumped_out = os.path.join(self.gwas_output_dir, f'chr{chrom}')
+        os.system(f'plink --vcf {input_vcf}  '
+                  f'--clump {gwas_chrom_file} '
+                  f'--clump-p1 {self.config_holder.gwas_p_threshold} '
+                  f'--clump-p2 {self.config_holder.gwas_p_threshold} '
+                  f'--clump-snp-field {self.gwas_col_dict["snp"]} '
+                  f'--clump-field {self.gwas_col_dict["pvalue"]} '
+                  f'--out {clumped_out}')
+        logging.info(f'Clumping for chrom {chrom} completed')
 
     def preprocess_gwas(self):
         utils.delete_dir(self.gwas_preprocessed_dir)
         Path(self.gwas_preprocessed_dir).mkdir(exist_ok=True, parents=True)
         gwas_file_path = self.global_config['input']['gwas']['file']
         population = self.global_config.get('population', 'EUR').upper()
-        ref_vcf_dir = self.global_config['input']['vcf']
         logging.info(f'Reading GWAS file {gwas_file_path}')
         gwas_df = pd.read_table(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
                                 usecols=self.gwas_col_dict.values(),
-                                dtype={self.gwas_col_dict['position']: 'Int64', self.gwas_col_dict['chrom']: 'string'})
-        gwas_df[self.gwas_col_dict['chrom']].astype(str).str.lower().str.strip('chr')
-
+                                dtype={self.gwas_col_dict['position']: 'Int64', self.gwas_col_dict['chrom']: 'category',
+                                       self.gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                       self.gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
+        logging.info(f'GWAS data memory usage: {gwas_df.memory_usage(deep=True)}')
+        gwas_df[self.gwas_col_dict['chrom']] = gwas_df[self.gwas_col_dict['chrom']].astype(str).str.lower().str.strip(
+            'chr').astype('category')
         logging.info(f'GWAS data dropping non-autosome data, time: {datetime.datetime.now()}')
         gwas_df.drop(labels=gwas_df[~gwas_df[self.gwas_col_dict['chrom']].isin([str(i) for i in range(1, 23)])].index,
                      inplace=True)
-        gwas_df[Processor.VAR_ID_COL_NAME] = 'chr' + gwas_df[self.gwas_col_dict['chrom']].astype(str) + '_' + \
-                                             gwas_df[
-                                                 self.gwas_col_dict['position']].astype(str)
         logging.info(f'GWAS data dropping INDEL SNPs, time: {datetime.datetime.now()}')
         utils.drop_indel_snp(gwas_df, self.gwas_col_dict['effect_allele'], self.gwas_col_dict['other_allele'])
+        logging.info(f'GWAS data cleaning, time: {datetime.datetime.now()}')
+        utils.clean_data(gwas_df, dup_consider_subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']])
         logging.info(f'GWAS data total {len(gwas_df)} rows, sorting by chrom and pos, time: {datetime.datetime.now()}')
         gwas_df.sort_values([self.gwas_col_dict['chrom'], self.gwas_col_dict['position']], inplace=True)
-        logging.info(f'GWAS data cleaning, time: {datetime.datetime.now()}')
-        utils.clean_data(gwas_df, dup_consider_subset=Processor.VAR_ID_COL_NAME)
-        # gwas_df.drop(labels=gwas_df[~gwas_df[gwas_col_dict['snp']].str.startswith('rs')].index, inplace=True)
-        logging.info(f'GWAS data {len(gwas_df)} rows left, adding varbeta if needed, time: {datetime.datetime.now()}')
-        if ('varbeta' not in self.gwas_col_dict.keys() or self.gwas_col_dict.get('varbeta') is None) and (
-                'se' in self.gwas_col_dict.keys() and self.gwas_col_dict.get('se') is not None):
-            gwas_df['varbeta'] = gwas_df[self.gwas_col_dict['se']] ** 2
-        gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper()
-        gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper()
-        logging.info(f'Merging alt,ref from vcf into GWAS data')
+        logging.info(f'Merging alt ref from vcf into GWAS data')
+        # discontinuous index cost a lot more memory
+        gwas_df.reset_index(drop=True, inplace=True)
         # Merge alt/ref from vcf into gwas file for later use
-        gwas_df['alt'] = pd.NA
-        gwas_df['ref'] = pd.NA
+        gwas_df['alt'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df['ref'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
         chroms = gwas_df[self.gwas_col_dict['chrom']].unique()
-        for chrom in chroms:
-            input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
-            vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4],
-                                   dtype={0: 'category', 1: 'Int64', 3: 'category', 4: 'category'})
-            vcf_df.columns = [self.gwas_col_dict['chrom'], self.gwas_col_dict['position'], 'ref', 'alt']
-            utils.drop_indel_snp(vcf_df, 'ref', 'alt')
-            gwas_df = pd.merge(left=gwas_df,
-                               right=vcf_df,
-                               left_on=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
-                               right_on=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
-                               how='left',
-                               suffixes=(None, '__vcf'))
-            gwas_df['ref'].mask(gwas_df['ref'].isna(), gwas_df['ref__vcf'], inplace=True)
-            gwas_df['alt'].mask(gwas_df['alt'].isna(), gwas_df['alt__vcf'], inplace=True)
-            gwas_df.drop(columns=[col for col in gwas_df.columns if col.endswith('__vcf')], inplace=True)
-        gwas_df.drop_duplicates(subset=Processor.VAR_ID_COL_NAME, keep=False, inplace=True)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = []
+            for chrom in chroms:
+                futures.append(executor.submit(self.__merge_alt_ref, gwas_df, chrom, population))
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    logging.error('Get %s generated an exception: %s' % (data, exc))
+        gwas_df.drop_duplicates(subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
+                                keep=False, inplace=True)
+        gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper().astype(
+            pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper().astype(
+            pd.CategoricalDtype(const.SNP_ALLELE))
         # Fill SNP ref/alt by other_allele/effect_allele if the SNP is not in vcf
         gwas_df['ref'].mask(gwas_df['ref'].isna(), gwas_df[self.gwas_col_dict['other_allele']], inplace=True)
         gwas_df['alt'].mask(gwas_df['alt'].isna(), gwas_df[self.gwas_col_dict['effect_allele']], inplace=True)
+        gwas_df[Processor.VAR_ID_COL_NAME] = 'chr' + gwas_df[self.gwas_col_dict['chrom']].astype(str) + '_' + \
+                                             gwas_df[self.gwas_col_dict['position']].astype(str)
         logging.info(
             f'Writing GWAS preprocessed data to {self.gwas_preprocessed_file}, time: {datetime.datetime.now()}')
         gwas_df.to_csv(self.gwas_preprocessed_file, sep=const.output_spliter, header=True, index=False)
@@ -205,6 +236,7 @@ class Processor:
             # print(f'No significant records found in GWAS file {gwas_file_path}')
             logging.warning(f'No significant records found in GWAS file {gwas_file_path}')
             return
+        del pval_filter_gwas_df
         neighbor_range = self.global_config['neighbour_snp_range']
         logging.info(
             f'Clumping GWAS SNPs, range files will be written to {self.gwas_cluster_output_dir}, time: {datetime.datetime.now()}')
@@ -216,18 +248,28 @@ class Processor:
         chrom_list = []
         range_lead_list = []
         positions_list = []
+        gwas_chrom_group_files = {}
         for name, group in gwas_df.groupby(self.gwas_col_dict['chrom']):
             group_file = os.path.join(self.gwas_output_dir, f'chr{name}.tsv.gz')
             group.to_csv(group_file, sep=const.output_spliter, header=True, index=False)
-            input_vcf = os.path.join(ref_vcf_dir, population, f'chr{name}.vcf.gz')
+            gwas_chrom_group_files[name] = group_file
+        del gwas_df
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            futures = []
+            for name, group_file in gwas_chrom_group_files.items():
+                futures.append(executor.submit(self.__gwas_clumping, group_file, name, population))
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    logging.error('Get %s generated an exception: %s' % (data, exc))
+        for name, group_file in gwas_chrom_group_files.items():
+            group = pd.read_table(group_file, sep=const.output_spliter,
+                                  dtype={self.gwas_col_dict['position']: 'Int64',
+                                         self.gwas_col_dict['chrom']: 'category',
+                                         self.gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                         self.gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
             clumped_out = os.path.join(self.gwas_output_dir, f'chr{name}')
-            os.system(f'plink --vcf {input_vcf}  '
-                      f'--clump {group_file} '
-                      f'--clump-p1 {self.config_holder.gwas_p_threshold} '
-                      f'--clump-p2 {self.config_holder.gwas_p_threshold} '
-                      f'--clump-snp-field {self.gwas_col_dict["snp"]} '
-                      f'--clump-field {self.gwas_col_dict["pvalue"]} '
-                      f'--out {clumped_out}')
             clumped_file = f'{clumped_out}.clumped'
             if not os.path.exists(clumped_file) or os.path.getsize(clumped_file) <= 0:
                 logging.warning(f'No significant SNP on chromosome {name}')
@@ -261,6 +303,7 @@ class Processor:
                 range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
                                 header=True,
                                 index=False)
+            del group
         logging.info(
             f'Writing GWAS significant ranges summary to {self.gwas_cluster_summary}, time: {datetime.datetime.now()}')
         cluster_summary_df = pd.DataFrame(

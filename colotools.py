@@ -1,8 +1,10 @@
+import json
 import logging
 import os
 import sys
 import uuid
 from datetime import datetime
+from functools import partial
 from multiprocessing import Pool
 
 import pandas as pd
@@ -12,6 +14,8 @@ import common.constants
 from analyze.api import run_tools_api
 from common import coloc_utils as utils, global_data_process as gdp
 from figures import report_data_processor as redp
+from ranking import scoring as sc
+from threshold import calc
 
 
 # def __before_run_jlim_tools_check(global_config):
@@ -219,32 +223,44 @@ def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, stu
     utils.check_path_exist_and_has_size(processor.eqtl_output_report)
     utils.check_path_exist_and_has_size(processor.gwas_preprocessed_file)
     utils.check_file_or_path_exist(processor.gwas_cluster_output_dir)
-
+    results = dict()
+    rank_output_file = os.path.join(processor.rank_dir,
+                                    f'ensemble_ranking_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv')
     if parallel:
         logging.info("Parallel run {}".format(actually_tools_list))
         p = Pool(len(actually_tools_list))
 
-        results = dict()
+        def __tool_callback(res, current_tool):
+            results[current_tool] = res
+            logging.info("Run tool {} completed!".format(current_tool))
+
         for tool in actually_tools_list:
             logging.info("Run tool {}".format(tool))
-            results[tool] = p.apply_async(tools_func_map[tool]['run_fun'], args=(processor,))
-
+            p.apply_async(tools_func_map[tool]['run_fun'], args=(processor,),
+                          callback=partial(__tool_callback, current_tool=tool))
         p.close()
         p.join()
         for tool in results.keys():
             report_list.append(
                 {'trait': config_holder.gwas_trait, 'tool_name': tool, 'study1': study,
-                 'tissue': config_holder.eqtl_tissue, 'report_path': results[tool].get(),
-                 'cfg_pro': processor})
+                 'tissue': config_holder.eqtl_tissue, 'report_path': results[tool],
+                 'cfg_pro': processor, 'rank_output_file': rank_output_file})
     else:
         for tool in actually_tools_list:
             logging.info("Run tool {}".format(tool))
             # report_file_path = get_tools_path(processor.tool_parent_dir, tool)
             report_file_path = tools_func_map[tool]['run_fun'](processor)
+            logging.info("Run tool {} completed!".format(tool))
+            results[tool] = report_file_path
             report_list.append({'trait': config_holder.gwas_trait, 'tool_name': tool, 'study1': study,
                                 'tissue': config_holder.eqtl_tissue, 'report_path': report_file_path,
-                                'cfg_pro': processor})
-
+                                'cfg_pro': processor, 'rank_output_file': rank_output_file})
+    sc.run_ranking(rpt_obj=results, output_file_path=rank_output_file,
+                   sample_size=processor.global_config['input']['gwas']['sample_size'])
+    with open(processor.config_holder.threshold_path, 'w') as outfile:
+        json.dump(calc.calc_threshold(rpt_obj=results,
+                                      work_dir=os.path.dirname(processor.config_holder.threshold_path)), outfile)
+        outfile.write('\n')
     logging.info(f'coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')
 
 
