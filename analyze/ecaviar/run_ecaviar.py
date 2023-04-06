@@ -28,19 +28,21 @@ class ECaviar:
         if custom_params and custom_params != '':
             finemap_params = custom_params
         for gene_dir in os.listdir(candidate_data_dir):
-            if not gene_dir.startswith('.'):
-                for causal_snp_dir in os.listdir(f'{candidate_data_dir}/{gene_dir}'):
-                    if not causal_snp_dir.startswith('.'):
-                        candidate_dir = f'{candidate_data_dir}/{gene_dir}/{causal_snp_dir}'
-                        finemap_file_name = f'{causal_snp_dir}_{gene_dir}'
-                        run_finemap_cmd = self.shell_command_run_finemap.format(
-                            f'{candidate_dir}/{finemap_file_name}.in', finemap_params)
-                        # asyncio.create_task will submit task immediately
-                        coros.append(utils.async_run_cmd(run_finemap_cmd))
-                        finemap_snp_files.append((f'{candidate_dir}/gwas_{finemap_file_name}.snp',
-                                                  f'{candidate_dir}/eqtl_{finemap_file_name}.snp'))
+            if gene_dir.startswith('.'):
+                continue
+            for causal_snp_dir in os.listdir(f'{candidate_data_dir}/{gene_dir}'):
+                if causal_snp_dir.startswith('.'):
+                    continue
+                candidate_dir = f'{candidate_data_dir}/{gene_dir}/{causal_snp_dir}'
+                finemap_file_name = f'{causal_snp_dir}_{gene_dir}'
+                run_finemap_cmd = self.shell_command_run_finemap.format(
+                    f'{candidate_dir}/{finemap_file_name}.in', finemap_params)
+                # asyncio.create_task will submit task immediately
+                coros.append(utils.async_run_cmd(run_finemap_cmd))
+                finemap_snp_files.append((f'{candidate_dir}/gwas_{finemap_file_name}.snp',
+                                          f'{candidate_dir}/eqtl_{finemap_file_name}.snp'))
 
-        await utils.gather_with_limit(20, *coros)
+        await utils.gather_with_limit(10, *coros)
         logging.info(f'finish eCaviar process.')
         logging.info(f'generate eCaviar report.')
         return self.generate_report(working_dir=working_dir, finemap_reports=finemap_snp_files)
@@ -50,7 +52,7 @@ class ECaviar:
         var_ids, chroms, gene_ids, gwas_pips, eqtl_pips, gene_clpps = [], [], [], [], [], [],
         for gwas_snp, eqtl_snp in finemap_reports:
             if not utils.file_exists(gwas_snp) or not utils.file_exists(eqtl_snp):
-                logging.error(f'{gwas_snp} or {eqtl_snp} is not found.')
+                logging.warning(f'{gwas_snp} or {eqtl_snp} is not found.')
                 continue
             try:
                 gwas_snp_df = pd.read_csv(gwas_snp, sep=' ', usecols=['snp', 'snp_prob'])

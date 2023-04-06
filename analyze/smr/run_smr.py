@@ -44,162 +44,197 @@ class Smr:
         output_dir = self.__get_output_dir(working_dir)
         Path(input_dir).mkdir(parents=True, exist_ok=True)
         Path(output_dir).mkdir(parents=True, exist_ok=True)
-        gwas_type_dict = {gwas_col_dict['chrom']: 'category',
-                          gwas_col_dict['position']: 'Int64'}
-
-        eqtl_type_dict = {eqtl_col_dict['chrom']: 'category',
-                          eqtl_col_dict['position']: 'Int64'}
         smr_custom_params = utils.get_tools_params(self.COLOC_TOOL_NAME, params_without_value=['heidi-off'])
 
-        gwas_files = {}
+        pval_filtered_gwas_df = pd.read_table(gwas_filter_file, sep=const.column_spliter,
+                                              usecols=[gwas_col_dict['chrom'], gwas_col_dict['position']],
+                                              dtype={gwas_col_dict['chrom']: 'category',
+                                                     gwas_col_dict['position']: 'Int64'})
+        genecode_df = self.__prepare_genecode(genecode_file)
+        eqtl_summary_df = pd.read_table(eqtl_output_report, sep=const.column_spliter,
+                                        dtype={eqtl_col_dict['chrom']: 'category'})
+        # Loop to process all eQTL trait file
         for chrom_group_file in os.listdir(gwas_chrom_group_dir):
             if not (chrom_group_file.endswith('.tsv') or chrom_group_file.endswith('.tsv.gz')):
                 continue
             chr_nums = re.findall(r'\d+', chrom_group_file)
             if len(chr_nums) == 0:
                 continue
-            gwas_files[chr_nums[0]] = os.path.join(gwas_chrom_group_dir, chrom_group_file)
-        pval_filtered_gwas_df = pd.read_table(gwas_filter_file, sep=const.column_spliter,
-                                              dtype=gwas_type_dict)
-        eqtl_summary_df = pd.read_table(eqtl_output_report, sep=const.column_spliter,
-                                        dtype={eqtl_col_dict['chrom']: 'category'})
-        # Loop to process all eQTL trait file
-        gwas_chroms = pval_filtered_gwas_df[gwas_col_dict['chrom']].unique().tolist()
-
-        genecode_df = self.__prepare_genecode(genecode_file)
-        for _, row in eqtl_summary_df.iterrows():
-            chrom = str(row.loc['chrom'])
-            if chrom not in gwas_chroms:
+            chrom = str(chr_nums[0])
+            gwas_file = os.path.join(gwas_chrom_group_dir, chrom_group_file)
+            gwas_chrom_df = pd.read_table(gwas_file, sep=const.column_spliter,
+                                          usecols=[
+                                              gwas_col_dict['chrom'],
+                                              gwas_col_dict['position'],
+                                              gwas_col_dict['effect_allele'],
+                                              gwas_col_dict['other_allele'],
+                                              gwas_col_dict['beta'],
+                                              gwas_col_dict['se'],
+                                              gwas_col_dict['pvalue'],
+                                              var_id_col_name],
+                                          dtype={
+                                              gwas_col_dict['chrom']: 'category',
+                                              gwas_col_dict['position']: 'Int64',
+                                              gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                              gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
+            if gwas_chrom_df.shape[0] < edp.SmrEqtlProcessor.SMR_MIN_SNP:
                 continue
-            eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
-            gene_id = utils.get_file_name(eqtl_gene_file)
-            eqtl_positions = ast.literal_eval(row.loc['positions'])
-            if len(eqtl_positions) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
-                continue
-            if not pval_filtered_gwas_df[pval_filtered_gwas_df[gwas_col_dict['chrom']] == chrom].loc[
-                   :, gwas_col_dict['position']].isin(eqtl_positions).any():
-                logging.debug(
-                    f'No intersection between gwas risk SNPs and eqtl risk SNPs for gene {gene_id}: {datetime.now()}')
-                continue
-            gwas_file = gwas_files[chrom]
-            candidate_gwas_df = pd.read_table(gwas_file, sep=const.column_spliter, dtype=gwas_type_dict)
-            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
-                continue
-            # eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter, dtype=eqtl_type_dict)
-            # 这里过滤不过滤都一样, smr代码会自行进行过滤
-            # candidate_eqtl_trait_df = utils.filter_data_frame_by_p_value(eqtl_trait_df,
-            #                                                              global_config['p-value_threshold']['eqtl'],
-            #                                                              eqtl_col_dict['pvalue'], inplace=False)
-            # candidate_eqtl_trait_df = eqtl_trait_df.copy()
-            # del eqtl_trait_df
-            candidate_eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter, dtype=eqtl_type_dict)
-            candidate_gwas_df = candidate_gwas_df[
-                candidate_gwas_df[var_id_col_name].isin(candidate_eqtl_trait_df[var_id_col_name])].copy()
-            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
-                continue
-            utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name,
-                                          candidate_gwas_df, var_id_col_name)
-            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
-                continue
-            gwas_input_path = os.path.join(input_dir, f'gwas_chr{chrom}_{gene_id}.tsv')
-            eqtl_input_path = os.path.join(input_dir, f'eqtl_chr{chrom}_{gene_id}.tsv')
-            matching_rpt_name = f'{utils.get_file_name(subset_vcf_file_pattern).format(chrom, gene_id)}.tsv'
-            vcf_matching_file = os.path.join(subset_vcf_dir, 'matching', matching_rpt_name)
-            if not os.path.exists(vcf_matching_file) or os.path.getsize(vcf_matching_file) <= 0:
-                logging.warning(f'No generated vcf file for gene {gene_id}')
-                continue
-            vcf_matching_df = pd.read_table(vcf_matching_file,
-                                            sep=const.column_spliter, header=0,
-                                            usecols=[eqtl_col_dict['position'], var_id_col_name],
-                                            dtype={eqtl_col_dict['position']: 'Int64'})
-            if len(vcf_matching_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
-                continue
-            # Drop GWAS rows that does not have vcf records
-            # SNP in vcf_matching_df is subset of SNP in candidate_gwas_df, so it's fine to drop intersect rows here
-            utils.drop_non_intersect_rows(candidate_gwas_df, var_id_col_name, vcf_matching_df, var_id_col_name)
-            # Drop eQTL rows that does not have vcf records
-            utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name, vcf_matching_df, var_id_col_name)
-            del vcf_matching_df
-            if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
-                continue
-            eqtl_flist_file = os.path.join(input_dir, f'{gene_id}_flist.txt')
-            eqtl_besd_file = os.path.join(input_dir, f'{gene_id}')
-            utils.delete_file_if_exists(eqtl_flist_file)
-            utils.delete_file_if_exists(eqtl_besd_file)
-            output_ld_ref_path = os.path.join(ld_ref_dir, ld_ref_file_pattern.format(chrom, gene_id))
-            if not os.path.exists(f'{output_ld_ref_path}.bim') or not os.path.exists(
-                    f'{output_ld_ref_path}.bed') or not os.path.exists(f'{output_ld_ref_path}.fam'):
-                logging.warning(f'No generated ld ref file for gene {gene_id}')
-                continue
-            # Adjust allele order and then set GWAS eaf to NA
-            utils.adjust_allele_order(candidate_gwas_df,
-                                      gwas_col_dict['effect_allele'],
-                                      gwas_col_dict['other_allele'],
-                                      gwas_col_dict['chrom'],
-                                      gwas_col_dict['position'],
-                                      candidate_eqtl_trait_df,
-                                      ref_df_chrom_col_name=eqtl_col_dict['chrom'],
-                                      ref_df_pos_col_name=eqtl_col_dict['position'],
-                                      ref_df_alt_allele_col_name=eqtl_col_dict['alt'],
-                                      ref_df_ref_allele_col_name=eqtl_col_dict['ref'],
-                                      gbeta_col_name=gwas_col_dict['beta'])
-            # Keep only SMR recognized COJO format columns
-            candidate_gwas_df['eaf'] = 'NA'
-            candidate_gwas_df = candidate_gwas_df[
-                [var_id_col_name, gwas_col_dict['effect_allele'],
-                 gwas_col_dict['other_allele'],
-                 'eaf', gwas_col_dict['beta'], gwas_col_dict['se'],
-                 gwas_col_dict['pvalue']]]
-            candidate_gwas_df['N'] = gwas_sample_size
-            gwas_col = {v: k for k, v in gwas_col_dict.items()}
-            # gwas file first col name has to be 'snp'
-            gwas_col.update({var_id_col_name: 'snp'})
-            candidate_gwas_df.rename(gwas_col, axis='columns', inplace=True)
-            # eQTL data does not have eaf column, set as NA
-            candidate_eqtl_trait_df['eaf'] = 'NA'
-            candidate_eqtl_trait_df = candidate_eqtl_trait_df[
-                [eqtl_col_dict['chrom'], var_id_col_name, eqtl_col_dict['position'],
-                 eqtl_col_dict['alt'],
-                 eqtl_col_dict['ref'], 'eaf', eqtl_col_dict['beta'], eqtl_col_dict['se'],
-                 eqtl_col_dict['pvalue']]]
-            eqtl_col = {v: k for k, v in eqtl_col_dict.items()}
-            # esd file first column name has to be 'Chr', rest col names can be arbitrary strings
-            eqtl_col.update({eqtl_col_dict['chrom']: 'Chr'})
-            candidate_eqtl_trait_df.rename(eqtl_col, axis='columns', inplace=True)
-            candidate_eqtl_trait_df.to_csv(eqtl_input_path, sep=const.output_spliter, header=True, index=False)
-            candidate_gwas_df.to_csv(gwas_input_path, sep=const.output_spliter, header=True, index=False)
-            genecode_df_idx = genecode_df[genecode_df['gene_id'] == gene_id].index
-            if len(genecode_df_idx) == 0:
-                continue
-            probe_bp = genecode_df.at[genecode_df_idx[0], 'position']
-            gene_name = genecode_df.at[genecode_df_idx[0], 'gene_name']
-            gene_strand = genecode_df.at[genecode_df_idx[0], 'strand']
-            with open(eqtl_flist_file, mode='w') as flist_ptr:
-                # flist file first column name has to be 'Chr', can have some extra cols
-                flist_ptr.write(f'Chr\tProbeID\tGeneticDistance\tProbeBp\tGene\tOrientation\tPathOfEsd\n')
-                flist_ptr.write(f'{chrom}\t{gene_id}\t0\t{probe_bp}\t{gene_name}\t{gene_strand}\t{eqtl_input_path}\n')
-            logging.info(f'Generating besd for gene {gene_id}')
-            os.system(f'smr --eqtl-flist {eqtl_flist_file} --make-besd --out {eqtl_besd_file}')
-            if not os.path.exists(f'{eqtl_besd_file}.besd') or not os.path.exists(
-                    f'{eqtl_besd_file}.esi') or not os.path.exists(f'{eqtl_besd_file}.epi'):
-                logging.warning(f'No generated besd file for gene {gene_id}')
-                continue
-            logging.debug(f'Running SMR on ',
-                          f'GWAS input file {gwas_input_path} and eQTL input file {eqtl_besd_file}',
-                          f' and LD ref file: {output_ld_ref_path}')
-            gene_out_result = os.path.join(output_dir, f'{gene_id}_out')
-            smr_cmd = f'smr --bfile {output_ld_ref_path} --gwas-summary {gwas_input_path} --beqtl-summary {eqtl_besd_file} --peqtl-smr {eqtl_p_thresh} --out {gene_out_result}'
-            cmd_params = '--diff-freq-prop 0.99 --cis-wind 200'
-            if smr_custom_params and smr_custom_params != '':
-                cmd_params += smr_custom_params
-            os.system(f'{smr_cmd} {cmd_params}')
-            gene_out_result_file = f'{gene_out_result}.smr'
-            if not utils.file_exists(gene_out_result_file):
-                logging.warning(f'SMR: {gene_out_result_file} does not exist')
-                continue
-            gene_result_df = pd.read_table(gene_out_result_file)
-            gene_result_df.rename(columns={'probeID': 'gene_id', 'ProbeChr': 'chrom'}, inplace=True)
-            gene_result_df.to_csv(gene_out_result_file, sep=const.output_spliter, header=True, index=False)
+            for _, row in eqtl_summary_df.iterrows():
+                if chrom != str(row.loc['chrom']):
+                    continue
+                eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
+                gene_id = utils.get_file_name(eqtl_gene_file)
+                eqtl_positions = ast.literal_eval(row.loc['positions'])
+                if len(eqtl_positions) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
+                    continue
+                if not pval_filtered_gwas_df[pval_filtered_gwas_df[gwas_col_dict['chrom']] == chrom].loc[
+                       :, gwas_col_dict['position']].isin(eqtl_positions).any():
+                    logging.debug(
+                        f'No intersection between gwas risk SNPs and eqtl risk SNPs for gene {gene_id}: {datetime.now()}')
+                    continue
+                # eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter, dtype=eqtl_type_dict)
+                # 这里过滤不过滤都一样, smr代码会自行进行过滤
+                # candidate_eqtl_trait_df = utils.filter_data_frame_by_p_value(eqtl_trait_df,
+                #                                                              global_config['p-value_threshold']['eqtl'],
+                #                                                              eqtl_col_dict['pvalue'], inplace=False)
+                # candidate_eqtl_trait_df = eqtl_trait_df.copy()
+                # del eqtl_trait_df
+                candidate_eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter,
+                                                        usecols=[
+                                                            eqtl_col_dict['chrom'],
+                                                            eqtl_col_dict['position'],
+                                                            eqtl_col_dict['alt'],
+                                                            eqtl_col_dict['ref'],
+                                                            eqtl_col_dict['beta'],
+                                                            eqtl_col_dict['se'],
+                                                            eqtl_col_dict['pvalue'],
+                                                            var_id_col_name],
+                                                        dtype={
+                                                            eqtl_col_dict['chrom']: 'category',
+                                                            eqtl_col_dict['position']: 'Int64',
+                                                            eqtl_col_dict['alt']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                                            eqtl_col_dict['ref']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                                        })
+                candidate_gwas_df = gwas_chrom_df.drop(index=gwas_chrom_df[
+                    ~gwas_chrom_df[var_id_col_name].isin(candidate_eqtl_trait_df[var_id_col_name])].index,
+                                       inplace=False)
+                if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
+                    continue
+                candidate_gwas_df.reset_index(drop=True, inplace=True)
+                utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name,
+                                              candidate_gwas_df, var_id_col_name)
+                if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
+                    continue
+                candidate_eqtl_trait_df.reset_index(drop=True, inplace=True)
+                gwas_input_path = os.path.join(input_dir, f'gwas_chr{chrom}_{gene_id}.tsv')
+                eqtl_input_path = os.path.join(input_dir, f'eqtl_chr{chrom}_{gene_id}.tsv')
+                matching_rpt_name = f'{utils.get_file_name(subset_vcf_file_pattern).format(chrom, gene_id)}.tsv'
+                vcf_matching_file = os.path.join(subset_vcf_dir, 'matching', matching_rpt_name)
+                if not os.path.exists(vcf_matching_file) or os.path.getsize(vcf_matching_file) <= 0:
+                    logging.warning(f'No generated vcf file for gene {gene_id}')
+                    continue
+                vcf_matching_df = pd.read_table(vcf_matching_file,
+                                                sep=const.column_spliter, header=0,
+                                                usecols=[eqtl_col_dict['position'], var_id_col_name],
+                                                dtype={eqtl_col_dict['position']: 'Int64'})
+                if len(vcf_matching_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
+                    continue
+                # Drop GWAS rows that does not have vcf records
+                # SNP in vcf_matching_df is subset of SNP in candidate_gwas_df, so it's fine to drop intersect rows here
+                utils.drop_non_intersect_rows(candidate_gwas_df, var_id_col_name, vcf_matching_df, var_id_col_name)
+                # Drop eQTL rows that does not have vcf records
+                utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name, vcf_matching_df,
+                                              var_id_col_name)
+                del vcf_matching_df
+                if len(candidate_gwas_df) < edp.SmrEqtlProcessor.SMR_MIN_SNP:
+                    continue
+                candidate_gwas_df.reset_index(drop=True, inplace=True)
+                candidate_eqtl_trait_df.reset_index(drop=True, inplace=True)
+                eqtl_flist_file = os.path.join(input_dir, f'{gene_id}_flist.txt')
+                eqtl_besd_file = os.path.join(input_dir, f'{gene_id}')
+                utils.delete_file_if_exists(eqtl_flist_file)
+                utils.delete_file_if_exists(eqtl_besd_file)
+                output_ld_ref_path = os.path.join(ld_ref_dir, ld_ref_file_pattern.format(chrom, gene_id))
+                if not os.path.exists(f'{output_ld_ref_path}.bim') or not os.path.exists(
+                        f'{output_ld_ref_path}.bed') or not os.path.exists(f'{output_ld_ref_path}.fam'):
+                    logging.warning(f'No generated ld ref file for gene {gene_id}')
+                    continue
+                # Adjust allele order and then set GWAS eaf to NA
+                utils.adjust_allele_order(candidate_gwas_df,
+                                          gwas_col_dict['effect_allele'],
+                                          gwas_col_dict['other_allele'],
+                                          gwas_col_dict['chrom'],
+                                          gwas_col_dict['position'],
+                                          candidate_eqtl_trait_df,
+                                          ref_df_chrom_col_name=eqtl_col_dict['chrom'],
+                                          ref_df_pos_col_name=eqtl_col_dict['position'],
+                                          ref_df_alt_allele_col_name=eqtl_col_dict['alt'],
+                                          ref_df_ref_allele_col_name=eqtl_col_dict['ref'],
+                                          gbeta_col_name=gwas_col_dict['beta'])
+                # Keep only SMR recognized COJO format columns
+                candidate_gwas_df['eaf'] = 'NA'
+                candidate_gwas_df = candidate_gwas_df[
+                    [var_id_col_name, gwas_col_dict['effect_allele'],
+                     gwas_col_dict['other_allele'],
+                     'eaf', gwas_col_dict['beta'], gwas_col_dict['se'],
+                     gwas_col_dict['pvalue']]]
+                candidate_gwas_df['N'] = gwas_sample_size
+                gwas_col = {v: k for k, v in gwas_col_dict.items()}
+                # gwas file first col name has to be 'snp'
+                gwas_col.update({var_id_col_name: 'snp'})
+                candidate_gwas_df.rename(gwas_col, axis='columns', inplace=True)
+                candidate_gwas_df.to_csv(gwas_input_path, sep=const.output_spliter, header=True, index=False)
+                del candidate_gwas_df
+                # eQTL data does not have eaf column, set as NA
+                candidate_eqtl_trait_df['eaf'] = 'NA'
+                candidate_eqtl_trait_df = candidate_eqtl_trait_df[
+                    [eqtl_col_dict['chrom'], var_id_col_name, eqtl_col_dict['position'],
+                     eqtl_col_dict['alt'],
+                     eqtl_col_dict['ref'], 'eaf', eqtl_col_dict['beta'], eqtl_col_dict['se'],
+                     eqtl_col_dict['pvalue']]]
+                eqtl_col = {v: k for k, v in eqtl_col_dict.items()}
+                # esd file first column name has to be 'Chr', rest col names can be arbitrary strings
+                eqtl_col.update({eqtl_col_dict['chrom']: 'Chr'})
+                candidate_eqtl_trait_df.rename(eqtl_col, axis='columns', inplace=True)
+                candidate_eqtl_trait_df.to_csv(eqtl_input_path, sep=const.output_spliter, header=True, index=False)
+                del candidate_eqtl_trait_df
+                genecode_df_idx = genecode_df[genecode_df['gene_id'] == gene_id].index
+                if len(genecode_df_idx) == 0:
+                    continue
+                probe_bp = genecode_df.at[genecode_df_idx[0], 'position']
+                gene_name = genecode_df.at[genecode_df_idx[0], 'gene_name']
+                gene_strand = genecode_df.at[genecode_df_idx[0], 'strand']
+                with open(eqtl_flist_file, mode='w') as flist_ptr:
+                    # flist file first column name has to be 'Chr', can have some extra cols
+                    flist_ptr.write(f'Chr\tProbeID\tGeneticDistance\tProbeBp\tGene\tOrientation\tPathOfEsd\n')
+                    flist_ptr.write(
+                        f'{chrom}\t{gene_id}\t0\t{probe_bp}\t{gene_name}\t{gene_strand}\t{eqtl_input_path}\n')
+                logging.info(f'Generating besd for gene {gene_id}')
+                os.system(f'smr --eqtl-flist {eqtl_flist_file} --make-besd --out {eqtl_besd_file}')
+                if not os.path.exists(f'{eqtl_besd_file}.besd') or not os.path.exists(
+                        f'{eqtl_besd_file}.esi') or not os.path.exists(f'{eqtl_besd_file}.epi'):
+                    logging.warning(f'No generated besd file for gene {gene_id}')
+                    continue
+                logging.debug(f'Running SMR on ',
+                              f'GWAS input file {gwas_input_path} and eQTL input file {eqtl_besd_file}',
+                              f' and LD ref file: {output_ld_ref_path}')
+                gene_out_result = os.path.join(output_dir, f'{gene_id}_out')
+                smr_cmd = f'smr --bfile {output_ld_ref_path} ' \
+                          f'--gwas-summary {gwas_input_path} ' \
+                          f'--beqtl-summary {eqtl_besd_file} ' \
+                          f'--peqtl-smr {eqtl_p_thresh} ' \
+                          f'--out {gene_out_result}'
+                cmd_params = '--diff-freq-prop 0.99 --cis-wind 200'
+                if smr_custom_params and smr_custom_params != '':
+                    cmd_params += smr_custom_params
+                os.system(f'{smr_cmd} {cmd_params}')
+                gene_out_result_file = f'{gene_out_result}.smr'
+                if not utils.file_exists(gene_out_result_file):
+                    logging.warning(f'SMR: {gene_out_result_file} does not exist')
+                    continue
+                gene_result_df = pd.read_table(gene_out_result_file)
+                gene_result_df.rename(columns={'probeID': 'gene_id', 'ProbeChr': 'chrom'}, inplace=True)
+                gene_result_df.to_csv(gene_out_result_file, sep=const.output_spliter, header=True, index=False)
         output_file = self.get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
         self.__analyze_result(output_dir, output_file)
@@ -223,15 +258,18 @@ class Smr:
     def __prepare_genecode(self, genecode_file):
         genecode_df = pr.read_gtf(genecode_file, as_df=True)
         genecode_df.drop(labels=genecode_df[genecode_df['Feature'] != 'gene'].index, inplace=True)
-        genecode_df = genecode_df[['Chromosome', 'Start', 'End', 'Strand', 'gene_id', 'gene_name']]
-        genecode_df.rename({'Chromosome': 'chrom', 'Start': 'start', 'End': 'end', 'Strand': 'strand'},
+        genecode_df.reset_index(drop=True, inplace=True)
+        genecode_df.drop(columns=[col for col in genecode_df if
+                                  col not in ['Start', 'End', 'Strand', 'gene_id', 'gene_name']],
+                         inplace=True)
+        genecode_df.rename({'Start': 'start', 'End': 'end', 'Strand': 'strand'},
                            axis='columns', inplace=True)
         gene_id_df = genecode_df['gene_id'].str.split('.', n=1, expand=True)
         genecode_df.loc[:, 'gene_id'] = gene_id_df[0]
-        genecode_df.loc[:, 'chrom'] = genecode_df['chrom'].str.strip('chr')
-        genecode_df.loc[:, 'position'] = '-1'
-        for indx, row in genecode_df.iterrows():
-            genecode_df.at[indx, 'position'] = row.loc['start'] if row.loc['strand'] == '+' else row.loc['end']
+        genecode_df.loc[:, 'position'] = pd.NA
+        genecode_df['position'].mask(genecode_df['strand'] == '+', genecode_df['start'], inplace=True)
+        genecode_df['position'].mask(genecode_df['position'].isna(), genecode_df['end'], inplace=True)
+        genecode_df.drop(columns=['start', 'end'], inplace=True)
         return genecode_df
 
     def __analyze_result(self, output_dir,

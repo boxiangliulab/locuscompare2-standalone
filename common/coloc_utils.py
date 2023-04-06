@@ -430,6 +430,7 @@ def adjust_allele_order(gwas_df, ea_col_name, oa_col_name, gwas_chrom_col_name, 
                         ref_df, ref_df_chrom_col_name='chromosome', ref_df_pos_col_name='position',
                         ref_df_alt_allele_col_name='alt', ref_df_ref_allele_col_name='ref',
                         gbeta_col_name=None, geaf_col_name=None, gz_col_name=None,
+                        drop_src_df_non_intersect_items=True,
                         drop_ref_df_non_intersect_items=True):
     """
         Adjust gwas_df beta/zscore sign and eaf value according a reference df allele order,
@@ -502,7 +503,8 @@ def adjust_allele_order(gwas_df, ea_col_name, oa_col_name, gwas_chrom_col_name, 
         gwas_df.loc[eq_flipped_list, gz_col_name] = - gwas_df.loc[eq_flipped_list, gz_col_name]
     if geaf_col_name is not None:
         gwas_df.loc[eq_flipped_list, geaf_col_name] = 1 - gwas_df.loc[eq_flipped_list, geaf_col_name]
-    gwas_df.drop(index=gwas_df[~eq_bool_series].index, inplace=True)
+    if drop_src_df_non_intersect_items:
+        gwas_df.drop(index=gwas_df[~eq_bool_series].index, inplace=True)
     if drop_ref_df_non_intersect_items:
         ref_df_inter_bool_series = ref_df[ref_df_chrom_col_name].isin(gwas_df[gwas_chrom_col_name]) & ref_df[
             ref_df_pos_col_name].isin(gwas_df[gwas_pos_col_name])

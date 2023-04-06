@@ -112,6 +112,7 @@ class FastenlocGwasProcessor:
                 # torus input file include columns variant_id、loc、zscore
                 df_input_torus.to_csv(output_torus_input_file, columns=['variant_id', 'loc', 'zscore'],
                                       sep=const.output_spliter, mode=mode, header=header, index=False)
+                del df_gwas_list, df_input_torus
         logging.info(f'prepare fastenloc gwas file all columns duration {datetime.now() - start_time}')
         os.system(shell_compress_file.format(output_torus_input_file))
         #

@@ -128,16 +128,7 @@ def plot_roc_curve(true_y, y_prob, tool):
     plt.legend(loc='lower right')
 
 
-def plot_all_roc(generated_file_path,
-                 h1_coloc_rpt, sec_coloc_rpt,
-                 h1_smr_rpt, sec_smr_rpt,
-                 h1_jlim_rpt, sec_jlim_rpt,
-                 h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-                 h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-                 h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-                 h1_twas_rpt=None, sec_twas_rpt=None,
-                 sec_causal_type=1,
-                 output_figure_path=None):
+def plot_all_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
     plt.figure().clear()
     xlocs, xlabels = plt.xticks()
     for idx, loc in enumerate(xlocs):
@@ -148,31 +139,14 @@ def plot_all_roc(generated_file_path,
     plt.ylabel('Sensitivity')
     plt.xlabel('Specificity')
     plt.plot([0, 1], [0, 1], color='grey', linewidth=1, linestyle='-')
-    if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
-                        rpt_prob_col_name='overall_H4', rpt_pval_col_name=None,
-                        tool='coloc')
-    if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
-    if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
-    if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                        rpt_prob_col_name='LCP', rpt_pval_col_name=None,
-                        tool='fastenloc')
-    if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
-    if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                        rpt_prob_col_name='clpp', rpt_pval_col_name=None,
-                        tool='ecaviar')
-    if h1_twas_rpt is not None and Path(h1_twas_rpt).exists() and os.path.getsize(h1_twas_rpt) > 0:
-        plot_single_roc(generated_file_path, h1_twas_rpt, sec_twas_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='TWAS.P',
-                        tool='twas')
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        if h1_rpt is not None and Path(h1_rpt).exists() and os.path.getsize(h1_rpt) > 0:
+            plot_single_roc(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                            rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                            rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                            tool=tool)
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
@@ -185,36 +159,18 @@ def plot_single_prc(generated_list, h1_report, sec_report, sec_causal_type,
     plot_prc_curve(result_df[is_positive_col_name], result_df[prob_col_name], tool=tool)
 
 
-def plot_all_prc(generated_file_path,
-                 h1_coloc_rpt, sec_coloc_rpt,
-                 h1_smr_rpt, sec_smr_rpt,
-                 h1_jlim_rpt, sec_jlim_rpt,
-                 h1_fastenloc_rpt=None, sec_fastenloc_rpt=None,
-                 h1_predixcan_rpt=None, sec_predixcan_rpt=None,
-                 h1_ecaviar_rpt=None, sec_ecaviar_rpt=None,
-                 sec_causal_type=1,
-                 output_figure_path=None):
+def plot_all_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
     plt.figure().clear()
     plt.ylabel('Precision')
     plt.xlabel('Recall')
-    if h1_coloc_rpt is not None and Path(h1_coloc_rpt).exists() and os.path.getsize(h1_coloc_rpt) > 0:
-        plot_single_prc(generated_file_path, h1_coloc_rpt, sec_coloc_rpt, sec_causal_type,
-                        rpt_prob_col_name='overall_H4', rpt_pval_col_name=None, tool='coloc')
-    if h1_smr_rpt is not None and Path(h1_smr_rpt).exists() and os.path.getsize(h1_smr_rpt) > 0:
-        plot_single_prc(generated_file_path, h1_smr_rpt, sec_smr_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='p_SMR', tool='smr')
-    if h1_jlim_rpt is not None and Path(h1_jlim_rpt).exists() and os.path.getsize(h1_jlim_rpt) > 0:
-        plot_single_prc(generated_file_path, h1_jlim_rpt, sec_jlim_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='jlim')
-    if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
-        plot_single_prc(generated_file_path, h1_fastenloc_rpt, sec_fastenloc_rpt, sec_causal_type,
-                        rpt_prob_col_name='LCP', rpt_pval_col_name=None, tool='fastenloc')
-    if h1_predixcan_rpt is not None and Path(h1_predixcan_rpt).exists() and os.path.getsize(h1_predixcan_rpt) > 0:
-        plot_single_prc(generated_file_path, h1_predixcan_rpt, sec_predixcan_rpt, sec_causal_type,
-                        rpt_prob_col_name=None, rpt_pval_col_name='pvalue', tool='predixcan')
-    if h1_ecaviar_rpt is not None and Path(h1_ecaviar_rpt).exists() and os.path.getsize(h1_ecaviar_rpt) > 0:
-        plot_single_prc(generated_file_path, h1_ecaviar_rpt, sec_ecaviar_rpt, sec_causal_type,
-                        rpt_prob_col_name='clpp', rpt_pval_col_name=None, tool='eCaviar')
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        if h1_rpt is not None and Path(h1_rpt).exists() and os.path.getsize(h1_rpt) > 0:
+            plot_single_prc(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                            rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                            rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                            tool=tool)
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
@@ -422,6 +378,60 @@ def plot_all_against_ensemble_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
     # plt.show()
 
 
+def plot_all_against_ensemble_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1,
+                                  output_figure_path=None,
+                                  output_dir=''):
+    plt.figure().clear()
+    plt.ylabel('Precision')
+    plt.xlabel('Recall')
+    rpt_obj = {}
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        if h1_rpt is not None and Path(h1_rpt).exists() and os.path.getsize(h1_rpt) > 0:
+            tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                        rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                        rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                        tool=tool)
+            if tool_df.empty:
+                continue
+            plot_prc_curve(tool_df[is_positive_col_name], tool_df[prob_col_name], tool=tool)
+            tool_output = os.path.join(output_dir, f'{tool}_result.tsv')
+            tool_df.to_csv(tool_output, sep='\t', header=True, index=False)
+            rpt_obj[tool] = tool_output
+    if len(rpt_obj) == 0:
+        print('all report is empty, nothing to do')
+        return
+    std_df = retrieve_std_df(generated_file_path, sec_causal_type)
+    # --------
+    # rra_geo_output_file = os.path.join(output_dir, 'rra_geo.tsv')
+    # rra.run_ranking(output_file_path=rra_geo_output_file, rpt=rpt_obj, sample_size=191647, method='GEO')
+    # rgeo_df = pd.read_table(rra_geo_output_file, usecols=[GENE_ID_COL_NAME, 'geo_p_value'])
+    # # Convert rra p_value to probability. TODO this method is not good
+    # rgeo_df[prob_col_name] = 1 - rgeo_df['geo_p_value']
+    # rgeo_df = pd.merge(left=rgeo_df, right=std_df,
+    #                    left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+    #                    how='left')
+    # tp_na_bool_series = rgeo_df[is_positive_col_name].isna()
+    # rgeo_df.loc[rgeo_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    # plot_prc_curve(rgeo_df[is_positive_col_name], rgeo_df[prob_col_name], tool='rGEO')
+    # --------intact_expit
+    intact_expit_output_file = os.path.join(output_dir, 'intact_expit.tsv')
+    intact.run_ranking(rpt=rpt_obj, output_file_path=intact_expit_output_file, prior_fun='expit')
+    intact_expit_df = pd.read_table(intact_expit_output_file, usecols=[GENE_ID_COL_NAME, 'intact_probability'])
+    intact_expit_df = pd.merge(left=intact_expit_df, right=std_df,
+                               left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                               how='left')
+    tp_na_bool_series = intact_expit_df[is_positive_col_name].isna()
+    intact_expit_df.loc[intact_expit_df[tp_na_bool_series].index, is_positive_col_name] = 0
+    intact_expit_df.loc[intact_expit_df['intact_probability'].isna(), 'intact_probability'] = 0
+    plot_prc_curve(intact_expit_df[is_positive_col_name], intact_expit_df['intact_probability'], tool='intact expit')
+    # --------
+    if output_figure_path is not None:
+        plt.savefig(output_figure_path)
+    # plt.show()
+
+
 def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
     df_list = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
@@ -538,18 +548,36 @@ def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, ou
         plt.savefig(output_figure_path)
 
 
-# def calc_threshold(generated_file_path=None, h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1):
-#     tool_thresholds = {}
-#     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
-#         h1_rpt = h1_rpt_obj.get(tool)
-#         sec_rpt = sec_rpt_obj.get(tool)
-#         tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
-#                                     rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
-#                                     rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
-#                                     tool=tool)
-#         fpr, tpr, thresholds = roc_curve(tool_df[is_positive_col_name], tool_df[prob_col_name])
-#         tool_thresholds[tool] = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
-#     return tool_thresholds
+def calc_max_tpr_minus_fpr_threshold(generated_file_path=None, h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1):
+    tool_thresholds = {}
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                    rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                    rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                    tool=tool)
+        fpr, tpr, thresholds = roc_curve(tool_df[is_positive_col_name], tool_df[prob_col_name])
+        prob_thresh = pd.Series(thresholds).loc[pd.Series(tpr - fpr).idxmax()]
+        tool_thresholds[tool] = prob_thresh if sig_type == RESULT_TYPE_PROB else 1 - prob_thresh
+    return tool_thresholds
+
+
+def calc_prc_pct_threshold(generated_file_path=None,
+                           h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1, prc_pct=0.95):
+    tool_thresholds = {}
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                    rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                    rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                    tool=tool)
+        precision, recall, thresholds = precision_recall_curve(tool_df[is_positive_col_name], tool_df[prob_col_name])
+        precision = precision[:-1].copy()
+        prob_thresh = pd.Series(thresholds).loc[pd.Series(precision - prc_pct).abs().idxmin()]
+        tool_thresholds[tool] = prob_thresh if sig_type == RESULT_TYPE_PROB else 1 - prob_thresh
+    return tool_thresholds
 
 
 def plot_single_venn(
@@ -856,8 +884,8 @@ if __name__ == '__main__':
                         help='H1 coloc result file')
     parser.add_argument('--h1_smr_rpt', dest='h1_smr_rpt',
                         help='H1 smr result file')
-    parser.add_argument('--h1_jlim_rpt', dest='h1_jlim_rpt',
-                        help='H1 jlim result file')
+    # parser.add_argument('--h1_jlim_rpt', dest='h1_jlim_rpt',
+    #                     help='H1 jlim result file')
     parser.add_argument('--h1_fastenloc_rpt', dest='h1_fastenloc_rpt',
                         help='H1 fastenloc result file')
     parser.add_argument('--h1_predixcan_rpt', dest='h1_predixcan_rpt',
@@ -871,8 +899,8 @@ if __name__ == '__main__':
                         help='H0/H2 coloc result file')
     parser.add_argument('--sec_smr_rpt', dest='sec_smr_rpt',
                         help='H0/H2 smr result file')
-    parser.add_argument('--sec_jlim_rpt', dest='sec_jlim_rpt',
-                        help='H0/H2 jlim result file')
+    # parser.add_argument('--sec_jlim_rpt', dest='sec_jlim_rpt',
+    #                     help='H0/H2 jlim result file')
     parser.add_argument('--sec_fastenloc_rpt', dest='sec_fastenloc_rpt',
                         help='H0/H2 fastenloc result file')
     parser.add_argument('--sec_predixcan_rpt', dest='sec_predixcan_rpt',
@@ -890,93 +918,31 @@ if __name__ == '__main__':
                         help='PRC figure output file path')
     args = parser.parse_args()
     print(f'Accepted args:\n {args}')
-    plot_all_roc(args.generated_file, args.h1_coloc_rpt, args.sec_coloc_rpt, args.h1_smr_rpt, args.sec_smr_rpt,
-                 args.h1_jlim_rpt, args.sec_jlim_rpt, args.h1_fastenloc_rpt, args.sec_fastenloc_rpt,
-                 args.h1_predixcan_rpt, args.sec_predixcan_rpt, args.h1_ecaviar_rpt, args.sec_ecaviar_rpt,
+    plot_all_roc(args.generated_file,
+                 {'coloc': args.h1_coloc_rpt,
+                  'smr': args.h1_smr_rpt,
+                  'fastenloc': args.h1_fastenloc_rpt,
+                  'predixcan': args.h1_predixcan_rpt,
+                  'ecaviar': args.h1_ecaviar_rpt,
+                  'twas': args.h1_twas_rpt},
+                 {'coloc': args.sec_coloc_rpt,
+                  'smr': args.sec_smr_rpt,
+                  'fastenloc': args.sec_fastenloc_rpt,
+                  'predixcan': args.sec_predixcan_rpt,
+                  'ecaviar': args.sec_ecaviar_rpt,
+                  'twas': args.sec_twas_rpt},
                  args.sec_causal_type, args.roc_output_figure_path)
-    plot_all_prc(args.generated_file, args.h1_coloc_rpt, args.sec_coloc_rpt, args.h1_smr_rpt, args.sec_smr_rpt,
-                 args.h1_jlim_rpt, args.sec_jlim_rpt, args.h1_fastenloc_rpt, args.sec_fastenloc_rpt,
-                 args.h1_predixcan_rpt, args.sec_predixcan_rpt, args.h1_ecaviar_rpt, args.sec_ecaviar_rpt,
+    plot_all_prc(args.generated_file,
+                 {'coloc': args.h1_coloc_rpt,
+                  'smr': args.h1_smr_rpt,
+                  'fastenloc': args.h1_fastenloc_rpt,
+                  'predixcan': args.h1_predixcan_rpt,
+                  'ecaviar': args.h1_ecaviar_rpt,
+                  'twas': args.h1_twas_rpt},
+                 {'coloc': args.sec_coloc_rpt,
+                  'smr': args.sec_smr_rpt,
+                  'fastenloc': args.sec_fastenloc_rpt,
+                  'predixcan': args.sec_predixcan_rpt,
+                  'ecaviar': args.sec_ecaviar_rpt,
+                  'twas': args.sec_twas_rpt},
                  args.sec_causal_type, args.prc_output_figure_path)
-
-    # ============testing============
-    # _output_dir = '/Users/admin/Downloads/coloc_results'
-    #
-    # _generated_file = '/Users/admin/Downloads/coloc_results/generated_20221102031352.tsv'
-    # _h1_coloc_rpt = '/Users/admin/Downloads/coloc_results/h1/coloc_output_20221212140605.tsv.gz'
-    # if _h1_coloc_rpt is not None and (_h1_coloc_rpt == '' or _h1_coloc_rpt.lower() == "none"):
-    #     _h1_coloc_rpt = None
-    #
-    # _h1_smr_rpt = '/Users/admin/Downloads/coloc_results/h1/smr_output_20221212141459.tsv.gz'
-    # if _h1_smr_rpt is not None and (_h1_smr_rpt == '' or _h1_smr_rpt.lower() == "none"):
-    #     _h1_smr_rpt = None
-    #
-    # _h1_jlim_rpt = None
-    # if _h1_jlim_rpt is not None and (_h1_jlim_rpt == '' or _h1_jlim_rpt.lower() == "none"):
-    #     _h1_jlim_rpt = None
-    #
-    # _h1_fastenloc_rpt = '/Users/admin/Downloads/coloc_results/h1/fastenloc_output_20221212153042.tsv.gz'
-    # if _h1_fastenloc_rpt is not None and (_h1_fastenloc_rpt == '' or _h1_fastenloc_rpt.lower() == "none"):
-    #     _h1_fastenloc_rpt = None
-    #
-    # _h1_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h1/predixcan_output_20221212140610.tsv.gz'
-    # if _h1_predixcan_rpt is not None and (_h1_predixcan_rpt == '' or _h1_predixcan_rpt.lower() == "none"):
-    #     _h1_predixcan_rpt = None
-    #
-    # _h1_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h1/ecaviar_output_20221212141418.tsv.gz'
-    # if _h1_ecaviar_rpt is not None and (_h1_ecaviar_rpt == '' or _h1_ecaviar_rpt.lower() == "none"):
-    #     _h1_ecaviar_rpt = None
-    #
-    # _h1_twas_rpt = '/Users/admin/Downloads/coloc_results/h1/twas_output_20221223222006.tsv.gz'
-    # if _h1_twas_rpt is not None and (_h1_twas_rpt == '' or _h1_twas_rpt.lower() == "none"):
-    #     _h1_twas_rpt = None
-    # ----------------
-    # _sec_coloc_rpt = '/Users/admin/Downloads/coloc_results/h2004/coloc_output_20221212141510.tsv.gz'
-    # _sec_smr_rpt = '/Users/admin/Downloads/coloc_results/h2004/smr_output_20221212142103.tsv.gz'
-    # _sec_jlim_rpt = None
-    # _sec_fasatenloc_rpt = '/Users/admin/Downloads/coloc_results/h2004/fastenloc_output_20221212153046.tsv.gz'
-    # _sec_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h2004/predixcan_output_20221212141515.tsv.gz'
-    # _sec_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h2004/ecaviar_output_20221212141934.tsv.gz'
-    # _sec_twas_rpt = '/Users/admin/Downloads/coloc_results/h2004/twas_output_20221223222921.tsv.gz'
-    # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
-    # _sec_causal_type = 2
-    # _roc_figure_ensemble_path = '/Users/admin/Downloads/coloc_results/ROC_H1_H2_004.png'
-    #
-    # ----------------
-    # ----------------
-    # _sec_coloc_rpt = '/Users/admin/Downloads/coloc_results/h20407/coloc_output_20221212142112.tsv.gz'
-    # _sec_smr_rpt = '/Users/admin/Downloads/coloc_results/h20407/smr_output_20221212142748.tsv.gz'
-    # _sec_jlim_rpt = None
-    # _sec_fasatenloc_rpt = '/Users/admin/Downloads/coloc_results/h20407/fastenloc_output_20221212153049.tsv.gz'
-    # _sec_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h20407/predixcan_output_20221212142115.tsv.gz'
-    # _sec_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h20407/ecaviar_output_20221212142707.tsv.gz'
-    # _sec_twas_rpt = '/Users/admin/Downloads/coloc_results/h20407/twas_output_20221223223832.tsv.gz'
-    # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
-    # _sec_causal_type = 3
-    #
-    # _roc_figure_ensemble_path = '/Users/admin/Downloads/coloc_results/ROC_H1_H2_0407.png'
-    # ----------------
-    # ----------------
-    # _sec_coloc_rpt = '/Users/admin/Downloads/coloc_results/h20709/coloc_output_20221212142756.tsv.gz'
-    # _sec_smr_rpt = '/Users/admin/Downloads/coloc_results/h20709/smr_output_20221212143433.tsv.gz'
-    # _sec_jlim_rpt = None
-    # _sec_fasatenloc_rpt = '/Users/admin/Downloads/coloc_results/h20709/fastenloc_output_20221212153052.tsv.gz'
-    # _sec_predixcan_rpt = '/Users/admin/Downloads/coloc_results/h20709/predixcan_output_20221212142800.tsv.gz'
-    # _sec_ecaviar_rpt = '/Users/admin/Downloads/coloc_results/h20709/ecaviar_output_20221212143404.tsv.gz'
-    # _sec_twas_rpt = '/Users/admin/Downloads/coloc_results/h20709/twas_output_20221223224746.tsv.gz'
-    # # H0/H2 causal type: 0:H0; 1:H1; 2:H2 r2<=0.4; 3:H2 0.4<r2<=0.7; 4:H2 0.7<r2<=0.9
-    # _sec_causal_type = 4
-    #
-    # _roc_figure_ensemble_path = '/Users/admin/Downloads/coloc_results/ROC_H1_H2_0709.png'
-    # ----------------
-    #
-    # plot_all_against_ensemble_roc(_generated_file,
-    #                               _h1_coloc_rpt, _sec_coloc_rpt,
-    #                               _h1_smr_rpt, _sec_smr_rpt,
-    #                               _h1_jlim_rpt, _sec_jlim_rpt,
-    #                               h1_fastenloc_rpt=_h1_fastenloc_rpt, sec_fastenloc_rpt=_sec_fasatenloc_rpt,
-    #                               h1_predixcan_rpt=_h1_predixcan_rpt, sec_predixcan_rpt=_sec_predixcan_rpt,
-    #                               h1_ecaviar_rpt=_h1_ecaviar_rpt, sec_ecaviar_rpt=_sec_ecaviar_rpt,
-    #                               h1_twas_rpt=_h1_twas_rpt, sec_twas_rpt=_sec_twas_rpt,
-    #                               sec_causal_type=_sec_causal_type,
-    #                               output_figure_path=_roc_figure_ensemble_path, output_dir=_output_dir)

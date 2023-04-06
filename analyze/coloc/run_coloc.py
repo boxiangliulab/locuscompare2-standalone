@@ -34,9 +34,18 @@ class Coloc:
             eqtl_type=None,
             parallel=False):
         gwas_type_dict = {gwas_col_dict['chrom']: 'category',
-                          gwas_col_dict['position']: 'Int64'}
+                          gwas_col_dict['position']: 'Int64',
+                          gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                          gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                          'ref': pd.CategoricalDtype(const.SNP_ALLELE),
+                          'alt': pd.CategoricalDtype(const.SNP_ALLELE)
+                          }
         eqtl_type_dict = {eqtl_col_dict['chrom']: 'category',
-                          eqtl_col_dict['position']: 'Int64'}
+                          eqtl_col_dict['position']: 'Int64',
+                          eqtl_col_dict['alt']: pd.CategoricalDtype(const.SNP_ALLELE),
+                          eqtl_col_dict['ref']: pd.CategoricalDtype(const.SNP_ALLELE),
+                          eqtl_col_dict['gene_id']: 'category'
+                          }
         start_time = datetime.now()
         Path(working_dir).mkdir(parents=True, exist_ok=True)
         logging.info(f'run_coloc start at: {start_time}')
@@ -62,7 +71,7 @@ class Coloc:
         _p1, _p2, _p12 = self.__get_coloc_run_params()
 
         if parallel:
-            with ThreadPoolExecutor(max_workers=20) as executor:
+            with ThreadPoolExecutor(max_workers=10) as executor:
                 futures = []
                 for _, row in eqtl_summary_df.iterrows():
                     chrom = str(row.loc['chrom'])
@@ -110,7 +119,17 @@ class Coloc:
                      var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                      eqtl_sample_size, gwas_type, eqtl_type, p1, p2, p12):
         range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
-        candidate_gwas_df = pd.read_table(gwas_range_file, sep=const.column_spliter, dtype=gwas_type_dict)
+        candidate_gwas_df = pd.read_table(gwas_range_file, sep=const.column_spliter,
+                                          usecols=[
+                                              var_id_col_name,
+                                              gwas_col_dict['chrom'],
+                                              gwas_col_dict['position'],
+                                              gwas_col_dict['effect_allele'],
+                                              gwas_col_dict['other_allele'],
+                                              gwas_col_dict['beta'],
+                                              gwas_col_dict['se'],
+                                              gwas_col_dict['pvalue']],
+                                          dtype=gwas_type_dict)
         if len(candidate_gwas_df) <= 1:
             return
         if not candidate_gwas_df.loc[:, gwas_col_dict['position']].isin(
@@ -118,14 +137,25 @@ class Coloc:
             logging.debug(
                 f'No intersection between gwas {gwas_range_file} and eqtl {eqtl_gene_file}: {datetime.now()}')
             return
-        eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter, dtype=eqtl_type_dict)
-        candidate_eqtl_trait_df = eqtl_trait_df[
-            eqtl_trait_df[var_id_col_name].isin(candidate_gwas_df[var_id_col_name])].copy()
-        del eqtl_trait_df
-        if len(candidate_eqtl_trait_df) <= 1:
+        eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter,
+                                      usecols=[
+                                          var_id_col_name,
+                                          eqtl_col_dict['chrom'],
+                                          eqtl_col_dict['position'],
+                                          eqtl_col_dict['alt'],
+                                          eqtl_col_dict['ref'],
+                                          eqtl_col_dict['beta'],
+                                          eqtl_col_dict['se'],
+                                          eqtl_col_dict['pvalue'],
+                                          eqtl_col_dict['gene_id'],
+                                          eqtl_col_dict['maf']],
+                                      dtype=eqtl_type_dict)
+        eqtl_trait_df.drop(
+            index=eqtl_trait_df[~eqtl_trait_df[var_id_col_name].isin(candidate_gwas_df[var_id_col_name])].index,
+            inplace=True)
+        if len(eqtl_trait_df) <= 1:
             return
-        utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name,
-                                      candidate_gwas_df, var_id_col_name)
+        utils.drop_non_intersect_rows(eqtl_trait_df, var_id_col_name, candidate_gwas_df, var_id_col_name)
         if len(candidate_gwas_df) <= 1:
             return
         coloc_gwas_input_path = os.path.join(coloc_input_dir, f'gwas_{gene_id}_{range_lead_snp}.tsv.gz')
@@ -148,18 +178,20 @@ class Coloc:
         # utils.drop_non_intersect_rows(candidate_gwas_df, var_id_col_name, vcf_matching_df,
         #                               var_id_col_name)
         # # Drop eQTL rows that does not have vcf records
-        # utils.drop_non_intersect_rows(candidate_eqtl_trait_df, var_id_col_name, vcf_matching_df,
+        # utils.drop_non_intersect_rows(eqtl_trait_df, var_id_col_name, vcf_matching_df,
         #                               var_id_col_name)
         # del vcf_matching_df
         # if len(candidate_gwas_df) <= 1:
         #     continue
         # Adjust eqtl beta sign according to gwas allele order
+        candidate_gwas_df.reset_index(drop=True, inplace=True)
+        eqtl_trait_df.reset_index(drop=True, inplace=True)
         utils.adjust_allele_order(candidate_gwas_df,
                                   gwas_col_dict['effect_allele'],
                                   gwas_col_dict['other_allele'],
                                   gwas_col_dict['chrom'],
                                   gwas_col_dict['position'],
-                                  candidate_eqtl_trait_df,
+                                  eqtl_trait_df,
                                   ref_df_chrom_col_name=eqtl_col_dict['chrom'],
                                   ref_df_pos_col_name=eqtl_col_dict['position'],
                                   ref_df_alt_allele_col_name=eqtl_col_dict['alt'],
@@ -183,17 +215,16 @@ class Coloc:
         # Reverse GWAS&eQTL column mapping key-value and pass to R so that dataframe in R has fixed column names
         if ('varbeta' not in eqtl_col_dict.keys() or eqtl_col_dict.get('varbeta') is None) and (
                 'se' in eqtl_col_dict.keys() and eqtl_col_dict.get('se') is not None):
-            candidate_eqtl_trait_df['varbeta'] = candidate_eqtl_trait_df[eqtl_col_dict['se']] ** 2
-        candidate_eqtl_trait_df.rename({v: k for k, v in eqtl_col_dict.items()}, axis='columns',
-                                       inplace=True)
+            eqtl_trait_df['varbeta'] = eqtl_trait_df[eqtl_col_dict['se']] ** 2
+        eqtl_trait_df.rename({v: k for k, v in eqtl_col_dict.items()}, axis='columns', inplace=True)
         if ('varbeta' not in gwas_col_dict.keys() or gwas_col_dict.get('varbeta') is None) and (
                 'se' in gwas_col_dict.keys() and gwas_col_dict.get('se') is not None):
             candidate_gwas_df['varbeta'] = candidate_gwas_df[gwas_col_dict['se']] ** 2
-        candidate_gwas_df.rename({v: k for k, v in gwas_col_dict.items()}, axis='columns',
-                                 inplace=True)
-        candidate_eqtl_trait_df.to_csv(coloc_eqtl_input_path, sep=const.output_spliter, header=True,
-                                       index=False)
+        candidate_gwas_df.rename({v: k for k, v in gwas_col_dict.items()}, axis='columns', inplace=True)
+        eqtl_trait_df.to_csv(coloc_eqtl_input_path, sep=const.output_spliter, header=True, index=False)
+        del eqtl_trait_df
         candidate_gwas_df.to_csv(coloc_gwas_input_path, sep=const.output_spliter, header=True, index=False)
+        del candidate_gwas_df
 
         logging.debug(f'Running coloc for significant SNP {range_lead_snp} on ',
                       f'GWAS input file {coloc_gwas_input_path} and eQTL input file {coloc_eqtl_input_path}')

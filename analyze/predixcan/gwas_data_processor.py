@@ -27,6 +27,9 @@ class PredixcanGwasProcessor:
         output_processed_file = self.__get_output_file(working_dir)
         utils.delete_file_if_exists(output_processed_file)
         with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter,
+                           usecols=[gwas_col_dict['chrom'], gwas_col_dict['position'], gwas_col_dict['effect_allele'],
+                                    gwas_col_dict['other_allele'], gwas_col_dict['beta'], gwas_col_dict['se'], 'alt',
+                                    'ref'],
                            dtype={gwas_col_dict['position']: 'Int64',
                                   gwas_col_dict['chrom']: 'category',
                                   gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
@@ -41,18 +44,18 @@ class PredixcanGwasProcessor:
                     + '_' + chunk['ref'].astype(str) \
                     + '_' + chunk['alt'].astype(str) \
                     + '_b38'
+                chunk.drop(columns=[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt', 'ref'], inplace=True)
                 if os.path.exists(output_processed_file) and os.path.getsize(output_processed_file) > 0:
                     mode = 'a'
                     header = False
                 else:
                     mode = 'w'
                     header = True
-                chunk[[var_id_col_name,
+                chunk[[PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME,
                        gwas_col_dict['effect_allele'],
                        gwas_col_dict['other_allele'],
                        gwas_col_dict['beta'],
-                       gwas_col_dict['se'],
-                       PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME]
+                       gwas_col_dict['se']]
                 ].to_csv(output_processed_file, mode=mode, sep=const.output_spliter, header=header, index=False)
         logging.info(f'Preparing gwas file {output_processed_file} completed at {datetime.now()},'
                      f'duration {datetime.now() - start_time}')

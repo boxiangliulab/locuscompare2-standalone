@@ -98,22 +98,28 @@ class TWAS:
     def process_chrom(self, chrom, gwas_file, input_vcf, ld_ref_prefix, gwas_col_dict, input_dir, twas_path,
                       weights_path):
         logging.warning(f'Processing for chromosome {chrom} start')
-        vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4], dtype={0: 'category'})
+        vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4], dtype={
+            0: 'category',
+            1: 'Int64',
+            3: pd.CategoricalDtype(const.SNP_ALLELE),
+            4: pd.CategoricalDtype(const.SNP_ALLELE)})
         vcf_df.columns = ['chromosome', 'position', 'ref', 'alt']
+        vcf_df.dropna(subset=['ref', 'alt'], inplace=True)
         vcf_df.drop_duplicates(subset='position', keep=False, inplace=True)
-        indel_bool_series = (vcf_df['ref'].astype(str).str.len() != 1) | (vcf_df['alt'].astype(str).str.len() != 1)
-        vcf_df.drop(labels=vcf_df[indel_bool_series].index, inplace=True)
-        del indel_bool_series
+        vcf_df.reset_index(drop=True, inplace=True)
         gwas_chrom_df = pd.read_table(gwas_file, sep=const.column_spliter,
                                       usecols=[gwas_col_dict['snp'], gwas_col_dict['chrom'], gwas_col_dict['position'],
                                                gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
                                                gwas_col_dict['beta'], gwas_col_dict['se']],
-                                      dtype={gwas_col_dict['chrom']: 'category'})
+                                      dtype={gwas_col_dict['chrom']: 'category',
+                                             gwas_col_dict['position']: 'Int64',
+                                             gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+                                             gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
         utils.adjust_allele_order(gwas_chrom_df, gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
                                   gwas_col_dict['chrom'], gwas_col_dict['position'], vcf_df,
                                   gbeta_col_name=gwas_col_dict['beta'], drop_ref_df_non_intersect_items=False)
         del vcf_df
-        if gwas_chrom_df.shape[0] == 0:
+        if gwas_chrom_df.empty:
             logging.warning(f'gwas input size is 0')
             return
         gwas_chrom_df['Z'] = gwas_chrom_df[gwas_col_dict['beta']] / gwas_chrom_df[gwas_col_dict['se']]

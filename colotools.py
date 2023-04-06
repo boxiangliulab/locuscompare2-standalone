@@ -1,11 +1,11 @@
+import concurrent
 import json
 import logging
 import os
 import sys
 import uuid
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
-from functools import partial
-from multiprocessing import Pool
 
 import pandas as pd
 
@@ -126,6 +126,8 @@ def run(config_file=None, tools_list=None, log_file=None, parallel=False):
         study = os.path.basename(config_file)
         for dir_path, _, file_names in os.walk(config_file):
             for cfg in file_names:
+                if cfg.startswith('.'):
+                    continue
                 if not cfg.endswith('.yml') and not cfg.endswith('.yaml'):
                     continue
                 cfg_list.append(os.path.join(dir_path, cfg))
@@ -227,19 +229,22 @@ def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, stu
     rank_output_file = os.path.join(processor.rank_dir,
                                     f'ensemble_ranking_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv')
     if parallel:
-        logging.info("Parallel run {}".format(actually_tools_list))
-        p = Pool(len(actually_tools_list))
-
-        def __tool_callback(res, current_tool):
-            results[current_tool] = res
-            logging.info("Run tool {} completed!".format(current_tool))
-
-        for tool in actually_tools_list:
-            logging.info("Run tool {}".format(tool))
-            p.apply_async(tools_func_map[tool]['run_fun'], args=(processor,),
-                          callback=partial(__tool_callback, current_tool=tool))
-        p.close()
-        p.join()
+        logging.info("Parallel running {}".format(actually_tools_list))
+        with ProcessPoolExecutor(max_workers=len(actually_tools_list)) as executor:
+            tool_futures = {}
+            for tool in actually_tools_list:
+                tool_futures[executor.submit(tools_func_map[tool]['run_fun'], processor)] = tool
+            exceptions = []
+            for future in concurrent.futures.as_completed(tool_futures.keys()):
+                current_tool = tool_futures[future]
+                try:
+                    results[current_tool] = future.result()
+                    logging.info(f'Tool {current_tool} completed successfully!')
+                except Exception as exc:
+                    exceptions.append(exc)
+                    logging.info(f'Tool {current_tool} failed with error: {exc}!')
+            if exceptions:
+                raise Exception(exceptions)
         for tool in results.keys():
             report_list.append(
                 {'trait': config_holder.gwas_trait, 'tool_name': tool, 'study1': study,
@@ -247,10 +252,13 @@ def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, stu
                  'cfg_pro': processor, 'rank_output_file': rank_output_file})
     else:
         for tool in actually_tools_list:
-            logging.info("Run tool {}".format(tool))
-            # report_file_path = get_tools_path(processor.tool_parent_dir, tool)
-            report_file_path = tools_func_map[tool]['run_fun'](processor)
-            logging.info("Run tool {} completed!".format(tool))
+            logging.info(f'Tool {tool} start running')
+            try:
+                report_file_path = tools_func_map[tool]['run_fun'](processor)
+                logging.info(f'Tool {tool} completed successfully!')
+            except Exception as error:
+                logging.info(f'Tool {tool} failed with error: {error}!')
+                raise error
             results[tool] = report_file_path
             report_list.append({'trait': config_holder.gwas_trait, 'tool_name': tool, 'study1': study,
                                 'tissue': config_holder.eqtl_tissue, 'report_path': report_file_path,

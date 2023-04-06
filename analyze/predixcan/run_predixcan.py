@@ -58,9 +58,7 @@ class Predixcan:
         eqtl_summary_df.drop(columns=['gene_file'], inplace=True)
         # predixcan output column sep is comma
         result_df = pd.read_table(output_file, sep=',')
-        result_df = pd.merge(left=result_df, right=eqtl_summary_df,
-                             left_on='gene', right_on='gene',
-                             how='left')
+        result_df = pd.merge(left=result_df, right=eqtl_summary_df, left_on='gene', right_on='gene', how='left')
         result_df.rename(columns={'gene': 'gene_id'}, inplace=True)
         result_df.to_csv(output_file, sep=const.output_spliter, header=True, index=False)
         self.__analyze_result(output_file)
