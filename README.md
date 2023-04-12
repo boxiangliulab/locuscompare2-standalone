@@ -183,7 +183,7 @@ The [config generator](/common/config_generator.py) is a tool to generate config
 4. Run python script
 ```shell
 python colotools_project_path/common/config_generator.py --out output_dir 
-[--global_cfg global_config_path] [--gwas_cfg gwas_configs_path] [--eqtl_cfg eqtl_configs_path]
+[--gb_temp global_config_path] [--gw_temp gwas_configs_path] [--eqtl_temp eqtl_configs_path]
 ```
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
 

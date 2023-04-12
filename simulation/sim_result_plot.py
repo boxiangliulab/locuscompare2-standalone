@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from sklearn.metrics import roc_auc_score, roc_curve, average_precision_score, precision_recall_curve
+from upsetplot import plot, from_indicators
 from venn import pseudovenn
 
 import ranking.intact as intact
@@ -465,6 +466,7 @@ def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, ou
     tool_positive_cols = []
     tool_sensitivity = []
     tool_specificity = []
+    tool_f1 = []
     tools = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         if sig_column not in ranking_df.columns:
@@ -496,8 +498,8 @@ def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, ou
         ranking_df[f'{tool}_positive'].mask(positive_series, 1, inplace=True)
         ranking_df[f'{tool}_positive'].mask(negative_series, 0, inplace=True)
         tool_positive_cols.append(f'{tool}_positive')
-        tool_f1 = 2 * tp / (2 * tp + fp + fn)
-        tools.append(f'{tool}\nT={"{:.1e}".format(tool_thresholds[tool])}\nF1={"{:0.2f}".format(tool_f1)}')
+        tool_f1.append(2 * tp / (2 * tp + fp + fn))
+        tools.append(f'{tool}\nT={"{:.1e}".format(tool_thresholds[tool])}')
     ranking_df['mvote_positive'] = ranking_df[tool_positive_cols].sum(axis=1) >= 3
     bar_plot_result = os.path.join(os.path.dirname(output_figure_path), f'bar_result.tsv')
     ranking_df.to_csv(bar_plot_result, sep='\t', header=True, index=False, na_rep='NA')
@@ -508,25 +510,32 @@ def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, ou
     mv_fp = ranking_df[(ranking_df[is_positive_col_name] == 0) & ranking_df['mvote_positive']].shape[0]
     mv_fn = ranking_df[(ranking_df[is_positive_col_name] == 1) & (~ranking_df['mvote_positive'])].shape[0]
     mv_f1 = 2 * mv_tp / (2 * mv_tp + mv_fp + mv_fn)
-    tools.append(f'm_vote\nT=cnt>=3\nF1={"{:0.2f}".format(mv_f1)}')
+    tools.append(f'm_vote\nT=cnt>=3')
     # tools.append('majority_vote')
     tool_sensitivity.append(mv_tp / mv_p)
     tool_specificity.append(mv_tn / mv_n)
+    tool_f1.append(mv_f1)
     print(f'Thresholds:  {tool_thresholds}')
     print(f'Tools: {tools}\nSensitivities: {tool_sensitivity}')
     print(f'Specificities: {tool_specificity}')
     plt.figure().clear()
     fig, ax = plt.subplots(figsize=(8, 6))
     x = np.arange(len(tools))
-    bar_width = 0.4
-    rects = ax.bar(x - bar_width / 2, tool_sensitivity, bar_width, label='Sensitivity')
-    ax.bar_label(rects, fmt='{:0.3f}')
-    rects = ax.bar(x + bar_width / 2, tool_specificity, bar_width, label='Specificity')
-    ax.bar_label(rects, fmt='{:0.3f}')
-    ax.set_ylabel('Sensitivity/Specificity')
-    ax.set_title('Sensitivity/Specificity of different tools')
+    bar_width = 0.25
+    # rects = ax.bar(x - bar_width / 2, tool_sensitivity, bar_width, label='Sensitivity')
+    # ax.bar_label(rects, fmt='{:0.3f}')
+    # rects = ax.bar(x + bar_width / 2, tool_specificity, bar_width, label='Specificity')
+    # ax.bar_label(rects, fmt='{:0.3f}')
+    rects = ax.bar((x - bar_width), tool_sensitivity, bar_width, label='Sensitivity')
+    ax.bar_label(rects, fmt='{:0.2f}')
+    rects = ax.bar(x, tool_specificity, bar_width, label='Specificity')
+    ax.bar_label(rects, fmt='{:0.2f}')
+    rects = ax.bar(x + bar_width, tool_f1, bar_width, label='F1')
+    ax.bar_label(rects, fmt='{:0.2f}')
+    ax.set_ylabel('Sensitivity/Specificity/F1')
+    ax.set_title('Sensitivity/Specificity/F1 of different tools')
     ax.set_xticks(x, tools)
-    ax.legend(loc='upper left', ncols=2)
+    ax.legend(loc='upper left', ncols=3)
     ax.set_ylim(0, 1.2)
 
     # -----rendering thresholds start
@@ -835,8 +844,8 @@ def __read_tool_rank(rpt, tool_name, sig_col_name, sig_type):
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     rpt_df = pd.read_table(rpt, usecols=[sig_col_name, GENE_ID_COL_NAME])
-    rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
     rpt_df.sort_values(sig_col_name, ascending=sig_type == RESULT_TYPE_PVAL, inplace=True)
+    rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
     rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
     rpt_df[tool_name] = range(0, rpt_df.shape[0])
     return rpt_df
@@ -871,6 +880,75 @@ def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1'):
     plt.tick_params(labelbottom=False, bottom=False, top=False, labeltop=True)
     heatmap = sns.clustermap(spearman_corr, vmin=0, vmax=1, annot=True, cmap="vlag")
     # heatmap.set_title('Spearman Correlation Heatmap')
+    if output_figure_path is not None:
+        plt.savefig(output_figure_path)
+
+
+def plot_upset(generated_file_path, h1_rpt_obj=None, sec_rpt_obj=None,
+               sec_causal_type=1, output_figure_path=None, min_subset_size=3, sort_by='cardinality'):
+    df_dict = {}
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        if h1_rpt is not None and Path(h1_rpt).exists() and os.path.getsize(h1_rpt) > 0:
+            tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                        rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                        rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                        tool=tool)
+            if tool_df.empty:
+                continue
+            df_dict[tool] = tool_df
+    if len(df_dict) == 0:
+        print('all report is empty, nothing to do')
+        return
+    threshold_param = {}
+    ranking_df = None
+    for tool, rpt_df in df_dict.items():
+        rpt_df.drop(columns=[is_positive_col_name, prob_col_name], inplace=True)
+        tool_pre_threshold_file = os.path.join(os.path.dirname(output_figure_path), f'{tool}_pre_threshold.tsv')
+        rpt_df.to_csv(tool_pre_threshold_file, sep='\t', index=False, na_rep='NA')
+        threshold_param[tool] = tool_pre_threshold_file
+        if ranking_df is None:
+            ranking_df = rpt_df
+        else:
+            ranking_df = pd.merge(left=ranking_df, right=rpt_df,
+                                  left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                                  how='outer')
+    tool_thresholds = calc.calc_threshold(rpt_obj=threshold_param, work_dir=os.path.dirname(output_figure_path))
+    for _, tool_pre_threshold_file in threshold_param.items():
+        os.remove(tool_pre_threshold_file)
+    print(f'Thresholds: {tool_thresholds}')
+    tool_cols = []
+    tool_positive_cols = []
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        if sig_column not in ranking_df.columns:
+            continue
+        ranking_df.rename(columns={sig_column: tool}, inplace=True)
+        # thresholds are covert to tool specific!
+        if tool == 'smr':
+            ranking_df[f'{tool}_positive'] = (ranking_df[tool] < tool_thresholds[tool]) & (
+                    ranking_df['p_HEIDI'] > 0.05)
+        elif sig_type == RESULT_TYPE_PROB:
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] > tool_thresholds[tool]
+        elif sig_type == RESULT_TYPE_PVAL:
+            ranking_df[f'{tool}_positive'] = ranking_df[tool] < tool_thresholds[tool]
+        else:
+            raise ValueError(f'Tool {tool} is not recognized, what is its threshold for it?')
+        tool_cols.append(tool)
+        tool_positive_cols.append(f'{tool}_positive')
+
+    tool_val_cols = [f'{tool}_val' for tool in tool_cols]
+    val_mapper = {k: v for k, v in zip(tool_cols, tool_val_cols)}
+    ranking_df.rename(columns=val_mapper, inplace=True)
+    positive_mapper = {k: v for k, v in zip(tool_positive_cols, tool_cols)}
+    ranking_df.rename(columns=positive_mapper, inplace=True)
+    pre_upset = os.path.join(os.path.dirname(output_figure_path), f'pre_upset.tsv')
+    ranking_df.to_csv(pre_upset, sep='\t', index=False, na_rep='NA')
+    plt.figure().clear()
+    plot(from_indicators(tool_cols, data=ranking_df[tool_cols]),
+         show_counts=True,
+         min_subset_size=min_subset_size,
+         sort_by=sort_by)
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
 

@@ -51,5 +51,5 @@ def parse_parameters():
 
 if __name__ == '__main__':
     parse_args = parse_parameters()
-    generate_gwas_eqtl_config(parse_args.output_dir[0], parse_args.global_template, parse_args.gwas_template,
-                              parse_args.eqtl_template)
+    generate_gwas_eqtl_config(parse_args.output_dir[0], parse_args.global_template[0], parse_args.gwas_template[0],
+                              parse_args.eqtl_template[0])

@@ -249,7 +249,9 @@ class Processor:
         range_lead_list = []
         positions_list = []
         gwas_chrom_group_files = {}
-        for name, group in gwas_df.groupby(self.gwas_col_dict['chrom']):
+        for name, group in gwas_df.groupby(self.gwas_col_dict['chrom'], observed=True):
+            if group.shape[0] == 0:
+                continue
             group_file = os.path.join(self.gwas_output_dir, f'chr{name}.tsv.gz')
             group.to_csv(group_file, sep=const.output_spliter, header=True, index=False)
             gwas_chrom_group_files[name] = group_file

@@ -59,8 +59,10 @@ def calc_threshold(rpt_obj=None, work_dir=''):
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         tool_rpt = rpt_obj.get(tool)
         if tool_rpt is None or len(tool_rpt) == 0:
+            logging.warning(f'{tool_rpt} does not exist, skipping {tool}')
             continue
         if not os.path.exists(tool_rpt) or os.path.getsize(tool_rpt) <= 0:
+            logging.warning(f'{tool_rpt} does not exist or is empty, skipping {tool}')
             continue
         if sig_type == RESULT_TYPE_PVAL:
             thresholds[tool] = calc_threshold_for_pval_rpt(tool_rpt, sig_column, work_dir=work_dir)

@@ -146,11 +146,10 @@ def run(config_file=None, tools_list=None, log_file=None, parallel=False):
         config_holder = common.config.ConfigHolder(single_config_file=cfg, study=study, parallel=parallel)
         __init_logger(os.path.join(config_holder.study_dir, f'{log_file}'))
         __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
-        # todo create a process for the clean up job
-        # try:
-        #     utils.cleanup_output(config_holder.tool_parent_dir)
-        # except:
-        #     logging.warning(f'failed to clean {config_holder.tool_parent_dir}')
+        try:
+            utils.cleanup_output(config_holder.tool_parent_dir)
+        except:
+            logging.warning(f'failed to clean {config_holder.tool_parent_dir}')
     if len(report_list) == 0:
         logging.warning(f'No results of specified tools found')
         return

@@ -185,5 +185,4 @@ def __preprocess_and_run_twas(glob_processor):
                     glob_processor.gwas_output_dir,
                     glob_processor.gwas_col_dict,
                     glob_processor.ref_vcf_dir,
-                    pop,
-                    parallel=glob_processor.config_holder.parallel)
+                    pop)
