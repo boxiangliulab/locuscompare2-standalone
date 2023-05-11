@@ -298,6 +298,9 @@ def parse_parameters():
     # log file path
     parser.add_argument('--log', dest='log_file', help='Log file path')
     parser.add_argument('--parallel', dest='parallel', help='turn on parallel', action="store_true")
+    # customized parameters for each tool
+    parser.add_argument('--tools_config', dest='tools_config', help='customized parameters for each tool')
+    parser.add_argument('--no_report', dest='no_report', help='turn off generating report', action="store_true")
     parse_args = parser.parse_args()
     return parse_args
 
@@ -683,11 +686,18 @@ def run_logging_command(command):
 def cleanup_output(tools_output_base):
     if file_exists(tools_output_base):
         for tool_output_dir in os.listdir(tools_output_base):
+            if tool_output_dir == 'rank':
+                continue
             tool_output_dir_full_path = f'{tools_output_base}/{tool_output_dir}'
             if Path(tool_output_dir_full_path).is_dir():
                 for tool_output_sub_dir in os.listdir(tool_output_dir_full_path):
-                    if tool_output_sub_dir != 'analyzed' and os.path.isdir(tool_output_sub_dir):
-                        delete_dir(f'{tool_output_dir_full_path}/{tool_output_sub_dir}')
+                    if tool_output_sub_dir == 'analyzed':
+                        continue
+                    tool_output_sub_out_full_path = os.path.join(tool_output_dir_full_path, tool_output_sub_dir)
+                    if Path(tool_output_sub_out_full_path).is_dir():
+                        delete_dir(tool_output_sub_out_full_path)
+                    else:
+                        delete_file_if_exists(tool_output_sub_out_full_path)
             else:
                 delete_file_if_exists(tool_output_dir_full_path)
 
@@ -712,9 +722,9 @@ def remove_nan_from_ld(ld_file, header):
     return nan_cols
 
 
-def get_tools_params(tool_name, param_prefix='--', params_without_value=[]):
+def get_tools_params(tool_name, tools_config_file, param_prefix='--', params_without_value=[]):
     params_str = ''
-    param_dict = get_tools_params_dict(tool_name)
+    param_dict = get_tools_params_dict(tool_name, tools_config_file)
     if param_dict is not None:
         for pk, pv in param_dict.items():
             if pv is None:
@@ -727,10 +737,10 @@ def get_tools_params(tool_name, param_prefix='--', params_without_value=[]):
     return params_str
 
 
-def get_tools_params_dict(tool_name):
+def get_tools_params_dict(tool_name, tool_config_file):
     params = None
-    if file_exists(const.tools_config):
-        with open(const.tools_config, 'r') as cfg_file:
+    if tool_config_file and file_exists(tool_config_file):
+        with open(tool_config_file, 'r') as cfg_file:
             params = yaml.safe_load(cfg_file)
             if params is not None and tool_name in params:
                 params = params[tool_name]

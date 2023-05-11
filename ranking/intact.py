@@ -81,9 +81,8 @@ def prepare_ranking_input(output_file_path, rpts):
     ranking_df.drop(columns=tool_ranking_cols, inplace=True)
     # 如果部分基因在TWAS或者colocalization这两边任何一方没有结果, 怎么处理? input如果有一方是NA, 那么output也是NA
     if len(prob_tools) == 0 or len(pval_tools) == 0:
-        ranking_df.to_csv(output_file_path, sep='\t', header=True, index=False)
         logging.warning('To run intact, you need both TWAS results and colocalization results, skipping')
-        return output_file_path
+        return None
     zscore_cols = [f'{col}_zscore' for col in pval_tools]
     ranking_df['probability'] = ranking_df[prob_tools].mean(axis=1)
     # ranking_df.loc[ranking_df['probability'].isna(), 'probability'] = 0

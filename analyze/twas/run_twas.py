@@ -28,7 +28,9 @@ class TWAS:
             gwas_col_dict=None,
             ref_vcf_dir=None,
             population=None,
-            parallel=False):
+            parallel=False,
+            tools_config_file=None,
+            parallel_worker_num=4):
         start_time = datetime.now()
         logging.info(f'run_twas start at: {start_time}')
         output_file = self.__get_output_file(working_dir)
@@ -42,7 +44,7 @@ class TWAS:
         if weights_path is None:
             raise ValueError(f'TWAS weight files(.pos file and .RDat files) must be provided to run TWAS')
         if parallel:
-            with ThreadPoolExecutor(max_workers=4) as executor:
+            with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for chrom_group_file in os.listdir(gwas_chrom_group_dir):
                     chrom, input_vcf, ld_ref_prefix = self.__prepare_depdencies(
@@ -52,12 +54,12 @@ class TWAS:
                     chrom_group_file_path = os.path.join(gwas_chrom_group_dir, chrom_group_file)
                     futures.append(
                         executor.submit(self.process_chrom, chrom, chrom_group_file_path, input_vcf, ld_ref_prefix,
-                                        gwas_col_dict, input_dir, twas_path, weights_path))
+                                        gwas_col_dict, input_dir, twas_path, weights_path, tools_config_file))
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get %s generated an exception: %s' % (data, exc))
+                        logging.error('Get result generated an exception: %s' % exc)
 
         else:
             for chrom_group_file in os.listdir(gwas_chrom_group_dir):
@@ -67,7 +69,7 @@ class TWAS:
                     continue
                 chrom_group_file_path = os.path.join(gwas_chrom_group_dir, chrom_group_file)
                 self.process_chrom(chrom, chrom_group_file_path, input_vcf, ld_ref_prefix, gwas_col_dict, input_dir,
-                                   twas_path, weights_path)
+                                   twas_path, weights_path, tools_config_file)
 
         self.__analyze_result(input_dir, output_file)
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
@@ -96,17 +98,17 @@ class TWAS:
         return chrom, input_vcf, ld_ref_prefix
 
     def process_chrom(self, chrom, gwas_file, input_vcf, ld_ref_prefix, gwas_col_dict, input_dir, twas_path,
-                      weights_path):
+                      weights_path, tools_config_file):
         logging.warning(f'Processing for chromosome {chrom} start')
-        vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4], dtype={
-            0: 'category',
-            1: 'Int64',
-            3: pd.CategoricalDtype(const.SNP_ALLELE),
-            4: pd.CategoricalDtype(const.SNP_ALLELE)})
-        vcf_df.columns = ['chromosome', 'position', 'ref', 'alt']
-        vcf_df.dropna(subset=['ref', 'alt'], inplace=True)
-        vcf_df.drop_duplicates(subset='position', keep=False, inplace=True)
-        vcf_df.reset_index(drop=True, inplace=True)
+        # vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4], dtype={
+        #     0: 'category',
+        #     1: 'Int64',
+        #     3: pd.CategoricalDtype(const.SNP_ALLELE),
+        #     4: pd.CategoricalDtype(const.SNP_ALLELE)})
+        # vcf_df.columns = ['chromosome', 'position', 'ref', 'alt']
+        # vcf_df.dropna(subset=['ref', 'alt'], inplace=True)
+        # vcf_df.drop_duplicates(subset='position', keep=False, inplace=True)
+        # vcf_df.reset_index(drop=True, inplace=True)
         gwas_chrom_df = pd.read_table(gwas_file, sep=const.column_spliter,
                                       usecols=[gwas_col_dict['snp'], gwas_col_dict['chrom'], gwas_col_dict['position'],
                                                gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
@@ -115,10 +117,10 @@ class TWAS:
                                              gwas_col_dict['position']: 'Int64',
                                              gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
                                              gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
-        utils.adjust_allele_order(gwas_chrom_df, gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
-                                  gwas_col_dict['chrom'], gwas_col_dict['position'], vcf_df,
-                                  gbeta_col_name=gwas_col_dict['beta'], drop_ref_df_non_intersect_items=False)
-        del vcf_df
+        # utils.adjust_allele_order(gwas_chrom_df, gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
+        #                           gwas_col_dict['chrom'], gwas_col_dict['position'], vcf_df,
+        #                           gbeta_col_name=gwas_col_dict['beta'], drop_ref_df_non_intersect_items=False)
+        # del vcf_df
         if gwas_chrom_df.empty:
             logging.warning(f'gwas input size is 0')
             return
@@ -134,7 +136,7 @@ class TWAS:
         gwas_chrom_df.to_csv(gwas_chrom_input, sep=const.column_spliter, header=True, index=False)
         del gwas_chrom_df
         chrom_out_file = os.path.join(input_dir, f'chr{chrom}_result.tsv')
-        custom_params = utils.get_tools_params(self.COLOC_TOOL_NAME)
+        custom_params = utils.get_tools_params(self.COLOC_TOOL_NAME, tools_config_file=tools_config_file)
         if custom_params is None:
             custom_params = ''
         # Error "cannot open file '/xxx/yyy/chr.bim': No such file or directory" can be ignored" can be ignored
@@ -145,6 +147,7 @@ class TWAS:
                   f'--weights_dir {os.path.dirname(weights_path)} '
                   f'--ref_ld_chr {ld_ref_prefix} '
                   f'--chr {chrom} '
+                  f'--max_impute 1 '
                   f'--out {chrom_out_file} '
                   f'{custom_params}')
         logging.warning(f'Processing for chromosome {chrom} completed')
@@ -199,4 +202,5 @@ if __name__ == '__main__':
              glob_processor.gwas_col_dict,
              glob_processor.ref_vcf_dir,
              pop,
+             tools_config_file='/Users/nicklin/gitrepo/bio/colocalization-tools/resource/tools_config.yml',
              parallel=True)

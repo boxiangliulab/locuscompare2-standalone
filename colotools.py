@@ -1,5 +1,4 @@
 import concurrent
-import json
 import logging
 import os
 import sys
@@ -15,7 +14,6 @@ from analyze.api import run_tools_api
 from common import coloc_utils as utils, global_data_process as gdp
 from figures import report_data_processor as redp
 from ranking import scoring as sc
-from threshold import calc
 
 
 # def __before_run_jlim_tools_check(global_config):
@@ -110,7 +108,7 @@ tools_func_map = {
 }
 
 
-def run(config_file=None, tools_list=None, log_file=None, parallel=False):
+def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_config=None, no_report=False):
     if tools_list is None:
         tools_list = ['all']
     cfg_list = []
@@ -143,7 +141,8 @@ def run(config_file=None, tools_list=None, log_file=None, parallel=False):
 
     report_list = []
     for cfg in cfg_list:
-        config_holder = common.config.ConfigHolder(single_config_file=cfg, study=study, parallel=parallel)
+        config_holder = common.config.ConfigHolder(single_config_file=cfg, study=study, parallel=parallel,
+                                                   tools_config_file=tools_config)
         __init_logger(os.path.join(config_holder.study_dir, f'{log_file}'))
         __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
         try:
@@ -153,7 +152,8 @@ def run(config_file=None, tools_list=None, log_file=None, parallel=False):
     if len(report_list) == 0:
         logging.warning(f'No results of specified tools found')
         return
-    redp.report_data_process(report_list)
+    if no_report is False:
+        redp.report_data_process(report_list)
 
 
 def __init_logger(logfile):
@@ -264,13 +264,13 @@ def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, stu
                                 'cfg_pro': processor, 'rank_output_file': rank_output_file})
     sc.run_ranking(rpt_obj=results, output_file_path=rank_output_file,
                    sample_size=processor.global_config['input']['gwas']['sample_size'])
-    with open(processor.config_holder.threshold_path, 'w') as outfile:
-        json.dump(calc.calc_threshold(rpt_obj=results,
-                                      work_dir=os.path.dirname(processor.config_holder.threshold_path)), outfile)
-        outfile.write('\n')
     logging.info(f'coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')
+    logging.info(f'tissue: {config_holder.eqtl_tissue},trait: {config_holder.gwas_trait} coloctools complete')
 
 
 if __name__ == '__main__':
+    start_time = datetime.now()
+    logging.info(f'start run all coloctools, start time: {start_time}')
     parse_args = utils.parse_parameters()
-    run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel)
+    run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel, parse_args.tools_config, parse_args.no_report)
+    logging.info(f'all coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')

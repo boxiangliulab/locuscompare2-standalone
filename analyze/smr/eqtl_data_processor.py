@@ -31,7 +31,8 @@ class SmrEqtlProcessor:
                        eqtl_p_thresh=None,
                        ref_vcf_dir=None,
                        population=None,
-                       parallel=False):
+                       parallel=False,
+                       parallel_worker_num=2):
         start_time = datetime.now()
         logging.info(f'Generating LD ref file at {start_time}')
         Path(self.__get_ldref_dir(working_dir)).mkdir(exist_ok=True, parents=True)
@@ -45,7 +46,7 @@ class SmrEqtlProcessor:
         # Loop to process all eQTL trait file
         gwas_chroms = pval_filtered_gwas_df[gwas_col_dict['chrom']].unique().tolist()
         if parallel:
-            with ThreadPoolExecutor(max_workers=2) as executor:
+            with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for _, row in eqtl_summary_df.iterrows():
                     chrom = str(row.loc['chrom'])
@@ -60,14 +61,14 @@ class SmrEqtlProcessor:
                            :, gwas_col_dict['position']].isin(eqtl_positions).any():
                         continue
                     input_vcf = os.path.join(ref_vcf_dir, population.upper(), f'chr{chrom}.vcf.gz')
-                    futures.append(executor.submit(self.gene_plink_binary_ld_ref, working_dir, eqtl_gene_file,
+                    futures.append(executor.submit(self.gen_plink_binary_ld_ref, working_dir, eqtl_gene_file,
                                                    var_id_col_name, eqtl_col_dict, chrom, gene_id, input_vcf,
                                                    eqtl_p_thresh))
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get %s generated an exception: %s' % (data, exc))
+                        logging.error('Get result generated an exception: %s' % exc)
         else:
             for _, row in eqtl_summary_df.iterrows():
                 chrom = str(row.loc['chrom'])
@@ -82,8 +83,8 @@ class SmrEqtlProcessor:
                        :, gwas_col_dict['position']].isin(eqtl_positions).any():
                     continue
                 input_vcf = os.path.join(ref_vcf_dir, population.upper(), f'chr{chrom}.vcf.gz')
-                self.gene_plink_binary_ld_ref(working_dir, eqtl_gene_file, var_id_col_name, eqtl_col_dict,
-                                              chrom, gene_id, input_vcf, eqtl_p_thresh)
+                self.gen_plink_binary_ld_ref(working_dir, eqtl_gene_file, var_id_col_name, eqtl_col_dict,
+                                             chrom, gene_id, input_vcf, eqtl_p_thresh)
         logging.info(f'Generating LD ref file completed at {datetime.now()}, duration {datetime.now() - start_time}')
         return (
             self.__get_output_vcf_dir(working_dir),
@@ -92,8 +93,8 @@ class SmrEqtlProcessor:
             self.__get_ldref_file_pattern()
         )
 
-    def gene_plink_binary_ld_ref(self, working_dir, eqtl_gene_file, var_id_col_name, eqtl_col_dict,
-                                 chrom, gene_id, input_vcf, eqtl_p_thresh):
+    def gen_plink_binary_ld_ref(self, working_dir, eqtl_gene_file, var_id_col_name, eqtl_col_dict,
+                                chrom, gene_id, input_vcf, eqtl_p_thresh):
         eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter,
                                       usecols=[var_id_col_name, eqtl_col_dict['position'], eqtl_col_dict['pvalue']],
                                       dtype={eqtl_col_dict['position']: 'Int64'})

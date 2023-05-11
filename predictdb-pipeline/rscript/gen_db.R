@@ -18,17 +18,30 @@ if(!dir.exists(output_dir)){
 
 "%&%" <- function(a,b) paste(a,b, sep='')
 driver <- dbDriver('SQLite')
-model_summaries <- read.table(file.path(summary_dir, prefix%&%'_chr1_model_summaries.txt'),header = T, stringsAsFactors = F)
-tiss_summary <- read.table(file.path(summary_dir, prefix%&%'_chr1_summary.txt'), header = T, stringsAsFactors = F)
+
+tiss_summary_files = list.files(path=summary_dir, pattern = paste0("^", prefix, "_chr\\d+_summary.txt$"))
+model_summary_files = list.files(path=summary_dir, pattern = paste0("^", prefix, "_chr\\d+_model_summaries.txt$"))
+
+model_summaries = NA
+tiss_summary = NA
+
+for (f in tiss_summary_files) {
+  if (is.na(tiss_summary)) {
+    tiss_summary = read.table(file.path(summary_dir, f), header = T, stringsAsFactors = F)
+    next
+  }
+  tiss_summary <- rbind(tiss_summary, read.table(file.path(summary_dir, f), header = T, stringsAsFactors = F))
+}
 
 n_samples <- tiss_summary$n_samples
 
-for (i in 2:22) {
+for (f in model_summary_files) {
+  if (is.na(model_summaries)) {
+    model_summaries = read.table(file.path(summary_dir, f), header = T, stringsAsFactors = F)
+    next
+  }
   model_summaries <- rbind(model_summaries,
-                            read.table(file.path(summary_dir, prefix%&%'_chr'%&%as.character(i) %&% '_model_summaries.txt'), header = T, stringsAsFactors = F))
-  tiss_summary <- rbind(tiss_summary,
-                             read.table(file.path(summary_dir, prefix%&%'_chr' %&% as.character(i) %&% '_summary.txt'), header = T, stringsAsFactors = F))
-
+                            read.table(file.path(summary_dir, f), header = T, stringsAsFactors = F))
 }
 
 model_summaries <- rename(model_summaries, gene = gene_id)
@@ -40,10 +53,15 @@ dbExecute(conn, "CREATE INDEX gene_model_summary ON model_summaries (gene)")
 
 # Weights Table -----
 
-weights <- read.table(file.path(weights_dir, prefix%&%'_chr1_weights.txt'), header = T,stringsAsFactors = F)
-for (i in 2:22) {
+weight_files = list.files(path=weights_dir, pattern = paste0("^", prefix, "_chr\\d+_weights.txt$"))
+weights = NA
+for (f in weight_files) {
+  if (is.na(weights)) {
+    weights = read.table(file.path(weights_dir, f), header = T, stringsAsFactors = F)
+    next
+  }
   weights <- rbind(weights,
-              read.table(file.path(weights_dir, prefix%&%'_chr' %&% as.character(i) %&% '_weights.txt'), header = T, stringsAsFactors = F))
+              read.table(file.path(weights_dir, f), header = T, stringsAsFactors = F))
 
 }
 

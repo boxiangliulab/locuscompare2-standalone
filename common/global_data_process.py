@@ -2,7 +2,6 @@ import concurrent
 import datetime
 import logging
 import os
-import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -62,6 +61,9 @@ class Processor:
         # vcf input output path
         self.vcf_output_dir = self.config_holder.vcf_output_dir
         self.ref_vcf_dir = self.config_holder.ref_vcf_dir
+
+        # tools parameter config path
+        self.tools_config_file = self.config_holder.tools_config_file
 
     def preprocess_eqtl(self):
         # group by trait
@@ -139,8 +141,8 @@ class Processor:
         vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4],
                                dtype={0: 'category', 1: 'Int64', 3: pd.CategoricalDtype(const.SNP_ALLELE),
                                       4: pd.CategoricalDtype(const.SNP_ALLELE)})
-        vcf_df.columns = [self.gwas_col_dict['chrom'], self.gwas_col_dict['position'], 'ref', 'alt']
-        vcf_df.dropna(subset=['ref', 'alt'], inplace=True)
+        vcf_df.columns = [self.gwas_col_dict['chrom'], self.gwas_col_dict['position'], 'ref_', 'alt_']
+        vcf_df.dropna(subset=['ref_', 'alt_'], inplace=True)
         vcf_df.reset_index(drop=True, inplace=True)
         merged_vcf_col_suffix = f'_{chrom}_vcf'
         gwas_df = pd.merge(left=gwas_df,
@@ -150,25 +152,30 @@ class Processor:
                            how='left',
                            suffixes=(None, merged_vcf_col_suffix))
         del vcf_df
-        gwas_df['ref'].mask((gwas_df[self.gwas_col_dict['chrom']] == chrom) & gwas_df['ref'].isna(),
-                            gwas_df[f'ref{merged_vcf_col_suffix}'], inplace=True)
-        gwas_df['alt'].mask((gwas_df[self.gwas_col_dict['chrom']] == chrom) & gwas_df['alt'].isna(),
-                            gwas_df[f'alt{merged_vcf_col_suffix}'], inplace=True)
+        gwas_df['ref_'].mask((gwas_df[self.gwas_col_dict['chrom']] == chrom) & gwas_df['ref_'].isna(),
+                             gwas_df[f'ref_{merged_vcf_col_suffix}'], inplace=True)
+        gwas_df['alt_'].mask((gwas_df[self.gwas_col_dict['chrom']] == chrom) & gwas_df['alt_'].isna(),
+                             gwas_df[f'alt_{merged_vcf_col_suffix}'], inplace=True)
         gwas_df.drop(columns=[col for col in gwas_df.columns if col.endswith(merged_vcf_col_suffix)], inplace=True)
         logging.info(f'Merge alt ref for chrom {chrom} completed')
 
-    def __gwas_clumping(self, gwas_chrom_file, chrom, population):
-        logging.info(f'Clumping for chrom {chrom}')
-        input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
-        clumped_out = os.path.join(self.gwas_output_dir, f'chr{chrom}')
-        os.system(f'plink --vcf {input_vcf}  '
-                  f'--clump {gwas_chrom_file} '
-                  f'--clump-p1 {self.config_holder.gwas_p_threshold} '
-                  f'--clump-p2 {self.config_holder.gwas_p_threshold} '
-                  f'--clump-snp-field {self.gwas_col_dict["snp"]} '
-                  f'--clump-field {self.gwas_col_dict["pvalue"]} '
-                  f'--out {clumped_out}')
-        logging.info(f'Clumping for chrom {chrom} completed')
+    # def __gwas_clumping(self, gwas_chrom_file, chrom, population):
+    #     logging.info(f'Clumping for chrom {chrom}')
+    #     input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
+    #     clumped_out = os.path.join(self.gwas_output_dir, f'chr{chrom}')
+    #     clump_r2 = self.global_config.get('clump_r2', 0)
+    #     clump_kb = self.global_config.get('clump_kb', 500)
+    #     logging.info(f'Clumping param for chrom {chrom} clump_r2: {clump_r2}, clump_kb: {clump_kb}')
+    #     os.system(f'plink --vcf {input_vcf}  '
+    #               f'--clump {gwas_chrom_file} '
+    #               f'--clump-p1 {self.config_holder.gwas_p_threshold} '
+    #               f'--clump-p2 {self.config_holder.gwas_p_threshold} '
+    #               f'--clump-snp-field {self.gwas_col_dict["snp"]} '
+    #               f'--clump-field {self.gwas_col_dict["pvalue"]} '
+    #               f'--clump-r2 {clump_r2} '
+    #               f'--clump-kb {clump_kb} '
+    #               f'--out {clumped_out}')
+    #     logging.info(f'Clumping for chrom {chrom} completed')
 
     def preprocess_gwas(self):
         utils.delete_dir(self.gwas_preprocessed_dir)
@@ -181,6 +188,7 @@ class Processor:
                                 dtype={self.gwas_col_dict['position']: 'Int64', self.gwas_col_dict['chrom']: 'category',
                                        self.gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
                                        self.gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
+        raw_gwas_snp_size = len(gwas_df)
         logging.info(f'GWAS data memory usage: {gwas_df.memory_usage(deep=True)}')
         gwas_df[self.gwas_col_dict['chrom']] = gwas_df[self.gwas_col_dict['chrom']].astype(str).str.lower().str.strip(
             'chr').astype('category')
@@ -191,14 +199,16 @@ class Processor:
         utils.drop_indel_snp(gwas_df, self.gwas_col_dict['effect_allele'], self.gwas_col_dict['other_allele'])
         logging.info(f'GWAS data cleaning, time: {datetime.datetime.now()}')
         utils.clean_data(gwas_df, dup_consider_subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']])
-        logging.info(f'GWAS data total {len(gwas_df)} rows, sorting by chrom and pos, time: {datetime.datetime.now()}')
+        filtered_gwas_snp_size = len(gwas_df)
+        logging.info(
+            f'GWAS data total {filtered_gwas_snp_size} rows, sorting by chrom and pos, time: {datetime.datetime.now()}')
         gwas_df.sort_values([self.gwas_col_dict['chrom'], self.gwas_col_dict['position']], inplace=True)
         logging.info(f'Merging alt ref from vcf into GWAS data')
         # discontinuous index cost a lot more memory
         gwas_df.reset_index(drop=True, inplace=True)
         # Merge alt/ref from vcf into gwas file for later use
-        gwas_df['alt'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
-        gwas_df['ref'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df['alt_'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df['ref_'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
         chroms = gwas_df[self.gwas_col_dict['chrom']].unique()
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = []
@@ -208,7 +218,7 @@ class Processor:
                 try:
                     data = future.result()
                 except Exception as exc:
-                    logging.error('Get %s generated an exception: %s' % (data, exc))
+                    logging.error('Get result generated an exception: %s' % exc)
         gwas_df.drop_duplicates(subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
                                 keep=False, inplace=True)
         gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper().astype(
@@ -216,8 +226,8 @@ class Processor:
         gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper().astype(
             pd.CategoricalDtype(const.SNP_ALLELE))
         # Fill SNP ref/alt by other_allele/effect_allele if the SNP is not in vcf
-        gwas_df['ref'].mask(gwas_df['ref'].isna(), gwas_df[self.gwas_col_dict['other_allele']], inplace=True)
-        gwas_df['alt'].mask(gwas_df['alt'].isna(), gwas_df[self.gwas_col_dict['effect_allele']], inplace=True)
+        gwas_df['ref_'].mask(gwas_df['ref_'].isna(), gwas_df[self.gwas_col_dict['other_allele']], inplace=True)
+        gwas_df['alt_'].mask(gwas_df['alt_'].isna(), gwas_df[self.gwas_col_dict['effect_allele']], inplace=True)
         gwas_df[Processor.VAR_ID_COL_NAME] = 'chr' + gwas_df[self.gwas_col_dict['chrom']].astype(str) + '_' + \
                                              gwas_df[self.gwas_col_dict['position']].astype(str)
         logging.info(
@@ -236,18 +246,55 @@ class Processor:
             # print(f'No significant records found in GWAS file {gwas_file_path}')
             logging.warning(f'No significant records found in GWAS file {gwas_file_path}')
             return
-        del pval_filter_gwas_df
-        neighbor_range = self.global_config['neighbour_snp_range']
-        logging.info(
-            f'Clumping GWAS SNPs, range files will be written to {self.gwas_cluster_output_dir}, time: {datetime.datetime.now()}')
-        # perform LD clumping on gwas input
         utils.delete_dir(self.gwas_output_dir)
         Path(self.gwas_output_dir).mkdir(exist_ok=True, parents=True)
         utils.delete_dir(self.gwas_cluster_output_dir)
         Path(self.gwas_cluster_output_dir).mkdir(exist_ok=True, parents=True)
+        pval_filter_gwas_df.sort_values([self.gwas_col_dict['chrom'], self.gwas_col_dict['pvalue']], inplace=True)
         chrom_list = []
         range_lead_list = []
         positions_list = []
+        cluster_pos_dict = {}
+        loci_count = 0
+        clump_dist = 500000
+        for _, row in pval_filter_gwas_df.iterrows():
+            chrom = row.loc[self.gwas_col_dict['chrom']]
+            pos = row.loc[self.gwas_col_dict['position']]
+            chrom_cluster_pos_list = cluster_pos_dict.get(chrom, [])
+            for cp in chrom_cluster_pos_list:
+                cp_start = max(0, cp - clump_dist)
+                cp_end = cp + clump_dist
+                if cp_start <= pos <= cp_end:
+                    break
+            else:
+                chrom_cluster_pos_list.append(pos)
+                cluster_pos_dict[chrom] = chrom_cluster_pos_list
+                # retrieve range_df from group by peak_positions.min <= group[position] <= peak_positions.max
+                cluster_start = max(0, pos - clump_dist)
+                cluster_end = pos + clump_dist
+                range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
+                        cluster_start <= gwas_df[self.gwas_col_dict['position']]) & (
+                                           gwas_df[self.gwas_col_dict['position']] <= cluster_end)]
+                range_lead_var_id = \
+                    range_df.loc[range_df[self.gwas_col_dict['position']] == pos][Processor.VAR_ID_COL_NAME].iloc[0]
+                chrom_list.append(chrom)
+                range_lead_list.append(range_lead_var_id)
+                loci_count += 1
+                file_name = f'{range_lead_var_id}-chr{chrom}.tsv.gz'
+                range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
+                                header=True,
+                                index=False)
+                del range_df
+                pval_filter_range_df = pval_filter_gwas_df[(pval_filter_gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
+                        cluster_start <= pval_filter_gwas_df[self.gwas_col_dict['position']]) & (
+                                                                   pval_filter_gwas_df[
+                                                                       self.gwas_col_dict['position']] <= cluster_end)]
+                positions_list.append(pval_filter_range_df[self.gwas_col_dict['position']].tolist())
+                del pval_filter_range_df
+        del pval_filter_gwas_df
+        # neighbor_range = self.global_config['neighbour_snp_range']
+        logging.info(
+            f'Clumping GWAS SNPs, range files will be written to {self.gwas_cluster_output_dir}, time: {datetime.datetime.now()}')
         gwas_chrom_group_files = {}
         for name, group in gwas_df.groupby(self.gwas_col_dict['chrom'], observed=True):
             if group.shape[0] == 0:
@@ -256,56 +303,63 @@ class Processor:
             group.to_csv(group_file, sep=const.output_spliter, header=True, index=False)
             gwas_chrom_group_files[name] = group_file
         del gwas_df
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            futures = []
-            for name, group_file in gwas_chrom_group_files.items():
-                futures.append(executor.submit(self.__gwas_clumping, group_file, name, population))
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    data = future.result()
-                except Exception as exc:
-                    logging.error('Get %s generated an exception: %s' % (data, exc))
-        for name, group_file in gwas_chrom_group_files.items():
-            group = pd.read_table(group_file, sep=const.output_spliter,
-                                  dtype={self.gwas_col_dict['position']: 'Int64',
-                                         self.gwas_col_dict['chrom']: 'category',
-                                         self.gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
-                                         self.gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
-            clumped_out = os.path.join(self.gwas_output_dir, f'chr{name}')
-            clumped_file = f'{clumped_out}.clumped'
-            if not os.path.exists(clumped_file) or os.path.getsize(clumped_file) <= 0:
-                logging.warning(f'No significant SNP on chromosome {name}')
-                continue
-            index_variant_df = pd.read_table(clumped_file, sep=r'\s+', usecols=['SNP', 'BP', 'SP2'])
-            for _, row in index_variant_df.iterrows():
-                peak_snps = re.sub(r'\(\d+\)', '', row.loc['SP2']).split(',')
-                range_df = utils.find_peak_range_df(name, row.loc['BP'], group, self.gwas_col_dict['chrom'],
-                                                    self.gwas_col_dict['position'], neighbor_range)
-                if len(peak_snps) == 0 or peak_snps[0] == 'NONE':
-                    peak_positions = [row.loc['BP']]
-                else:
-                    # consider the index snp(i.e. lead snp), index snp maybe on the edge of the cluster
-                    peak_snps.append(row.loc['SNP'])
-                    # NOTE!! The column gwas_col_dict['snp'] in gwas file can be other values(like variant_id),
-                    # as long as they match the values of ID column in vcf file, else clumping won't work
-                    peak_positions = group.loc[group[self.gwas_col_dict['snp']].isin(peak_snps)][
-                        self.gwas_col_dict['position']].tolist()
-                # all peak_positions should be in range_df, else extends range_df
-                if not all(pos in range_df[self.gwas_col_dict['position']].values for pos in peak_positions):
-                    # retrieve range_df from group by peak_positions.min <= group[position] <= peak_positions.max
-                    range_df = group[(min(peak_positions) <= group[self.gwas_col_dict['position']]) & (
-                            group[self.gwas_col_dict['position']] <= max(peak_positions))]
-                range_lead_var_id = \
-                    range_df.loc[range_df[self.gwas_col_dict['position']] == row.loc['BP']][
-                        Processor.VAR_ID_COL_NAME].iloc[0]
-                positions_list.append(peak_positions)
-                chrom_list.append(name)
-                range_lead_list.append(range_lead_var_id)
-                file_name = f'{range_lead_var_id}-chr{name}.tsv.gz'
-                range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
-                                header=True,
-                                index=False)
-            del group
+        # with ThreadPoolExecutor(max_workers=4) as executor:
+        #     futures = []
+        #     for name, group_file in gwas_chrom_group_files.items():
+        #         futures.append(executor.submit(self.__gwas_clumping, group_file, name, population))
+        #     for future in concurrent.futures.as_completed(futures):
+        #         try:
+        #             data = future.result()
+        #         except Exception as exc:
+        #             logging.error('Get result generated an exception: %s' % exc)
+        # loci_count = 0
+        # for name, group_file in gwas_chrom_group_files.items():
+        #     group = pd.read_table(group_file, sep=const.output_spliter,
+        #                           dtype={self.gwas_col_dict['position']: 'Int64',
+        #                                  self.gwas_col_dict['chrom']: 'category',
+        #                                  self.gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
+        #                                  self.gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
+        #     clumped_out = os.path.join(self.gwas_output_dir, f'chr{name}')
+        #     clumped_file = f'{clumped_out}.clumped'
+        #     if not os.path.exists(clumped_file) or os.path.getsize(clumped_file) <= 0:
+        #         logging.warning(f'No significant SNP on chromosome {name}')
+        #         continue
+        #     index_variant_df = pd.read_table(clumped_file, sep=r'\s+', usecols=['SNP', 'BP', 'TOTAL', 'SP2'])
+        #     index_variant_df.drop(index=index_variant_df[index_variant_df['TOTAL'] == 0].index, inplace=True)
+        #     loci_count += index_variant_df.shape[0]
+        #     for _, row in index_variant_df.iterrows():
+        #         peak_snps = re.sub(r'\(\d+\)', '', row.loc['SP2']).split(',')
+        #         range_df = utils.find_peak_range_df(name, row.loc['BP'], group, self.gwas_col_dict['chrom'],
+        #                                             self.gwas_col_dict['position'], neighbor_range)
+        #         if len(peak_snps) == 0 or peak_snps[0] == 'NONE':
+        #             peak_positions = [row.loc['BP']]
+        #         else:
+        #             # consider the index snp(i.e. lead snp), index snp maybe on the edge of the cluster
+        #             peak_snps.append(row.loc['SNP'])
+        #             # NOTE!! The column gwas_col_dict['snp'] in gwas file can be other values(like variant_id),
+        #             # as long as they match the values of ID column in vcf file, else clumping won't work
+        #             peak_positions = group.loc[group[self.gwas_col_dict['snp']].isin(peak_snps)][
+        #                 self.gwas_col_dict['position']].tolist()
+        #         # all peak_positions should be in range_df, else extends range_df
+        #         if not all(pos in range_df[self.gwas_col_dict['position']].values for pos in peak_positions):
+        #             # retrieve range_df from group by peak_positions.min <= group[position] <= peak_positions.max
+        #             range_df = group[(min(peak_positions) <= group[self.gwas_col_dict['position']]) & (
+        #                     group[self.gwas_col_dict['position']] <= max(peak_positions))]
+        #         range_lead_var_id = \
+        #             range_df.loc[range_df[self.gwas_col_dict['position']] == row.loc['BP']][
+        #                 Processor.VAR_ID_COL_NAME].iloc[0]
+        #         positions_list.append(peak_positions)
+        #         chrom_list.append(name)
+        #         range_lead_list.append(range_lead_var_id)
+        #         file_name = f'{range_lead_var_id}-chr{name}.tsv.gz'
+        #         range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
+        #                         header=True,
+        #                         index=False)
+        #     del group
+        with open(f'{self.gwas_preprocessed_dir}/gwas_snp_summary.log', mode='w') as snp_file:
+            snp_file.write(f'raw GWAS snp size: {raw_gwas_snp_size}\n')
+            snp_file.write(f'filtered GWAS snp size: {filtered_gwas_snp_size}\n')
+            snp_file.write(f'GWAS significant loci size: {loci_count}\n')
         logging.info(
             f'Writing GWAS significant ranges summary to {self.gwas_cluster_summary}, time: {datetime.datetime.now()}')
         cluster_summary_df = pd.DataFrame(

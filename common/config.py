@@ -8,7 +8,7 @@ import logging
 class ConfigHolder:
 
     def __init__(self, single_config_file=common.constants.default_config, study=common.constants.default_study,
-                 parallel=False):
+                 parallel=False, tools_config_file=None):
         if study is None:
             study = common.constants.default_study
         if single_config_file is None:
@@ -32,8 +32,6 @@ class ConfigHolder:
 
         self.rank_dir = os.path.join(self.tool_parent_dir, 'rank')
         Path(self.rank_dir).mkdir(exist_ok=True, parents=True)
-
-        self.threshold_path = os.path.join(self.tool_parent_dir, 'thresholds.json')
 
         self.report_path = os.path.join(self.study_dir)
 
@@ -70,12 +68,8 @@ class ConfigHolder:
         self.gwas_p_threshold = self.global_config['p-value_threshold']['gwas']
         if self.gwas_p_threshold <= 0:
             self.gwas_p_threshold = 5.0E-8
-        elif self.gwas_p_threshold > 1.0E-7:
-            self.gwas_p_threshold = 1.0E-7
         self.eqtl_p_threshold = self.global_config['p-value_threshold']['eqtl']
         if self.eqtl_p_threshold <= 0:
-            self.eqtl_p_threshold = 1.0E-6
-        elif self.eqtl_p_threshold > 1.0E-5:
             self.eqtl_p_threshold = 1.0E-5
         # input sep
         self.gwas_sep = self.global_config['input']['gwas'].get('sep', '\t')
@@ -90,3 +84,6 @@ class ConfigHolder:
         elif (len(self.eqtl_sep)) > 1:
             logging.warning(f'eQTL file separator is too long (can only be one char), using tab instead')
             self.eqtl_sep = '\t'
+
+        # tools parameter config file
+        self.tools_config_file = tools_config_file

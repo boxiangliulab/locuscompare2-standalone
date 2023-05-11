@@ -17,13 +17,15 @@ class Fastenloc:
     def run(self, eqtl_tissue=None, working_dir=None,
             eqtl_finemapping_file=None,
             eqtl_output_report=None,
-            output_torus_output_file=None):
+            output_torus_output_file=None,
+            tools_config_file=None):
         start_time = datetime.now()
         logging.info(f'fastenloc start at: {start_time}')
 
         shell_command_fastenloc_execute = 'fastenloc -e {} -g {} -t {} -prefix {} {}'
         output_analyze_output_dir = f'{working_dir}/analyzed'
-        fastenloc_params = utils.get_tools_params(self.COLOC_TOOL_NAME, param_prefix='-')
+        fastenloc_params = utils.get_tools_params(self.COLOC_TOOL_NAME, tools_config_file=tools_config_file,
+                                                  param_prefix='-')
 
         Path(output_analyze_output_dir).mkdir(parents=True, exist_ok=True)
         com_str = shell_command_fastenloc_execute.format(eqtl_finemapping_file,
@@ -34,7 +36,7 @@ class Fastenloc:
         os.system(com_str)
         report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue, eqtl_output_report)
 
-        logging.info(f'fastenloc complete at: {datetime.now()},duration: {datetime.now() - start_time}')
+        logging.info(f'fastenloc complete at: {datetime.now()},duration: {datetime.now() - start_time}, with params {fastenloc_params}')
         return report_output_snp_tsv_file
 
     def __analyze_result(self, output_dir, final_report_file, eqtl_output_report):

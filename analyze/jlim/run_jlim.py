@@ -188,7 +188,7 @@ class Jlim:
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get %s generated an exception: %s' % (data, exc))
+                        logging.error('Get result generated an exception: %s' % exc)
         else:
             for _, row in eqtl_summary_df.iterrows():
                 chrom = str(row.loc['chrom'])

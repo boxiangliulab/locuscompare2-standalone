@@ -18,13 +18,13 @@ class ECaviar:
     def __init__(self):
         logging.info('init eCaviar')
 
-    async def run(self, working_dir, candidate_data_dir):
+    async def run(self, working_dir, candidate_data_dir, tools_config):
         logging.info('eCaviar start to run...')
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
         coros = []
         finemap_snp_files = []
         finemap_params = '--n-causal-max 1'
-        custom_params = utils.get_tools_params('finemap')
+        custom_params = utils.get_tools_params('finemap', tools_config_file=tools_config)
         if custom_params and custom_params != '':
             finemap_params = custom_params
         for gene_dir in os.listdir(candidate_data_dir):

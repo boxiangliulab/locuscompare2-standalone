@@ -24,7 +24,7 @@ class ECaviarDataProcessor:
 
     def prepare(self, working_dir, gwas_cluster_dir, gwas_cluster_summary, eqtl_group_dir, eqtl_report, ref_vcf_dir,
                 gwas_col_dict, eqtl_col_dict, population, gwas_sample_size, eqtl_sample_size, var_id_col_name,
-                parallel=False):
+                parallel=False, parallel_worker_num=2):
         logging.info(f'Preparing gwas files')
         eqtl_candidate_df = pd.read_csv(eqtl_report, sep=const.column_spliter,
                                         dtype={eqtl_col_dict['chrom']: 'category'})
@@ -36,7 +36,7 @@ class ECaviarDataProcessor:
 
         if parallel:
             # Too many workers will cause error "Error: Failed to open"
-            with ThreadPoolExecutor(max_workers=2) as executor:
+            with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for gwas_cluster_file in os.listdir(gwas_cluster_dir):
                     # cluster file name example: chr{chromosome}_{position}-chr{}.tsv.gz
@@ -69,7 +69,7 @@ class ECaviarDataProcessor:
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get %s generated an exception: %s' % (data, exc))
+                        logging.error('Get result generated an exception: %s' % exc)
         else:
             for gwas_cluster_file in os.listdir(gwas_cluster_dir):
                 # cluster file name example: chr{chromosome}_{position}-chr{}.tsv.gz
@@ -126,9 +126,7 @@ class ECaviarDataProcessor:
                                              eqtl_col_dict['ref']: pd.CategoricalDtype(const.SNP_ALLELE)
                                              })
         # gwas, eqtl position matching的交集
-        gwas_cluster_df.drop(index=gwas_cluster_df[
-            ~gwas_cluster_df[gwas_col_dict['position']].isin(eqtl_grouped_df[eqtl_col_dict['position']])].index,
-                             inplace=True)
+        utils.drop_non_intersect_rows(eqtl_grouped_df, var_id_col_name, gwas_cluster_df, var_id_col_name)
         if len(gwas_cluster_df) == 0:
             return
         eqtl_grouped_df[self.zscore_col] = \
@@ -143,7 +141,6 @@ class ECaviarDataProcessor:
         if not Path(input_vcf).exists():
             logging.warning(f'!ref vcf {input_vcf} does not exist')
             return
-        utils.drop_non_intersect_rows(eqtl_grouped_df, var_id_col_name, gwas_cluster_df, var_id_col_name)
         gwas_cluster_df.sort_values(by=gwas_col_dict['position'], inplace=True)
         gwas_cluster_df.reset_index(drop=True, inplace=True)
         utils.adjust_allele_order(gwas_cluster_df,

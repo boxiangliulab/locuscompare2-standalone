@@ -5,7 +5,7 @@ input:
     trait: 'GCST90000616'
     sample_size: 417580
     type: 'cc'
-    sep: '	' #optional
+    sep: '	' #or "\t", escaping character must be in double quotes; optional
     col_name_mapping:
       snp: 'hm_rsid'
       chrom: 'hm_chrom'
@@ -39,6 +39,5 @@ input:
   twas_model_dir: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model'
 p-value_threshold:
   gwas: 5.0E-8
-  eqtl: 1.0E-6
-neighbour_snp_range: 25
+  eqtl: 1.0E-5
 population: 'EUR'

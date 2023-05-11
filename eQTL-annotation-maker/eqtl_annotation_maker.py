@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 import pandas as pd
+import subprocess
 import argparse
 from datetime import datetime
 
@@ -24,6 +25,16 @@ def converting_to_sbams_format(eqtl_path, phenotype_file, genotype_file, covaria
     return output_dir
 
 
+def get_chroms_from_bed(vcf_file):
+    if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
+        os.system(f'tabix -f -p bed {vcf_file}')
+    process = subprocess.Popen(['tabix', '-l', vcf_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = process.communicate()
+    if stderr:
+        return []
+    return stdout.decode("UTF-8").splitlines()
+
+
 # step 2 covariate_file need zip
 def estimate_priors_for_finemapping(eqtl_path, phenotype_file, genotype_file, covariate_file):
     print(f'estimate_priors_for_finemapping')
@@ -34,7 +45,8 @@ def estimate_priors_for_finemapping(eqtl_path, phenotype_file, genotype_file, co
     # foreach 22 chrom to get fastqtl file,then concat to one file
     torus_input_file_list = []
     torus_input_file = f'{eqtl_path}/torus_input.tsv'
-    for chr_num in [x + 1 for x in range(22)]:
+    chroms = get_chroms_from_bed(phenotype_file)
+    for chr_num in chroms:
         qtltools_file = f'{fastqtl_dir}/priors_{chr_num}.txt'
         shell_command_qtltools_execute = 'QTLtools cis --vcf {} --bed {} --cov {} --nominal 0.01 --region {} --normal --out {} --std-err'
         cmd_str_print_and_os_system(
@@ -127,7 +139,7 @@ def prepare(parse_args):
     print(f'prepare complete at: {datetime.now()},duration: {datetime.now() - start_time}')
 
 
-def parse_paramenters():
+def parse_parameters():
     parser = argparse.ArgumentParser()
     parser.add_argument('--d', dest="target_dir", help="target annotation file path")
     parser.add_argument('--g', dest="genotype_file", help="Text file with genotype vcf zip file")
@@ -148,5 +160,5 @@ def cmd_str_print_and_os_system(cmd_str):
 
 
 if __name__ == '__main__':
-    parse_args = parse_paramenters()
-    prepare(parse_args)
+    args = parse_parameters()
+    prepare(args)

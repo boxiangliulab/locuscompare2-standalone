@@ -37,14 +37,16 @@ class Smr:
             subset_vcf_dir=None,
             subset_vcf_file_pattern=None,
             ld_ref_dir=None,
-            ld_ref_file_pattern=None):
+            ld_ref_file_pattern=None,
+            tools_config_file=None):
         start_time = datetime.now()
         logging.info(f'run_smr start at: {start_time}')
         input_dir = self.__get_input_dir(working_dir)
         output_dir = self.__get_output_dir(working_dir)
         Path(input_dir).mkdir(parents=True, exist_ok=True)
         Path(output_dir).mkdir(parents=True, exist_ok=True)
-        smr_custom_params = utils.get_tools_params(self.COLOC_TOOL_NAME, params_without_value=['heidi-off'])
+        smr_custom_params = utils.get_tools_params(self.COLOC_TOOL_NAME, tools_config_file=tools_config_file,
+                                                   params_without_value=['heidi-off'])
 
         pval_filtered_gwas_df = pd.read_table(gwas_filter_file, sep=const.column_spliter,
                                               usecols=[gwas_col_dict['chrom'], gwas_col_dict['position']],
@@ -224,7 +226,7 @@ class Smr:
                           f'--beqtl-summary {eqtl_besd_file} ' \
                           f'--peqtl-smr {eqtl_p_thresh} ' \
                           f'--out {gene_out_result}'
-                cmd_params = '--diff-freq-prop 0.99 --cis-wind 200'
+                cmd_params = '--diff-freq-prop 1'
                 if smr_custom_params and smr_custom_params != '':
                     cmd_params += smr_custom_params
                 os.system(f'{smr_cmd} {cmd_params}')

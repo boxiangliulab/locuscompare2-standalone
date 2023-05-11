@@ -107,7 +107,7 @@ def create_snp_annot_from_vcf(input_vcf, output_dir, use_varid_in_covariances=Tr
     for name, group in grouped:
         chr_notation = f'{name}' if vcf_chr_notation else f'chr{name}'
         output_file = os.path.join(output_dir, f'snp_annot_{chr_notation}.tsv')
-        group.to_csv(output_file, sep='\t', header=True, index=False)
+        group.to_csv(output_file, sep='\t', header=True, index=False, na_rep='NA')
     logging.info('Create snp annotation from vcf complete')
 
 
@@ -156,7 +156,7 @@ def create_genotype_from_vcf(input_vcf, output_dir):
         group.columns = ['varID'] + individual_ids
         chr_notation = f'{name}' if vcf_chr_notation else f'chr{name}'
         output_file = os.path.join(output_dir, f'geno_{chr_notation}.tsv')
-        group.to_csv(output_file, sep='\t', header=True, index=False)
+        group.to_csv(output_file, sep='\t', header=True, index=False, na_rep='NA')
     logging.info('Create genotype files from vcf complete')
 
 
@@ -230,6 +230,12 @@ def train_for_chrom(chrom, expression_file, gene_annot_file, covariates_file, ge
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'train_elnet.R')
     snp_annot = os.path.join(geno_snp_input_dir, f'snp_annot_chr{chrom}.tsv')
     genotype = os.path.join(geno_snp_input_dir, f'geno_chr{chrom}.tsv')
+    if not os.path.exists(snp_annot) or os.path.getsize(snp_annot) <= 0:
+        logging.info(f'snp_annot for chrom {chrom} does exist, skipping')
+        return
+    if not os.path.exists(genotype) or os.path.getsize(genotype) <= 0:
+        logging.info(f'genotype for chrom {chrom} does exist, skipping')
+        return
     os.system(f'Rscript --no-save --no-restore {rscript_path} {snp_annot} {gene_annot_file}  {genotype} '
               f'{expression_file} {covariates_file} {chrom} {summary_dir} {weights_dir} {covariances_dir} {sim_data}')
 

@@ -32,13 +32,13 @@ class Coloc:
             eqtl_sample_size=None,
             gwas_type=None,
             eqtl_type=None,
-            parallel=False):
+            parallel=False,
+            tools_config=None,
+            parallel_worker_num=10):
         gwas_type_dict = {gwas_col_dict['chrom']: 'category',
                           gwas_col_dict['position']: 'Int64',
                           gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
-                          gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
-                          'ref': pd.CategoricalDtype(const.SNP_ALLELE),
-                          'alt': pd.CategoricalDtype(const.SNP_ALLELE)
+                          gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)
                           }
         eqtl_type_dict = {eqtl_col_dict['chrom']: 'category',
                           eqtl_col_dict['position']: 'Int64',
@@ -68,10 +68,10 @@ class Coloc:
         Path(self.__get_output_dir(working_dir)).mkdir(parents=True, exist_ok=True)
         # Loop to process all eQTL trait file
         gwas_chroms = gwas_range_files.keys()
-        _p1, _p2, _p12 = self.__get_coloc_run_params()
+        _p1, _p2, _p12 = self.__get_coloc_run_params(tools_config)
 
         if parallel:
-            with ThreadPoolExecutor(max_workers=10) as executor:
+            with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for _, row in eqtl_summary_df.iterrows():
                     chrom = str(row.loc['chrom'])
@@ -91,7 +91,7 @@ class Coloc:
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get %s generated an exception: %s' % (data, exc))
+                        logging.error('Get result generated an exception: %s' % exc)
 
         else:
             for _, row in eqtl_summary_df.iterrows():
@@ -111,7 +111,7 @@ class Coloc:
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
             logging.info(
-                f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
+                f'Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
         return output_file
 
     def process_gene(self, output_dir, gwas_range_file, gwas_type_dict, gwas_col_dict, row, eqtl_gene_file,
@@ -239,8 +239,8 @@ class Coloc:
     def __get_output_dir(self, working_dir):
         return os.path.join(working_dir, 'output')
 
-    def __get_coloc_run_params(self):
-        params = utils.get_tools_params_dict(self.COLOC_TOOL_NAME)
+    def __get_coloc_run_params(self, tools_config):
+        params = utils.get_tools_params_dict(self.COLOC_TOOL_NAME, tools_config)
         _p1 = 1.0E-4 if params.get('p1') is None else params['p1']
         _p2 = 1.0E-4 if params.get('p2') is None else params['p2']
         _p12 = 1.0E-5 if params.get('p12') is None else params['p12']

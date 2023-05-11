@@ -163,9 +163,6 @@ p-value_threshold:
   # For example, use 5.0E-8 rather than 5E-8
   gwas: 5.0E-8
   eqtl: 1.0E-6
-  
-# The upstream and downstream variants number of a significant snp
-neighbour_snp_range: 25
 # Your research population, EUR, EAS, SAS, AMR or AFR
 population: 'EUR'
 ```
@@ -187,11 +184,6 @@ python colotools_project_path/common/config_generator.py --out output_dir
 ```
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
 
-### Config Arguments for Each Tool (Optional)
-
-You can set arguments for each tools by creating a config file named 'tools_config.yml' in project root folder 'colocalization-tools/'.
-
-The configuration example is in [/resource/tools_config.yml](/resource/tools_config.yml) .
 
 ## 3. Run Colotools
 
@@ -199,14 +191,16 @@ The configuration example is in [/resource/tools_config.yml](/resource/tools_con
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run Colotools in command line
 ```shell
-python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--parallel] [--log path_to_logfile]
+python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--tools_config parameter_config_file_for_each_tool] [--parallel] [--log path_to_logfile] [--no_report]
 ```
-| Parameter | Description                                                                                                                                                                                                                                                                           |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| config    | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        |
-| tools     | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **ecaviar**, **twas**. All tools will be run if this param is omitted. |
-| parallel  | Optional. Run in parallel mode, this requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                                                       |
-| log       | Optional. The path to log file                                                                                                                                                                                                                                                        |
+| Parameter    | Description                                                                                                                                                                                                                                                                           |
+|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| config       | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        |
+| tools        | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **ecaviar**, **twas**. All tools will be run if this param is omitted. |
+| tools_config | Optional. Parameters for each tool, example is in [/resource/tools_config.yml](/resource/tools_config.yml)                                                                                                                                                                            |
+| parallel     | Optional. Run in parallel mode, this requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                                                       |
+| no_report    | Optional. Generate offline site                                                                                                                                                                                                                                                      |
+| log          | Optional. The path to log file                                                                                                                                                                                                                                                        |
 
 + Run Colotools in python project
 

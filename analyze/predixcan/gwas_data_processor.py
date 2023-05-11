@@ -28,23 +28,23 @@ class PredixcanGwasProcessor:
         utils.delete_file_if_exists(output_processed_file)
         with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter,
                            usecols=[gwas_col_dict['chrom'], gwas_col_dict['position'], gwas_col_dict['effect_allele'],
-                                    gwas_col_dict['other_allele'], gwas_col_dict['beta'], gwas_col_dict['se'], 'alt',
-                                    'ref'],
+                                    gwas_col_dict['other_allele'], gwas_col_dict['beta'], gwas_col_dict['se'], 'alt_',
+                                    'ref_'],
                            dtype={gwas_col_dict['position']: 'Int64',
                                   gwas_col_dict['chrom']: 'category',
                                   gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
                                   gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
-                                  'ref': pd.CategoricalDtype(const.SNP_ALLELE),
-                                  'alt': pd.CategoricalDtype(const.SNP_ALLELE)},
+                                  'ref_': pd.CategoricalDtype(const.SNP_ALLELE),
+                                  'alt_': pd.CategoricalDtype(const.SNP_ALLELE)},
                            iterator=True, chunksize=500000, header=0) as reader:
             for chunk in reader:
                 chunk[PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME] = \
                     'chr' + chunk[gwas_col_dict['chrom']].astype(str) \
                     + '_' + chunk[gwas_col_dict['position']].astype(str) \
-                    + '_' + chunk['ref'].astype(str) \
-                    + '_' + chunk['alt'].astype(str) \
+                    + '_' + chunk['ref_'].astype(str) \
+                    + '_' + chunk['alt_'].astype(str) \
                     + '_b38'
-                chunk.drop(columns=[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt', 'ref'], inplace=True)
+                chunk.drop(columns=[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt_', 'ref_'], inplace=True)
                 if os.path.exists(output_processed_file) and os.path.getsize(output_processed_file) > 0:
                     mode = 'a'
                     header = False

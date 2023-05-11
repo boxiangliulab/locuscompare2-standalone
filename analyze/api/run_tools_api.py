@@ -49,7 +49,8 @@ def __preprocess_and_run_fastenloc(processor):
                       working_dir=_working_dir,
                       eqtl_finemapping_file=processor.global_config['input']['eqtl_finemapping_file'],
                       eqtl_output_report=processor.eqtl_output_report,
-                      output_torus_output_file=fastenloc_gwas_result)
+                      output_torus_output_file=fastenloc_gwas_result,
+                      tools_config_file=processor.tools_config_file)
 
 
 def __preprocess_and_run_coloc(glob_processor):
@@ -72,6 +73,7 @@ def __preprocess_and_run_coloc(glob_processor):
                      _eqtl_sample_size,
                      _gwas_type,
                      _eqtl_type,
+                     tools_config=glob_processor.tools_config_file,
                      parallel=glob_processor.config_holder.parallel)
 
 
@@ -143,7 +145,8 @@ def __preprocess_and_run_smr(glob_processor):
                    _subset_vcf_dir,
                    smr_eqtl_result[1],
                    _ld_ref_dir,
-                   smr_eqtl_result[3])
+                   smr_eqtl_result[3],
+                   tools_config_file=glob_processor.tools_config_file)
 
 
 def __preprocess_and_run_ecaviar(glob_processor):
@@ -169,7 +172,8 @@ def __preprocess_and_run_ecaviar(glob_processor):
 
     ecaviar = run_e.ECaviar()
     return asyncio.run(ecaviar.run(working_dir=_working_dir,
-                                   candidate_data_dir=preproc_rst_dir))
+                                   candidate_data_dir=preproc_rst_dir,
+                                   tools_config=glob_processor.tools_config_file))
 
 
 def __preprocess_and_run_twas(glob_processor):
@@ -185,4 +189,5 @@ def __preprocess_and_run_twas(glob_processor):
                     glob_processor.gwas_output_dir,
                     glob_processor.gwas_col_dict,
                     glob_processor.ref_vcf_dir,
-                    pop)
+                    pop,
+                    tools_config_file=glob_processor.tools_config_file)

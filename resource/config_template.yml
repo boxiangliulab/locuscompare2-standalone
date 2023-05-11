@@ -10,5 +10,4 @@ input:
 p-value_threshold:
   gwas: 5.0E-8
   eqtl: 1.0E-6
-neighbour_snp_range: 25
 population: 'EUR'

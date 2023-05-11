@@ -24,7 +24,7 @@ class FastenlocGwasProcessor:
         return f'{output_gwas_dir}/pip'
 
     def get_output_torus_output_file(self, output_torus_output_dir):
-        return f'{output_torus_output_dir}/tours_output.pip'
+        return f'{output_torus_output_dir}/torus_output.pip'
 
     def prepare_gwas_data(self, working_dir=None, gwas_preprocessed_file=None,
                           gwas_col_dict=None, ld_block_loci_file=None):
@@ -34,7 +34,7 @@ class FastenlocGwasProcessor:
         output_base_dir = working_dir
         output_gwas_dir = self.get_output_gwas_dir(output_base_dir)
         output_torus_input_dir = f'{output_gwas_dir}/torus_input'
-        output_torus_input_file = f'{output_torus_input_dir}/tours_input'
+        output_torus_input_file = f'{output_torus_input_dir}/torus_input'
         utils.delete_file_if_exists(output_torus_input_file)
         output_torus_output_dir = self.get_output_torus_output(output_gwas_dir)
         output_torus_output_file = self.get_output_torus_output_file(output_torus_output_dir)
@@ -43,7 +43,7 @@ class FastenlocGwasProcessor:
                        gwas_col_dict['se'],
                        gwas_col_dict['position'], gwas_col_dict['chrom'],
                        gwas_col_dict['effect_allele'],
-                       gwas_col_dict['other_allele'], 'ref', 'alt']
+                       gwas_col_dict['other_allele'], 'ref_', 'alt_']
 
         shell_command_torus_execute = 'torus -d {} --load_zval -dump_pip {}'
         shell_compress_file = 'gzip -k -f {}'
@@ -55,15 +55,15 @@ class FastenlocGwasProcessor:
                                   gwas_col_dict['chrom']: 'category',
                                   gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
                                   gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
-                                  'ref': pd.CategoricalDtype(const.SNP_ALLELE),
-                                  'alt': pd.CategoricalDtype(const.SNP_ALLELE)},
+                                  'ref_': pd.CategoricalDtype(const.SNP_ALLELE),
+                                  'alt_': pd.CategoricalDtype(const.SNP_ALLELE)},
                            iterator=True, chunksize=500000) as reader:
             for chunk in reader:
                 chunk['zscore'] = chunk[gwas_col_dict['beta']] / chunk[gwas_col_dict['se']]
                 chunk.drop(columns=[gwas_col_dict['beta'], gwas_col_dict['se']], inplace=True)
                 logging.info(f'Reading GWAS file completed, memory usage: {chunk.memory_usage(deep=True)}')
                 # Adjust allele order
-                ref_df = chunk[[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt', 'ref']]
+                ref_df = chunk[[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt_', 'ref_']]
                 logging.info(f'Aligning allele order')
                 utils.adjust_allele_order(chunk,
                                           gwas_col_dict['effect_allele'],
@@ -73,8 +73,8 @@ class FastenlocGwasProcessor:
                                           ref_df,
                                           ref_df_chrom_col_name=gwas_col_dict['chrom'],
                                           ref_df_pos_col_name=gwas_col_dict['position'],
-                                          ref_df_alt_allele_col_name='alt',
-                                          ref_df_ref_allele_col_name='ref',
+                                          ref_df_alt_allele_col_name='alt_',
+                                          ref_df_ref_allele_col_name='ref_',
                                           gz_col_name='zscore',
                                           drop_ref_df_non_intersect_items=False)
                 logging.info(f'Align allele order completed')
@@ -82,8 +82,8 @@ class FastenlocGwasProcessor:
                 # chr1_13550_G_A_b38
                 chunk['variant_id'] = 'chr' + chunk[gwas_col_dict['chrom']].astype(str) + '_' + \
                                       chunk[gwas_col_dict['position']].astype(str) + '_' + \
-                                      chunk['ref'].astype(str) + '_' + chunk['alt'].astype(str)
-                chunk.drop(columns=[gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'], 'ref', 'alt'],
+                                      chunk['ref_'].astype(str) + '_' + chunk['alt_'].astype(str)
+                chunk.drop(columns=[gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'], 'ref_', 'alt_'],
                            inplace=True)
                 logging.info(f'Adding zscore/variant_id completed, memory usage: {chunk.memory_usage(deep=True)}')
                 # get loc range in eur_ld.hg38.bed for loc column
