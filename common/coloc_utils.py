@@ -210,6 +210,9 @@ def find_peak_range_from_file(input_file_path, common_snp, target_snp_df,
 
 def extract_vcf_data(chromosome, target_pos_rsid_df, ref_vcf_file_path, output_vcf_dir, output_vcf_file_name,
                      target_position_col_name, target_snp_col_name, extract_step_size=500000):
+    if target_pos_rsid_df.shape[0] == 0:
+        logging.info(f'**** end process, target df is empty, nothing to extract')
+        return
     if is_vcf_chrom_code_contains_chr(ref_vcf_file_path):
         chrom_code_in_vcf = chromosome if chromosome.startswith('chr') else f'chr{chromosome}'
     else:
@@ -297,7 +300,7 @@ def parse_parameters():
     parser.add_argument('--config', dest='config_file', help='Text file with gwas, eqtl message')
     # log file path
     parser.add_argument('--log', dest='log_file', help='Log file path')
-    parser.add_argument('--parallel', dest='parallel', help='turn on parallel', action="store_true")
+    parser.add_argument('--disable_parallel', dest='parallel', help='disable parallel', action="store_false")
     # customized parameters for each tool
     parser.add_argument('--tools_config', dest='tools_config', help='customized parameters for each tool')
     parser.add_argument('--no_report', dest='no_report', help='turn off generating report', action="store_true")

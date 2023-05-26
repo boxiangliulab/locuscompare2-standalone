@@ -70,9 +70,12 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
             reading_cols.append('b_SMR')
             reading_cols.append('se_SMR')
             reading_cols.append('p_HEIDI')
-        h1_report_df = pd.read_table(h1_report, usecols=reading_cols)
-        h1_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-        h1_report_df[prob_col_name] = 1 - h1_report_df[rpt_pval_col_name]
+        if h1_report is not None and Path(h1_report).exists() and os.path.getsize(h1_report) > 0:
+            h1_report_df = pd.read_table(h1_report, usecols=reading_cols)
+            h1_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+            h1_report_df[prob_col_name] = 1 - h1_report_df[rpt_pval_col_name]
+        else:
+            h1_report_df = pd.DataFrame(columns=[rpt_pval_col_name, prob_col_name, GENE_ID_COL_NAME])
         if sec_report is not None and Path(sec_report).exists() and os.path.getsize(sec_report) > 0:
             sec_report_df = pd.read_table(sec_report, usecols=reading_cols)
             sec_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -81,9 +84,12 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
         else:
             sec_report_df = pd.DataFrame(columns=[rpt_pval_col_name, prob_col_name, GENE_ID_COL_NAME])
     else:
-        h1_report_df = pd.read_table(h1_report, usecols=[rpt_prob_col_name, GENE_ID_COL_NAME])
-        h1_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-        h1_report_df[prob_col_name] = h1_report_df[rpt_prob_col_name]
+        if h1_report is not None and Path(h1_report).exists() and os.path.getsize(h1_report) > 0:
+            h1_report_df = pd.read_table(h1_report, usecols=[rpt_prob_col_name, GENE_ID_COL_NAME])
+            h1_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+            h1_report_df[prob_col_name] = h1_report_df[rpt_prob_col_name]
+        else:
+            h1_report_df = pd.DataFrame(columns=[rpt_prob_col_name, prob_col_name, GENE_ID_COL_NAME])
         if sec_report is not None and Path(sec_report).exists() and os.path.getsize(sec_report) > 0:
             sec_report_df = pd.read_table(sec_report, usecols=[rpt_prob_col_name, GENE_ID_COL_NAME])
             sec_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -878,7 +884,9 @@ def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1'):
     plt.figure(figsize=(8, 6))
     # move xlabel to top
     plt.tick_params(labelbottom=False, bottom=False, top=False, labeltop=True)
-    heatmap = sns.clustermap(spearman_corr, vmin=0, vmax=1, annot=True, cmap="vlag")
+    sns.set(font_scale=1.2)
+    heatmap = sns.clustermap(spearman_corr, vmin=0, vmax=1, annot=True, cmap="vlag",
+                             cbar_kws=dict(ticks=[0, .2, .4, .6, .8, 1.0]))
     # heatmap.set_title('Spearman Correlation Heatmap')
     if output_figure_path is not None:
         plt.savefig(output_figure_path)

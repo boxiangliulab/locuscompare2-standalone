@@ -101,6 +101,9 @@ class SmrEqtlProcessor:
         candidate_eqtl_trait_df = utils.filter_data_frame_by_p_value(eqtl_trait_df, eqtl_p_thresh,
                                                                      eqtl_col_dict['pvalue'], inplace=False)
         del eqtl_trait_df
+        if candidate_eqtl_trait_df.shape[0] == 0:
+            logging.warning(f'{eqtl_gene_file} does not contain significant records')
+            return
         output_vcf_name = self.__get_output_vcf_file_pattern().format(chrom, gene_id)
         output_vcf_full_path = os.path.join(self.__get_output_vcf_dir(working_dir), output_vcf_name)
 

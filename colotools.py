@@ -2,6 +2,7 @@ import concurrent
 import logging
 import os
 import sys
+import traceback
 import uuid
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
@@ -243,6 +244,8 @@ def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, stu
                     exceptions.append(exc)
                     logging.info(f'Tool {current_tool} failed with error: {exc}!')
             if exceptions:
+                for ex in exceptions:
+                    logging.error("".join(traceback.TracebackException.from_exception(ex).format()))
                 raise Exception(exceptions)
         for tool in results.keys():
             report_list.append(
@@ -272,5 +275,6 @@ if __name__ == '__main__':
     start_time = datetime.now()
     logging.info(f'start run all coloctools, start time: {start_time}')
     parse_args = utils.parse_parameters()
-    run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel, parse_args.tools_config, parse_args.no_report)
+    run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel,
+        parse_args.tools_config, parse_args.no_report)
     logging.info(f'all coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')

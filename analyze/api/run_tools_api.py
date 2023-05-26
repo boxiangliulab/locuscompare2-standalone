@@ -1,6 +1,7 @@
 import asyncio
 import os
 from pathlib import Path
+import psutil
 import analyze.jlim.run_jlim as jt
 import analyze.coloc.run_coloc as rc
 import analyze.fastenloc.run_fastenloc as rf
@@ -184,10 +185,24 @@ def __preprocess_and_run_twas(glob_processor):
     _weight_pos_file = util.get_twas_ref_files(glob_processor.global_config)
     pop = glob_processor.global_config.get('population', 'EUR').upper()
     twas = rt.TWAS()
+    parallel = glob_processor.config_holder.parallel
+    if parallel:
+        memory_size = psutil.virtual_memory().total / 1024 / 1024 / 1024
+        # baseline is 16GB, every TWAS worker use up to 5GB memory
+        worker_num = int((memory_size - 16) // 5)
+        if worker_num < 2:
+            worker_num = 1
+            parallel = False
+        elif worker_num > 22:
+            worker_num = 22
+    else:
+        worker_num = 1
     return twas.run(_working_dir,
                     _weight_pos_file,
                     glob_processor.gwas_output_dir,
                     glob_processor.gwas_col_dict,
                     glob_processor.ref_vcf_dir,
                     pop,
-                    tools_config_file=glob_processor.tools_config_file)
+                    parallel=parallel,
+                    tools_config_file=glob_processor.tools_config_file,
+                    parallel_worker_num=worker_num)

@@ -46,7 +46,7 @@ input:
     sample_size: 116863
     # Required. Study type, cc or quant
     type: cc
-    # Optional. seperator of the GWAS input file, can be one and only one char, if more chars are specified, tab will be used instead
+    # Optional. Seperator of the GWAS input file, escaping character must be in double quotes("\t" for tab), default sep is tab
     sep: '	'
     # Tell colotools the field name in input GWAS file.
     col_name_mapping:
@@ -75,7 +75,7 @@ input:
     tissue: 'Spleen'
     # Required. eQTL sample size
     sample_size: 147
-    # Optional. seperator of the eQTL input file, can be one and only one char, if more chars are specified, tab will be used instead
+    # Optional. Seperator of the eQTL input file, escaping character must be in double quotes("\t" for tab), default sep is tab
     sep: '	'
     # Tell colotools the field name in the input eQTL file.
     col_name_mapping:
@@ -162,7 +162,7 @@ p-value_threshold:
   # GWAS P-value threshold must <=1.0E-7, eQTL P-value threshold must <=1.0E-5, values out of this range will be discarded
   # For example, use 5.0E-8 rather than 5E-8
   gwas: 5.0E-8
-  eqtl: 1.0E-6
+  eqtl: 1.0E-5
 # Your research population, EUR, EAS, SAS, AMR or AFR
 population: 'EUR'
 ```
@@ -191,16 +191,16 @@ python colotools_project_path/common/config_generator.py --out output_dir
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run Colotools in command line
 ```shell
-python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--tools_config parameter_config_file_for_each_tool] [--parallel] [--log path_to_logfile] [--no_report]
+python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--tools_config parameter_config_file_for_each_tool] [--disable_parallel] [--log path_to_logfile] [--no_report]
 ```
-| Parameter    | Description                                                                                                                                                                                                                                                                           |
-|--------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| config       | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        |
-| tools        | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **ecaviar**, **twas**. All tools will be run if this param is omitted. |
-| tools_config | Optional. Parameters for each tool, example is in [/resource/tools_config.yml](/resource/tools_config.yml)                                                                                                                                                                            |
-| parallel     | Optional. Run in parallel mode, this requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                                                       |
-| no_report    | Optional. Generate offline site                                                                                                                                                                                                                                                      |
-| log          | Optional. The path to log file                                                                                                                                                                                                                                                        |
+| Parameter        | Description                                                                                                                                                                                                                                                                           |
+|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| config           | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        |
+| tools            | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **ecaviar**, **twas**. All tools will be run if this param is omitted. |
+| tools_config     | Optional. Parameters for each tool, example is in [/resource/tools_config.yml](/resource/tools_config.yml)                                                                                                                                                                            |
+| disable_parallel | Optional. Disable parallel mode (enabled by default), parallel run requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                         |
+| no_report        | Optional. Generate offline site                                                                                                                                                                                                                                                       |
+| log              | Optional. The path to log file                                                                                                                                                                                                                                                        |
 
 + Run Colotools in python project
 
