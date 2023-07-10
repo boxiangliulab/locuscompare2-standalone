@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -43,32 +44,31 @@ class TWAS:
                              f'did you config it in PATH env(or did you activate conda env?)')
         if weights_path is None:
             raise ValueError(f'TWAS weight files(.pos file and .RDat files) must be provided to run TWAS')
+        ld_ref_prefix = os.path.join(ref_vcf_dir, population.upper(), f'chr')
         if parallel:
             with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for chrom_group_file in os.listdir(gwas_chrom_group_dir):
-                    chrom, input_vcf, ld_ref_prefix = self.__prepare_depdencies(
-                        chrom_group_file, ref_vcf_dir, population)
-                    if chrom is None or input_vcf is None or ld_ref_prefix is None:
+                    chrom = self.__ensure_chrom_ld_ref(chrom_group_file, ref_vcf_dir, population)
+                    if chrom is None:
                         continue
                     chrom_group_file_path = os.path.join(gwas_chrom_group_dir, chrom_group_file)
                     futures.append(
-                        executor.submit(self.process_chrom, chrom, chrom_group_file_path, input_vcf, ld_ref_prefix,
+                        executor.submit(self.process_chrom, chrom, chrom_group_file_path, ld_ref_prefix,
                                         gwas_col_dict, input_dir, twas_path, weights_path, tools_config_file))
                 for future in concurrent.futures.as_completed(futures):
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get result generated an exception: %s' % exc)
+                        logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
 
         else:
             for chrom_group_file in os.listdir(gwas_chrom_group_dir):
-                chrom, input_vcf, ld_ref_prefix = self.__prepare_depdencies(
-                    chrom_group_file, ref_vcf_dir, population)
-                if chrom is None or input_vcf is None or ld_ref_prefix is None:
+                chrom = self.__ensure_chrom_ld_ref(chrom_group_file, ref_vcf_dir, population)
+                if chrom is None:
                     continue
                 chrom_group_file_path = os.path.join(gwas_chrom_group_dir, chrom_group_file)
-                self.process_chrom(chrom, chrom_group_file_path, input_vcf, ld_ref_prefix, gwas_col_dict, input_dir,
+                self.process_chrom(chrom, chrom_group_file_path, ld_ref_prefix, gwas_col_dict, input_dir,
                                    twas_path, weights_path, tools_config_file)
 
         self.__analyze_result(input_dir, output_file)
@@ -79,36 +79,30 @@ class TWAS:
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
         return output_file
 
-    def __prepare_depdencies(self, chrom_group_file, ref_vcf_dir, population):
+    def __ensure_chrom_ld_ref(self, chrom_group_file, ref_vcf_dir, population):
         if not (chrom_group_file.endswith('.tsv') or chrom_group_file.endswith('.tsv.gz')):
-            return None, None, None
+            return None
         chr_nums = re.findall(r'\d+', chrom_group_file)
         if len(chr_nums) == 0:
-            return None, None, None
+            return None
         chrom = chr_nums[0]
-        ld_ref_prefix = os.path.join(ref_vcf_dir, population.upper(), f'chr')
-        ld_ref = f'{ld_ref_prefix}{chrom}.bed'
-        if not os.path.exists(ld_ref):
-            logging.warning(f'!Plink binary ref LD files do not exist')
-            return None, None, None
-        input_vcf = os.path.join(ref_vcf_dir, population.upper(), f'chr{chrom}.vcf.gz')
-        if not os.path.exists(input_vcf):
-            logging.warning(f'!ref vcf {input_vcf} does not exist')
-            return None, None, None
-        return chrom, input_vcf, ld_ref_prefix
+        chrom_ld_ref_prefix = os.path.join(ref_vcf_dir, population.upper(), f'chr{chrom}')
+        if not os.path.exists(f'{chrom_ld_ref_prefix}.bed') or not os.path.exists(
+                f'{chrom_ld_ref_prefix}.bim') or not os.path.exists(f'{chrom_ld_ref_prefix}.fam'):
+            logging.info(f'plink binary ref LD files for chrom {chrom} do not exist, trying to generate from vcf')
+            input_vcf = os.path.join(ref_vcf_dir, population.upper(), f'chr{chrom}.vcf.gz')
+            if not os.path.exists(input_vcf):
+                logging.warning(f'!ref vcf {input_vcf} does not exist')
+                return None
+            # https://github.com/gusevlab/fusion_twas/issues/28
+            os.system(f'plink --silent --vcf {input_vcf} '
+                      f'--maf 0.01 --geno 0.01 --mind 0.01 --hwe 1e-06 --snps-only just-acgt '
+                      f'--biallelic-only strict --make-bed --out {chrom_ld_ref_prefix}')
+        return chrom
 
-    def process_chrom(self, chrom, gwas_file, input_vcf, ld_ref_prefix, gwas_col_dict, input_dir, twas_path,
+    def process_chrom(self, chrom, gwas_file, ld_ref_prefix, gwas_col_dict, input_dir, twas_path,
                       weights_path, tools_config_file):
         logging.warning(f'Processing for chromosome {chrom} start')
-        # vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4], dtype={
-        #     0: 'category',
-        #     1: 'Int64',
-        #     3: pd.CategoricalDtype(const.SNP_ALLELE),
-        #     4: pd.CategoricalDtype(const.SNP_ALLELE)})
-        # vcf_df.columns = ['chromosome', 'position', 'ref', 'alt']
-        # vcf_df.dropna(subset=['ref', 'alt'], inplace=True)
-        # vcf_df.drop_duplicates(subset='position', keep=False, inplace=True)
-        # vcf_df.reset_index(drop=True, inplace=True)
         gwas_chrom_df = pd.read_table(gwas_file, sep=const.column_spliter,
                                       usecols=[gwas_col_dict['snp'], gwas_col_dict['chrom'], gwas_col_dict['position'],
                                                gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
@@ -117,10 +111,6 @@ class TWAS:
                                              gwas_col_dict['position']: 'Int64',
                                              gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
                                              gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
-        # utils.adjust_allele_order(gwas_chrom_df, gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
-        #                           gwas_col_dict['chrom'], gwas_col_dict['position'], vcf_df,
-        #                           gbeta_col_name=gwas_col_dict['beta'], drop_ref_df_non_intersect_items=False)
-        # del vcf_df
         if gwas_chrom_df.empty:
             logging.warning(f'gwas input size is 0')
             return

@@ -157,6 +157,7 @@ def plot_all_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
+    plt.close()
 
 
 def plot_single_prc(generated_list, h1_report, sec_report, sec_causal_type,
@@ -181,6 +182,7 @@ def plot_all_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
+    plt.close()
 
 
 def plot_prc_curve(true_y, y_prob, tool):
@@ -239,10 +241,10 @@ def plot_all_against_ensemble_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
     # plot_roc_curve(ranking_result_df[is_positive_col_name], ranking_result_df[prob_col_name], tool='birra_ranking')
     # --------
     rra_geo_output_file = os.path.join(output_dir, 'rra_geo.tsv')
-    rra.run_ranking(output_file_path=rra_geo_output_file, rpt=rpt_obj, sample_size=191647, method='GEO')
-    rgeo_df = pd.read_table(rra_geo_output_file, usecols=[GENE_ID_COL_NAME, 'geo_p_value'])
+    rra.run_ranking(output_file_path=rra_geo_output_file, rpt=rpt_obj, method='GEO')
+    rgeo_df = pd.read_table(rra_geo_output_file, usecols=[GENE_ID_COL_NAME, 'geo_ranking'])
     # Convert rra p_value to probability. TODO this method is not good
-    rgeo_df[prob_col_name] = 1 - rgeo_df['geo_p_value']
+    rgeo_df[prob_col_name] = 1 - rgeo_df['geo_ranking']
     rgeo_df = pd.merge(left=rgeo_df, right=std_df,
                        left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
                        how='left')
@@ -383,6 +385,7 @@ def plot_all_against_ensemble_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
+    plt.close()
 
 
 def plot_all_against_ensemble_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1,
@@ -412,10 +415,10 @@ def plot_all_against_ensemble_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
     std_df = retrieve_std_df(generated_file_path, sec_causal_type)
     # --------
     # rra_geo_output_file = os.path.join(output_dir, 'rra_geo.tsv')
-    # rra.run_ranking(output_file_path=rra_geo_output_file, rpt=rpt_obj, sample_size=191647, method='GEO')
-    # rgeo_df = pd.read_table(rra_geo_output_file, usecols=[GENE_ID_COL_NAME, 'geo_p_value'])
+    # rra.run_ranking(output_file_path=rra_geo_output_file, rpt=rpt_obj, method='GEO')
+    # rgeo_df = pd.read_table(rra_geo_output_file, usecols=[GENE_ID_COL_NAME, 'geo_ranking'])
     # # Convert rra p_value to probability. TODO this method is not good
-    # rgeo_df[prob_col_name] = 1 - rgeo_df['geo_p_value']
+    # rgeo_df[prob_col_name] = 1 - rgeo_df['geo_ranking']
     # rgeo_df = pd.merge(left=rgeo_df, right=std_df,
     #                    left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
     #                    how='left')
@@ -437,6 +440,7 @@ def plot_all_against_ensemble_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
     # plt.show()
+    plt.close()
 
 
 def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
@@ -561,6 +565,7 @@ def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, ou
     # plt.title("Sensitivity/Specificity of different tools")
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
+    plt.close()
 
 
 def calc_max_tpr_minus_fpr_threshold(generated_file_path=None, h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1):
@@ -666,6 +671,7 @@ def plot_single_venn(
     pseudovenn(dataset_dict, figsize=(12, 12), hint_hidden=False, cmap="plasma")
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
+    plt.close()
     # save data to file
     result_df = __merge_tool_gene_id(generated_file_path, coloc_df, smr_df, fastenloc_df, predixcan_df, ecaviar_df,
                                      twas_df)
@@ -831,7 +837,7 @@ def plot_mean_sd_combinations_bar(
             tp_count.append(uniq_df.notna().sum())
         tp_count_df = pd.DataFrame(tp_count, columns=['cnt'])
         means.append(tp_count_df['cnt'].mean())
-        stds.append(0 if tp_count_df.shape[0] == 1 else tp_count_df['cnt'].std())
+        stds.append(0 if tp_count_df.shape[0] == 1 else tp_count_df['cnt'].std(ddof=0))
     print(f'count:{count}\nmeans:{means}\nstds:{stds}')
     plt.figure().clear()
     fig, ax = plt.subplots(figsize=(8, 6))
@@ -844,6 +850,7 @@ def plot_mean_sd_combinations_bar(
     # ax.set_xticks(x, count)
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
+    plt.close()
 
 
 def __read_tool_rank(rpt, tool_name, sig_col_name, sig_type):
@@ -853,7 +860,7 @@ def __read_tool_rank(rpt, tool_name, sig_col_name, sig_type):
     rpt_df.sort_values(sig_col_name, ascending=sig_type == RESULT_TYPE_PVAL, inplace=True)
     rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
     rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
-    rpt_df[tool_name] = range(0, rpt_df.shape[0])
+    rpt_df[tool_name] = range(1, rpt_df.shape[0] + 1)
     return rpt_df
 
 
@@ -872,24 +879,22 @@ def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1'):
             result_df = pd.merge(left=result_df, right=rpt_df,
                                  left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
                                  how='outer')
-    for tool, _, _ in TOOL_SIG_COL_INFO:
-        if tool in result_df.columns:
-            result_df.loc[result_df[tool].isna(), tool] = result_df[~result_df[tool].isna()].shape[0]
+    # for tool, _, _ in TOOL_SIG_COL_INFO:
+    #     if tool in result_df.columns:
+    #         result_df.loc[result_df[tool].isna(), tool] = result_df.shape[0]
     if result_df is None:
         return
     pre_heatmap = os.path.join(os.path.dirname(output_figure_path), f'{genetic_model}_pre_heatmap.tsv')
     result_df.to_csv(pre_heatmap, sep='\t', header=True, index=False, na_rep='NA')
     result_df.drop(columns=GENE_ID_COL_NAME, inplace=True)
     spearman_corr = result_df.corr(method='spearman')
-    plt.figure(figsize=(8, 6))
-    # move xlabel to top
-    plt.tick_params(labelbottom=False, bottom=False, top=False, labeltop=True)
     sns.set(font_scale=1.2)
-    heatmap = sns.clustermap(spearman_corr, vmin=0, vmax=1, annot=True, cmap="vlag",
-                             cbar_kws=dict(ticks=[0, .2, .4, .6, .8, 1.0]))
+    cluster_grid = sns.clustermap(spearman_corr, vmin=0, vmax=1, annot=True, cmap="vlag", fmt='.3f',
+                                  cbar_kws=dict(ticks=[0, .2, .4, .6, .8, 1.0]))
     # heatmap.set_title('Spearman Correlation Heatmap')
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
+    plt.close()
 
 
 def plot_upset(generated_file_path, h1_rpt_obj=None, sec_rpt_obj=None,
@@ -959,6 +964,7 @@ def plot_upset(generated_file_path, h1_rpt_obj=None, sec_rpt_obj=None,
          sort_by=sort_by)
     if output_figure_path is not None:
         plt.savefig(output_figure_path)
+    plt.close()
 
 
 if __name__ == '__main__':

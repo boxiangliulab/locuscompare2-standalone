@@ -110,15 +110,10 @@ if (summary_set["PP.H4.abf"] < overall_h4_threshold) {
   q(save = "no")
 }
 
-# if (nrow(summary_set) == 0) {
-#   print(paste("No records with H4 > specified cut off found for gene ", input$gene_id[0:1]))
-#   q(save = "no")
-# }
-appendMode = file.exists(output_file_path) && file.info(output_file_path)$size > 0
 # append extra info to result
 extra_info_df = input[, c("var_id_", "chrom_gwas", "gene_id")]
 colnames(extra_info_df)[which(colnames(extra_info_df) == "chrom_gwas")] = "chrom"
 detail_result = result$results
 detail_result$overall_H4 = summary_set["PP.H4.abf"]
 detail_result_with_gene = merge(detail_result, extra_info_df, by.x = "snp", by.y = "var_id_", all.x = TRUE)
-write.table(detail_result_with_gene, if (endsWith(output_file_path, ".gz")) gzfile(output_file_path) else output_file_path, append = appendMode, sep = "\t", row.names = FALSE, col.names = !appendMode)
+write.table(detail_result_with_gene, if (endsWith(output_file_path, ".gz")) gzfile(output_file_path) else output_file_path, sep = "\t", row.names = FALSE, col.names = TRUE)

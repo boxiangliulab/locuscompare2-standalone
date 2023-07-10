@@ -18,7 +18,7 @@ class ECaviar:
     def __init__(self):
         logging.info('init eCaviar')
 
-    async def run(self, working_dir, candidate_data_dir, tools_config):
+    async def run(self, working_dir, candidate_data_dir, parallel=False, tools_config=None, parallel_worker_num=4):
         logging.info('eCaviar start to run...')
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
         coros = []
@@ -42,7 +42,7 @@ class ECaviar:
                 finemap_snp_files.append((f'{candidate_dir}/gwas_{finemap_file_name}.snp',
                                           f'{candidate_dir}/eqtl_{finemap_file_name}.snp'))
 
-        await utils.gather_with_limit(10, *coros)
+        await utils.gather_with_limit(parallel_worker_num if parallel else 1, *coros)
         logging.info(f'finish eCaviar process.')
         logging.info(f'generate eCaviar report.')
         return self.generate_report(working_dir=working_dir, finemap_reports=finemap_snp_files)
@@ -88,7 +88,8 @@ class ECaviar:
                                   'eqtl_pip': eqtl_pips,
                                   'clpp': gene_clpps})
         report_df.sort_values(by='clpp', ascending=False, inplace=True)
-        report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
+        if report_df.shape[0] > 0:
+            report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
         return output_report_path
 
 

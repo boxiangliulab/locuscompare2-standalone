@@ -22,7 +22,7 @@ def prepare_hapgen2_input(subset_vcf, output_prefix, maf_thresh):
     os.system(f'gunzip -f {output_prefix}.hap.gz {output_prefix}.legend.gz')
     # generate output_prefix_pre.frq, this will be deleted
     print(f'calculating MAF from vcf')
-    os.system(f'plink --vcf {subset_vcf} --freq --out {output_prefix}_pre')
+    os.system(f'plink --silent --vcf {subset_vcf} --freq --out {output_prefix}_pre')
     maf_df = pd.read_table(f'{output_prefix}_pre.frq', sep=r'\s+')
     # include all variant that has maf>maf_thresh
     maf_df = maf_df[maf_df['MAF'] > maf_thresh]
@@ -63,12 +63,12 @@ def generate_cc(genetic_map_path, input_prefix, chrom, disease_loci_pos_and_alle
               # f'-output_snp_summary '
               f'-Ne {effect_population_size}')
     print(f'converting case control data to plink binary format')
-    os.system(f'plink --data {output_prefix}.controls '
+    os.system(f'plink --silent --data {output_prefix}.controls '
               f'-oxford-single-chr {chrom} --allow-no-sex --make-bed --out {output_prefix}_ctrl')
-    os.system(f'plink --data {output_prefix}.cases '
+    os.system(f'plink --silent --data {output_prefix}.cases '
               f'-oxford-single-chr {chrom} --allow-no-sex --make-bed --out {output_prefix}_case')
     if merge_cc:
-        os.system(f'plink --bfile {output_prefix}_ctrl --bmerge {output_prefix}_case --out {output_prefix}')
+        os.system(f'plink --silent --bfile {output_prefix}_ctrl --bmerge {output_prefix}_case --out {output_prefix}')
         # delete intermediate case/control binary files
         os.remove(f'{output_prefix}_ctrl.bed')
         os.remove(f'{output_prefix}_ctrl.bim')
@@ -95,7 +95,7 @@ def perform_gwas_analysis(input_prefix, output_id, maf_thresh=0.05):
     # Delete individuals with missingness >0.02
     # SKIP: Check sex discrepancy
     # MAF check
-    os.system(f'plink --allow-no-sex '
+    os.system(f'plink --silent --allow-no-sex '
               f'--bfile {input_prefix} '
               f'--geno 0.02 '
               f'--mind 0.02 '
@@ -106,7 +106,7 @@ def perform_gwas_analysis(input_prefix, output_id, maf_thresh=0.05):
     # SKIP: Cryptic relatedness check
     # SKIP: Population stracfication check?
     # GWAS analysis
-    os.system(f'plink --allow-no-sex '
+    os.system(f'plink --silent --allow-no-sex '
               f'--bfile {output_id}_qc '
               f'--freq --logistic beta --assoc --ci 0.95 '
               f'--out {output_id}')
@@ -140,7 +140,7 @@ def generate_eqtl(input_prefix, causal_snplist_path, output_bed_prefix,
                                            chrom, start_pos, end_pos, gene_id, strand)
     os.system(f'bgzip -f {output_bed_prefix}.bed && tabix -f -p bed {output_bed_prefix}.bed.gz')
     # convert input genotype data to vcf format, use original uncompressed vcf to correct allele order and then index it
-    os.system(f'plink --allow-no-sex --bfile {input_prefix} '
+    os.system(f'plink --silent --allow-no-sex --bfile {input_prefix} '
               f'--real-ref-alleles '
               f'--a2-allele {gene_id}.vcf 4 3 \'#\' '
               f'--recode vcf-iid tab bgz '
@@ -180,7 +180,7 @@ def perform_eqtl_analysis(phenotype_bed_path, genotype_vcf_path, output_path, p_
     eqtl_df.columns = ['phe_id', 'phe_chrom', 'phe_from', 'phe_to', 'phe_strd', 'n_var_in_cis', 'dist_phe_var',
                        'var_id', 'var_chrom', 'var_from', 'var_to', 'nom_pval', 'r_squared', 'beta', 'se', 'best_hit']
     # calculate MAF for eqtl data
-    os.system(f'plink --vcf {genotype_vcf_path} --freq --double-id --out  eqtl_maf')
+    os.system(f'plink --silent --vcf {genotype_vcf_path} --freq --double-id --out  eqtl_maf')
     eqtl_maf_df = pd.read_table(f'eqtl_maf.frq', sep=r'\s+', usecols=['SNP', 'MAF'])
     eqtl_maf_df.columns = ['var_id', 'maf']
     eqtl_df = pd.merge(eqtl_df, eqtl_maf_df,
@@ -272,7 +272,7 @@ def simulate_for_chrom(input_vcf, chrom_num_in_vcf, gwas_causal_list, eqtl_causa
         # by default, plink will filter out records with ld r2<0.2, --ld-window-r2 0 prevent this behaviour
         # monomorphic variant LD r2 will not be present in report in table(inter-chr) format,
         # in square format output they will be nan
-        os.system(f'plink --vcf {gene_id}.vcf.gz '
+        os.system(f'plink --silent --vcf {gene_id}.vcf.gz '
                   f'--r2 inter-chr with-freqs --ld-window-r2 0 '
                   f'--ld-snp {disease_loci.loc["SNP"]} '
                   f'--out {gene_id}')
@@ -489,7 +489,7 @@ def merge_raw_files(generated_file_list, output_suffix, eqtl_genetic_models, out
     gwas_first_file = gwas_list_df.iloc[0]
     gwas_file_list = gwas_list_df.iloc[1:]
     gwas_file_list.to_csv(f'gwas_binary_to_merge.txt', sep='\t', header=False, index=False)
-    os.system(f'plink --bfile {gwas_first_file} --merge-list gwas_binary_to_merge.txt --out {gwas_cc_binary}')
+    os.system(f'plink --silent --bfile {gwas_first_file} --merge-list gwas_binary_to_merge.txt --out {gwas_cc_binary}')
     print(f'Simulate completed, duration {datetime.now() - start_time}, output files are:')
     if output_dir is None:
         output_dir = f'output_{output_suffix}'

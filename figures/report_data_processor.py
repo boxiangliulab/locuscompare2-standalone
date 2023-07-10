@@ -88,22 +88,22 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         ranking_mg = None
         if utils.file_exists(ranking_output_file_path) and os.path.getsize(ranking_output_file_path) > 0:
             ranking_output_file_pd = pd.read_csv(ranking_output_file_path, sep=const.column_spliter,
-                                                 usecols=lambda col: col in ['gene_id', 'geo_p_value',
+                                                 usecols=lambda col: col in ['gene_id', 'geo_ranking',
                                                                              'intact_probability'])
             if 'intact_probability' in ranking_output_file_pd.columns:
                 ranking_output_file_pd_for_probability = ranking_output_file_pd.sort_values(by='intact_probability',
                                                                                             ascending=False,
                                                                                             inplace=False).head(
                     report_gene_ranking)
-                ranking_output_file_pd_for_pvalue = ranking_output_file_pd.sort_values(by='geo_p_value', ascending=True,
+                ranking_output_file_pd_for_pvalue = ranking_output_file_pd.sort_values(by='geo_ranking', ascending=True,
                                                                                        inplace=False).head(
                     report_gene_ranking)
                 ranking_mg = pd.merge(left=ranking_output_file_pd_for_probability[['gene_id', 'intact_probability']],
-                                      right=ranking_output_file_pd_for_pvalue[['gene_id', 'geo_p_value']],
+                                      right=ranking_output_file_pd_for_pvalue[['gene_id', 'geo_ranking']],
                                       on='gene_id', how='outer')
             else:
                 ranking_output_file_pd['intact_probability'] = -1
-                ranking_mg = ranking_output_file_pd.sort_values(by='geo_p_value', ascending=True, inplace=False).head(
+                ranking_mg = ranking_output_file_pd.sort_values(by='geo_ranking', ascending=True, inplace=False).head(
                     report_gene_ranking)
             ranking_mg.fillna('-1', inplace=True)
             # gene ranking mapping every tool info

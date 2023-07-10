@@ -121,7 +121,7 @@ def create_genotype_from_vcf(input_vcf, output_dir):
     if not os.path.exists(input_vcf) or os.path.getsize(input_vcf) <= 0:
         raise ValueError(f'{input_vcf} does not exist or is empty')
     traw_prefix = os.path.join(output_dir, 'geno_out')
-    os.system(f'plink --vcf {input_vcf} --recode A-transpose --double-id --out {traw_prefix}')
+    os.system(f'plink --silent --vcf {input_vcf} --recode A-transpose --double-id --out {traw_prefix}')
     traw_path = f'{traw_prefix}.traw'
     geno_df = pd.read_table(traw_path, header=0,
                             dtype={'CHR': 'category', 'SNP': 'string', '(C)M': 'Int64', 'POS': 'Int64',

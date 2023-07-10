@@ -22,7 +22,6 @@ smr:
   heidi-mtd: 1
   maf: 0.0
   diff-freq: 0.2
-  diff-freq-prop: 0.99
   peqtl-heidi: 1.57E-3
   ld-upper-limit: 0.9
   ld-lower-limit: 0.05
@@ -32,7 +31,6 @@ smr:
   # uncomment 'heidi-off' to disable the heidi test
   # heidi-off:
 twas:
-  max_impute: 0.5
   min_r2pred: 0.7
   perm: 0
   perm_minp: 0.05

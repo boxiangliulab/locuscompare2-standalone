@@ -3,6 +3,7 @@ import datetime
 import logging
 import os
 import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -166,7 +167,7 @@ class Processor:
     #     clump_r2 = self.global_config.get('clump_r2', 0)
     #     clump_kb = self.global_config.get('clump_kb', 500)
     #     logging.info(f'Clumping param for chrom {chrom} clump_r2: {clump_r2}, clump_kb: {clump_kb}')
-    #     os.system(f'plink --vcf {input_vcf}  '
+    #     os.system(f'plink --silent --vcf {input_vcf}  '
     #               f'--clump {gwas_chrom_file} '
     #               f'--clump-p1 {self.config_holder.gwas_p_threshold} '
     #               f'--clump-p2 {self.config_holder.gwas_p_threshold} '
@@ -218,7 +219,7 @@ class Processor:
                 try:
                     data = future.result()
                 except Exception as exc:
-                    logging.error('Get result generated an exception: %s' % exc)
+                    logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         gwas_df.drop_duplicates(subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
                                 keep=False, inplace=True)
         gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper().astype(

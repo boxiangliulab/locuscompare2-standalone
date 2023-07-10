@@ -3,6 +3,7 @@ import concurrent
 import logging
 import os
 import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -68,7 +69,7 @@ class SmrEqtlProcessor:
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get result generated an exception: %s' % exc)
+                        logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         else:
             for _, row in eqtl_summary_df.iterrows():
                 chrom = str(row.loc['chrom'])
@@ -139,7 +140,7 @@ class SmrEqtlProcessor:
         utils.delete_file_if_exists(f'{output_ld_ref_path}.bim')
         utils.delete_file_if_exists(f'{output_ld_ref_path}.fam')
         utils.delete_file_if_exists(f'{output_ld_ref_path}.bed')
-        os.system(f'plink -vcf {output_vcf_full_path} --make-bed --snps-only --out {output_ld_ref_path}')
+        os.system(f'plink --silent --vcf {output_vcf_full_path} --make-bed --snps-only --out {output_ld_ref_path}')
 
     def __get_output_vcf_dir(self, working_dir):
         return os.path.join(working_dir, 'vcf')

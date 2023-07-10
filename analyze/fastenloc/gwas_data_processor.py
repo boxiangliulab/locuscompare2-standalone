@@ -61,7 +61,6 @@ class FastenlocGwasProcessor:
             for chunk in reader:
                 chunk['zscore'] = chunk[gwas_col_dict['beta']] / chunk[gwas_col_dict['se']]
                 chunk.drop(columns=[gwas_col_dict['beta'], gwas_col_dict['se']], inplace=True)
-                logging.info(f'Reading GWAS file completed, memory usage: {chunk.memory_usage(deep=True)}')
                 # Adjust allele order
                 ref_df = chunk[[gwas_col_dict['chrom'], gwas_col_dict['position'], 'alt_', 'ref_']]
                 logging.info(f'Aligning allele order')

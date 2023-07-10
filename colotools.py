@@ -58,7 +58,6 @@ def __before_run_twas_tools_check(global_config):
     logging.info(f'TWAS pos file path: {twas_pos_path}')
     utils.check_file_or_path_exist(twas_pos_path)
     __check_vcf(global_config)
-    __check_plink_binary(global_config)
 
 
 def __check_vcf(global_config):
@@ -67,14 +66,6 @@ def __check_vcf(global_config):
     for chromosome in range(1, 23):
         input_vcf = os.path.join(ref_vcf_dir, population, f'chr{chromosome}.vcf.gz')
         utils.check_file_or_path_exist(input_vcf, False)
-
-
-def __check_plink_binary(global_config):
-    population = global_config.get('population', 'EUR').upper()
-    ref_vcf_dir = global_config['input']['vcf']
-    for chromosome in range(1, 23):
-        input_bed = os.path.join(ref_vcf_dir, population, f'chr{chromosome}.bed')
-        utils.check_file_or_path_exist(input_bed, False)
 
 
 tools_func_map = {

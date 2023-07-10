@@ -96,7 +96,7 @@ def calc_for_chrom(full_gene_list_file, chrom, input_vcf, maf_thresh=0.1):
         subset_snp_vcf = f'fill_snp_{chrom_code_in_vcf}.vcf'
         os.system(f'bcftools annotate -r {chrom_code_in_vcf} -I +"%CHROM:%POS\\_%REF\\_%FIRST_ALT" '
                   f'{subset_vcf} -Ov -o {subset_snp_vcf}')
-        os.system(f'plink --vcf {subset_vcf} --freq --out {chrom_code_in_vcf}_pre')
+        os.system(f'plink --silent --vcf {subset_vcf} --freq --out {chrom_code_in_vcf}_pre')
         maf_df = pd.read_table(f'{chrom_code_in_vcf}_pre.frq', sep=r'\s+')
         # include all variant that has maf>maf_thresh
         maf_df = maf_df[maf_df['MAF'] > maf_thresh]
@@ -114,7 +114,7 @@ def calc_for_chrom(full_gene_list_file, chrom, input_vcf, maf_thresh=0.1):
                                                 (maf_df.at[0, 'POS'] + maf_df.at[maf_df.shape[0] - 1, 'POS']) / 2)
         center_snp_pos_idx = vcf_df[vcf_df['POS'] == center_snp_pos].index
         center_snp = vcf_df.at[center_snp_pos_idx[0], 'SNP']
-        os.system(f'plink --vcf {subset_snp_vcf} '
+        os.system(f'plink --silent --vcf {subset_snp_vcf} '
                   f'--r2 inter-chr with-freqs --ld-window-r2 0 '
                   f'--ld-snp {center_snp} '
                   f'--out ld_{chrom_code_in_vcf}')

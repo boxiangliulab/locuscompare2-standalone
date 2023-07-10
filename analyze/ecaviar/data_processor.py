@@ -4,6 +4,7 @@ import logging
 import os.path
 import re
 import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -17,7 +18,7 @@ from common import constants as const, coloc_utils as utils, global_data_process
 class ECaviarDataProcessor:
     ECAVIAR_TOOL_NAME = 'ecaviar'
     zscore_col = 'zscore'
-    shell_command_plink_execute = 'plink -vcf {} --r2 --matrix --out {}'
+    shell_command_plink_execute = 'plink --silent --vcf {} --r2 --matrix --mac 1 --write-snplist --out {}'
 
     def __init__(self):
         logging.info('init ECaviarEQTLProcessor')
@@ -69,7 +70,7 @@ class ECaviarDataProcessor:
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get result generated an exception: %s' % exc)
+                        logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         else:
             for gwas_cluster_file in os.listdir(gwas_cluster_dir):
                 # cluster file name example: chr{chromosome}_{position}-chr{}.tsv.gz
@@ -137,7 +138,7 @@ class ECaviarDataProcessor:
         candidate_dir = f'{output_base_dir}/{gene_id.upper()}/{variant_id}'
         Path(candidate_dir).mkdir(parents=True, exist_ok=True)
         # 1.通过gwas, eqtl, vcf交集数据生成vcf, run plink 生成LD file
-        output_vcf_name = f'{variant_id}.vcf'
+        output_vcf_name = f'{variant_id}_{gene_id}.vcf'
         if not Path(input_vcf).exists():
             logging.warning(f'!ref vcf {input_vcf} does not exist')
             return
@@ -158,8 +159,7 @@ class ECaviarDataProcessor:
         gwas_cluster_df.reset_index(drop=True, inplace=True)
         utils.extract_vcf_data(chromosome, gwas_cluster_df, input_vcf, vcf_output_dir,
                                output_vcf_name, gwas_col_dict['position'], target_snp_col_name=var_id_col_name)
-
-        vcf_matching_file = os.path.join(vcf_output_dir, 'matching', f'{variant_id}.tsv')
+        vcf_matching_file = os.path.join(vcf_output_dir, 'matching', f'{variant_id}_{gene_id}.tsv')
         if not os.path.exists(vcf_matching_file) or os.path.getsize(vcf_matching_file) <= 0:
             logging.warning(f'No generated vcf file for gene {gene_id}')
             return
@@ -172,13 +172,11 @@ class ECaviarDataProcessor:
         output_ld_file = f'{candidate_dir}/{variant_id}_{gene_id}'
         os.system(self.shell_command_plink_execute.format(f'{vcf_output_dir}/{output_vcf_name}',
                                                           output_ld_file))
-        # 移除LD值为nan的行和列，并返回被移除的snp positions
-        nan_cols = utils.remove_nan_from_ld(f'{output_ld_file}.ld',
-                                            vcf_matching_df[gwas_col_dict['position']].tolist())
-
-        # 从vcf matching snps中移除LD行列为nan的snp
-        vcf_matching_df = vcf_matching_df[~vcf_matching_df[gwas_col_dict['position']].isin(nan_cols)].copy()
-
+        keeping_col_df = pd.read_table(f'{output_ld_file}.snplist', header=None)
+        if keeping_col_df.shape[0] < vcf_matching_df.shape[0]:
+            # 从vcf matching snps中移除LD行列为nan的snp
+            vcf_matching_df = vcf_matching_df[vcf_matching_df[var_id_col_name].isin(keeping_col_df[0])].copy()
+        del keeping_col_df
         # Drop GWAS rows that does not have vcf records
         # SNP in vcf_matching_df is subset of SNP in candidate_gwas_df, so it's fine to drop intersect rows here
         utils.drop_non_intersect_rows(gwas_cluster_df, var_id_col_name, vcf_matching_df, var_id_col_name)

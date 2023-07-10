@@ -102,8 +102,7 @@ input:
       maf: 'maf'
       
   # Required. The vcf files from 1000genomes.
-  # NOTE that if you want to run TWAS, one more step: copy resource/convert_vcf_to_plink_binary.sh to vcf file directory and run it to generate TWAS LDREF files
-  # hg38 http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20190425_NYGC_GATK/
+  # hg38 https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV/
   # 
   # We splitted the vcf files by population EUR, EAS, SAS, AFR, AMR. Please create the population folder and download your research population vcf and related tbi files from:
   # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz  
@@ -154,7 +153,6 @@ input:
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
   # Colotools will find the pos file in this directory by the configured eQTL tissue name. Note that the post file name must end with .pos
-  # **IMPORTANT** : DO NOT forget to copy resource/convert_vcf_to_plink_binary.sh to vcf directory and run it to generate TWAS LDREF files as already mentioned above!
   twas_model_dir: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model'
 
 p-value_threshold:

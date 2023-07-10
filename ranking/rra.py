@@ -50,7 +50,7 @@ def read_tool_result(rpt, tool_name, sig_col_name, sig_type):
     rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
     rpt_df[tool_name] = rpt_df[GENE_ID_COL_NAME]
     rpt_df.drop(labels=GENE_ID_COL_NAME, axis=1, inplace=True)
-    rpt_df[RANK_COL_NAME] = range(0, rpt_df.shape[0])
+    rpt_df[RANK_COL_NAME] = range(1, rpt_df.shape[0] + 1)
     return rpt_df
 
 

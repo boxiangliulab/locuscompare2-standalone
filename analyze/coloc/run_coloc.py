@@ -1,8 +1,10 @@
 import ast
 import concurrent
+import json
 import logging
 import os
 import sys
+import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -24,6 +26,7 @@ class Coloc:
             working_dir=None,
             var_id_col_name=None,
             gwas_cluster_output_dir=None,
+            gwas_cluster_summary=None,
             gwas_col_dict=None,
             gwas_sample_size=None,
             eqtl_output_report=None,
@@ -51,6 +54,10 @@ class Coloc:
         logging.info(f'run_coloc start at: {start_time}')
         eqtl_summary_df = pd.read_csv(eqtl_output_report, sep=const.column_spliter,
                                       dtype={eqtl_col_dict['chrom']: 'category'})
+        gwas_summary_df = pd.read_csv(gwas_cluster_summary, sep=const.column_spliter,
+                                      dtype={gwas_col_dict['chrom']: 'category'})
+        gwas_cluster_snps_dict = self.__get_cluster_significant_snps_dict(gwas_summary_df)
+        del gwas_summary_df
         # Put gwas range files in a list
         gwas_range_files = {}
         for gwas_range_file in os.listdir(gwas_cluster_output_dir):
@@ -80,6 +87,10 @@ class Coloc:
                     eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
                     gene_id = utils.get_file_name(eqtl_gene_file)
                     for gwas_range_file in gwas_range_files[chrom]:
+                        eqtl_significant_positions = ast.literal_eval(row.loc['positions'])
+                        range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
+                        if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
+                            continue
                         futures.append(executor.submit(self.process_gene, self.__get_output_dir(working_dir),
                                                        gwas_range_file, gwas_type_dict, gwas_col_dict, row,
                                                        eqtl_gene_file, eqtl_type_dict,
@@ -91,7 +102,7 @@ class Coloc:
                     try:
                         data = future.result()
                     except Exception as exc:
-                        logging.error('Get result generated an exception: %s' % exc)
+                        logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
 
         else:
             for _, row in eqtl_summary_df.iterrows():
@@ -101,6 +112,10 @@ class Coloc:
                 eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
                 gene_id = utils.get_file_name(eqtl_gene_file)
                 for gwas_range_file in gwas_range_files[chrom]:
+                    eqtl_significant_positions = ast.literal_eval(row.loc['positions'])
+                    range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
+                    if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
+                        continue
                     self.process_gene(self.__get_output_dir(working_dir), gwas_range_file, gwas_type_dict,
                                       gwas_col_dict, row, eqtl_gene_file, eqtl_type_dict,
                                       var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
@@ -113,6 +128,20 @@ class Coloc:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
         return output_file
+
+    def __convert_positions_str_to_list(self, positions_str):
+        if isinstance(positions_str, str):
+            return json.loads(positions_str)
+        elif isinstance(positions_str, list):
+            return positions_str
+        else:
+            return []
+
+    def __get_cluster_significant_snps_dict(self, cluster_df):
+        cluster_snps_dict = {}
+        for _, row in cluster_df.iterrows():
+            cluster_snps_dict[row.loc['range_lead']] = self.__convert_positions_str_to_list(row.loc['positions'])
+        return cluster_snps_dict
 
     def process_gene(self, output_dir, gwas_range_file, gwas_type_dict, gwas_col_dict, row, eqtl_gene_file,
                      eqtl_type_dict,
@@ -131,11 +160,6 @@ class Coloc:
                                               gwas_col_dict['pvalue']],
                                           dtype=gwas_type_dict)
         if len(candidate_gwas_df) <= 1:
-            return
-        if not candidate_gwas_df.loc[:, gwas_col_dict['position']].isin(
-                ast.literal_eval(row.loc['positions'])).any():
-            logging.debug(
-                f'No intersection between gwas {gwas_range_file} and eqtl {eqtl_gene_file}: {datetime.now()}')
             return
         eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter,
                                       usecols=[

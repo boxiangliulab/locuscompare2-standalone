@@ -21,8 +21,8 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
         intact_result) > 0
 
     if geo_result_exist and intact_result_exist:
-        # output cols: ['gene_id', 'geo_p_value', 'avg_ranking', 'intact_probability']
-        rgeo_df = pd.read_table(geo_result, usecols=['gene_id', 'geo_p_value'])
+        # output cols: ['gene_id', 'geo_ranking', 'avg_ranking', 'intact_probability']
+        rgeo_df = pd.read_table(geo_result, usecols=['gene_id', 'geo_ranking'])
         intact_df = pd.read_table(intact_result,
                                   usecols=lambda col: col in ['gene_id', 'avg_ranking', 'intact_probability'])
         result_df = pd.merge(left=rgeo_df, right=intact_df,
@@ -30,7 +30,7 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
                              how='outer')
     elif geo_result_exist:
         # intact_probability column is not present if user run TWAS only or colocalization methods
-        result_df = pd.read_table(geo_result, usecols=['gene_id', 'geo_p_value'])
+        result_df = pd.read_table(geo_result, usecols=['gene_id', 'geo_ranking'])
         os.remove(geo_result)
     elif intact_result_exist:
         result_df = pd.read_table(intact_result,

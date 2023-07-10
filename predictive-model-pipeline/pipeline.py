@@ -98,7 +98,7 @@ def run(rscript_path, input_geno_vcf=None, input_exp_bed=None, exp_gene_id_col_n
                 columns=['fid', 'iid'] + [col for col in phenotype_df.columns if col not in ['fid', 'iid']], copy=False)
             phenotype_df.to_csv(phenotype_file, sep='\t', index=False, header=False)
             phen_bin_prefix = os.path.join(output_dir, f'{gene_id}_{tissue_name}_phen_bin')
-            os.system(f'plink --allow-no-sex --vcf {subset_genotype_file} --double-id '
+            os.system(f'plink --silent --allow-no-sex --vcf {subset_genotype_file} --double-id '
                       f'--pheno {phenotype_file} --make-bed --out {phen_bin_prefix}')
             phen_bed = f'{phen_bin_prefix}.bed'
             if not os.path.exists(phen_bed) or os.path.getsize(phen_bed) <= 0:
