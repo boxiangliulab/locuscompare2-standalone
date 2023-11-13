@@ -38,7 +38,7 @@ def __preprocess_and_run_jlim(global_processor):
 def __preprocess_and_run_fastenloc(processor):
     _working_dir = os.path.join(processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
     fgdp_obj = fgdp.FastenlocGwasProcessor()
-    fastenloc_gwas_result = fgdp_obj.prepare_gwas_data(working_dir=_working_dir,
+    fastenloc_gwas_result, gwas_snp_count = fgdp_obj.prepare_gwas_data(working_dir=_working_dir,
                                                        gwas_preprocessed_file=processor.gwas_preprocessed_file,
                                                        gwas_col_dict=processor.gwas_col_dict,
                                                        ld_block_loci_file=processor.global_config['input'][
@@ -50,7 +50,7 @@ def __preprocess_and_run_fastenloc(processor):
                       eqtl_finemapping_file=processor.global_config['input']['eqtl_finemapping_file'],
                       eqtl_output_report=processor.eqtl_output_report,
                       output_torus_output_file=fastenloc_gwas_result,
-                      gwas_sample_size=processor.global_config['input']['gwas']['sample_size'],
+                      gwas_snp_count=gwas_snp_count,
                       tools_config_file=processor.tools_config_file)
 
 

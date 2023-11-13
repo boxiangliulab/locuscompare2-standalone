@@ -50,6 +50,7 @@ class FastenlocGwasProcessor:
 
         Path(output_torus_input_dir).mkdir(parents=True, exist_ok=True)
         Path(output_torus_output_dir).mkdir(parents=True, exist_ok=True)
+        gwas_snp_count = 0
         with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter, usecols=dap_use_col,
                            dtype={gwas_col_dict['position']: 'Int64',
                                   gwas_col_dict['chrom']: 'category',
@@ -59,6 +60,7 @@ class FastenlocGwasProcessor:
                                   'alt_': pd.CategoricalDtype(const.SNP_ALLELE)},
                            iterator=True, chunksize=500000) as reader:
             for chunk in reader:
+                gwas_snp_count += chunk.shape[0]
                 chunk['zscore'] = chunk[gwas_col_dict['beta']] / chunk[gwas_col_dict['se']]
                 chunk.drop(columns=[gwas_col_dict['beta'], gwas_col_dict['se']], inplace=True)
                 # Adjust allele order
@@ -118,7 +120,7 @@ class FastenlocGwasProcessor:
         os.system(shell_command_torus_execute.format(f'{output_torus_input_file}.gz', output_torus_output_file))
         os.system(shell_compress_file.format(output_torus_output_file))
         logging.info(f'prepare fastenloc gwas file at: {datetime.now()}, duration： {datetime.now() - start_time}')
-        return output_torus_output_file
+        return output_torus_output_file, gwas_snp_count
         # clean temp file folder
         # utils.delete_dir(output_torus_input_dir)
 

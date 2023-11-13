@@ -641,7 +641,7 @@ def is_vcf_chrom_code_contains_chr(vcf_file):
     return 'chr' in stdout.decode('UTF-8')
 
 
-async def async_run_cmd(cmd):
+async def async_run_cmd(cmd, logging_stdout=False):
     proc = await asyncio.create_subprocess_shell(
         cmd,
         stdout=asyncio.subprocess.PIPE,
@@ -650,7 +650,7 @@ async def async_run_cmd(cmd):
     stdout, stderr = await proc.communicate()
 
     logging.info(f'[{cmd!r} exited with {proc.returncode}]')
-    if stdout:
+    if stdout and logging_stdout:
         print(f'[stdout]\n{stdout.decode()}')
     if stderr:
         print(f'[stderr]\n{stderr.decode()}')
@@ -749,6 +749,7 @@ def get_tools_params_dict(tool_name, tool_config_file):
                 params = params[tool_name]
             else:
                 logging.info(f'No parameter config for {tool_name}, use default parameters')
+                params = None
     else:
         logging.info(f'No parameter config for {tool_name}, use default parameters')
     return {} if params is None else params

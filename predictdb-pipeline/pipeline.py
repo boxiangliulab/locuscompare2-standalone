@@ -120,43 +120,41 @@ def create_genotype_from_vcf(input_vcf, output_dir):
     logging.info('Create genotype files from vcf start')
     if not os.path.exists(input_vcf) or os.path.getsize(input_vcf) <= 0:
         raise ValueError(f'{input_vcf} does not exist or is empty')
-    traw_prefix = os.path.join(output_dir, 'geno_out')
-    os.system(f'plink --silent --vcf {input_vcf} --recode A-transpose --double-id --out {traw_prefix}')
-    traw_path = f'{traw_prefix}.traw'
-    geno_df = pd.read_table(traw_path, header=0,
-                            dtype={'CHR': 'category', 'SNP': 'string', '(C)M': 'Int64', 'POS': 'Int64',
-                                   'COUNTED': 'category', 'ALT': 'category'})
-    vcf_chr_notation = geno_df['CHR'].astype(str).str.contains('chr').any()
-    # COUNTED column is A1 (effect allele), ALT column Other allele(A2) in .traw file
-    geno_df['varID'] = \
-        geno_df['CHR'].astype(str) if vcf_chr_notation else 'chr' + geno_df['CHR'].astype(str) \
-                                                            + '_' + geno_df['POS'].astype(str) \
-                                                            + '_' + geno_df['ALT'].astype(str) \
-                                                            + '_' + geno_df['COUNTED'].astype(str) \
-                                                            + '_b38'
-    indel_bool_series = (geno_df['ALT'].str.len() != 1) | (geno_df['COUNTED'].str.len() != 1)
-    geno_df.drop(labels=geno_df[indel_bool_series].index, inplace=True)
-    ambiguous_strand_series = (geno_df['ALT'] == geno_df['COUNTED'].map(SNP_COMPLEMENT))
-    geno_df.drop(labels=geno_df[ambiguous_strand_series].index, inplace=True)
-    geno_df.drop_duplicates(subset='varID', inplace=True)
-    if geno_df.shape[0] == 0:
+    for line in gzip.open(input_vcf, 'rb'):
+        line = line.decode('UTF-8').strip('\n')
+        if line.startswith('#CHROM'):
+            vcf_header = line.split('\t')
+            break
+    else:
+        raise ValueError(f'{input_vcf} does not have a header row start with #CHROM')
+    vcf_df = pd.read_table(input_vcf, header=None, comment='#')
+    vcf_df.columns = vcf_header
+    vcf_df.replace({'0/0': '0', '0/1': '1', '1/0': '1', '1/1': '2', './.': pd.NA}, inplace=True)
+    vcf_chr_notation = vcf_df['#CHROM'].astype(str).str.contains('chr').any()
+    # COUNTED column is major allele, .traw file
+    vcf_df['varID'] = \
+        vcf_df['#CHROM'].astype(str) if vcf_chr_notation else 'chr' + vcf_df['#CHROM'].astype(str) \
+                                                              + '_' + vcf_df['POS'].astype(str) \
+                                                              + '_' + vcf_df['REF'].astype(str) \
+                                                              + '_' + vcf_df['ALT'].astype(str) \
+                                                              + '_b38'
+    indel_bool_series = (vcf_df['ALT'].str.len() != 1) | (vcf_df['REF'].str.len() != 1)
+    vcf_df.drop(labels=vcf_df[indel_bool_series].index, inplace=True)
+    ambiguous_strand_series = (vcf_df['ALT'] == vcf_df['REF'].map(SNP_COMPLEMENT))
+    vcf_df.drop(labels=vcf_df[ambiguous_strand_series].index, inplace=True)
+    vcf_df.drop_duplicates(subset='varID', inplace=True)
+    if vcf_df.shape[0] == 0:
         raise ValueError(f'No eligible data in {input_vcf}')
-    geno_df.drop(columns=['SNP', '(C)M', 'POS', 'COUNTED', 'ALT'], inplace=True)
-    individual_ids = []
-    for ind_id in [col for col in geno_df.columns if
-                   col not in ['CHR', 'varID']]:
-        # plink 1.x --double-id param will cause it to write [individual_id]_[individual_id] as sample id to .traw file
-        # for plink 2.x -export Av, sample id in .traw has the same format
-        individual_ids.append(ind_id[0:len(ind_id) // 2])
-    grouped = geno_df.groupby('CHR')
+    vcf_df.drop(columns=['POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT'], inplace=True)
+    grouped = vcf_df.groupby('#CHROM')
     Path(output_dir).mkdir(parents=True, exist_ok=True)
-    for name, group in grouped:
-        group.drop(columns='CHR', inplace=True)
-        group = group.reindex(columns=['varID'] + [col for col in group.columns if col not in ['varID']], copy=False)
-        group.columns = ['varID'] + individual_ids
+    for name, geno_group in grouped:
+        geno_group.drop(columns='#CHROM', inplace=True)
+        geno_group = geno_group.reindex(columns=['varID'] + [col for col in geno_group.columns if col not in ['varID']],
+                                        copy=False)
         chr_notation = f'{name}' if vcf_chr_notation else f'chr{name}'
         output_file = os.path.join(output_dir, f'geno_{chr_notation}.tsv')
-        group.to_csv(output_file, sep='\t', header=True, index=False, na_rep='NA')
+        geno_group.to_csv(output_file, sep='\t', header=True, index=False, na_rep='NA')
     logging.info('Create genotype files from vcf complete')
 
 

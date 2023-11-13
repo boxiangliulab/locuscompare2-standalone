@@ -18,7 +18,7 @@ class ECaviar:
     def __init__(self):
         logging.info('init eCaviar')
 
-    async def run(self, working_dir, candidate_data_dir, parallel=False, tools_config=None, parallel_worker_num=4):
+    async def run(self, working_dir, candidate_data_dir, parallel=False, tools_config=None, parallel_worker_num=3):
         logging.info('eCaviar start to run...')
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
         coros = []

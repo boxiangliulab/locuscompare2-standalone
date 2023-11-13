@@ -18,7 +18,7 @@ class Fastenloc:
             eqtl_finemapping_file=None,
             eqtl_output_report=None,
             output_torus_output_file=None,
-            gwas_sample_size=None,
+            gwas_snp_count=None,
             tools_config_file=None):
         start_time = datetime.now()
         logging.info(f'fastenloc start at: {start_time}')
@@ -31,7 +31,7 @@ class Fastenloc:
         Path(output_analyze_output_dir).mkdir(parents=True, exist_ok=True)
         com_str = shell_command_fastenloc_execute.format(eqtl_finemapping_file,
                                                          f'{output_torus_output_file}.gz',
-                                                         eqtl_tissue, gwas_sample_size,
+                                                         eqtl_tissue, gwas_snp_count,
                                                          f'{output_analyze_output_dir}/{eqtl_tissue}',
                                                          fastenloc_params)
         os.system(com_str)

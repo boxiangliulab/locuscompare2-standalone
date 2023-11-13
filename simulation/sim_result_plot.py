@@ -46,12 +46,25 @@ def retrieve_positive_df(generated_list):
                                                'eqtl_max_assoc_p_1'])
     positive_df = generated_list_df[(generated_list_df['gwas_max_assoc_p'] <= 1.0E-5) & (
             generated_list_df['gwas_r2'] >= 0.8) & (generated_list_df['eqtl_max_assoc_p_1'] <= 0.01)].copy()
-    positive_df[is_positive_col_name] = 1
     positive_df.rename(columns={'gene': GENE_ID_COL_NAME}, inplace=True)
     positive_df.drop(columns=[col for col in positive_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     positive_df[is_positive_col_name] = 1
     positive_df.reset_index(drop=True, inplace=True)
     return positive_df
+
+
+def retrieve_negative_df(generated_list, sec_causal_type):
+    generated_list_df = pd.read_table(generated_list,
+                                      usecols=['gene', 'gwas_causal_snp', 'gwas_max_assoc_p', 'gwas_r2',
+                                               f'eqtl_max_assoc_p_{sec_causal_type}'])
+    negative_df = generated_list_df[(generated_list_df['gwas_max_assoc_p'] <= 1.0E-5) & (
+            generated_list_df['gwas_r2'] >= 0.8) & (generated_list_df[
+                                                        f'eqtl_max_assoc_p_{sec_causal_type}'] <= 0.01)].copy()
+    negative_df.rename(columns={'gene': GENE_ID_COL_NAME}, inplace=True)
+    negative_df.drop(columns=[col for col in negative_df.columns if col != GENE_ID_COL_NAME], inplace=True)
+    negative_df[is_positive_col_name] = 0
+    negative_df.reset_index(drop=True, inplace=True)
+    return negative_df
 
 
 def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
@@ -853,35 +866,46 @@ def plot_mean_sd_combinations_bar(
     plt.close()
 
 
-def __read_tool_rank(rpt, tool_name, sig_col_name, sig_type):
+def __read_tool_info_align_to_prob(rpt, tool_name, sig_col_name, sig_type):
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     rpt_df = pd.read_table(rpt, usecols=[sig_col_name, GENE_ID_COL_NAME])
     rpt_df.sort_values(sig_col_name, ascending=sig_type == RESULT_TYPE_PVAL, inplace=True)
     rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-    rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
-    rpt_df[tool_name] = range(1, rpt_df.shape[0] + 1)
+    if sig_type == RESULT_TYPE_PVAL:
+        rpt_df[sig_col_name] = rpt_df[sig_col_name] * -1
+    rpt_df.rename(columns={sig_col_name: tool_name}, inplace=True)
     return rpt_df
 
 
-def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1'):
+def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1', tested_gene_df=None):
     df_list = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         tool_rpt = rpts.get(tool)
         if tool_rpt is None or len(tool_rpt) == 0:
             continue
-        df_list.append(__read_tool_rank(tool_rpt, tool_name=tool, sig_col_name=sig_column, sig_type=sig_type))
-    result_df = None
+        df_list.append(
+            __read_tool_info_align_to_prob(tool_rpt, tool_name=tool, sig_col_name=sig_column, sig_type=sig_type))
+    if tested_gene_df is None:
+        # merge all genes
+        gene_list = []
+        for rpt_df in [df for df in df_list if df is not None and df.shape[0] > 0]:
+            gene_list.append(rpt_df[[GENE_ID_COL_NAME]])
+        gene_list_df = pd.concat(gene_list)
+        del gene_list
+        gene_list_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+    else:
+        gene_list_df = tested_gene_df[[GENE_ID_COL_NAME]]
+    result_df = gene_list_df
     for rpt_df in [df for df in df_list if df is not None and df.shape[0] > 0]:
-        if result_df is None:
-            result_df = rpt_df
-        else:
-            result_df = pd.merge(left=result_df, right=rpt_df,
-                                 left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
-                                 how='outer')
-    # for tool, _, _ in TOOL_SIG_COL_INFO:
-    #     if tool in result_df.columns:
-    #         result_df.loc[result_df[tool].isna(), tool] = result_df.shape[0]
+        result_df = pd.merge(left=result_df, right=rpt_df,
+                             left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                             how='outer')
+    # result_df[tool] is aligned to prob (for pval, result_df[tool] = pval * -1)
+    # so fill NA with 0 for prob and -1 for pval
+    for tool, _, sig_type in TOOL_SIG_COL_INFO:
+        if tool in result_df.columns:
+            result_df.loc[result_df[tool].isna(), tool] = 0 if sig_type == RESULT_TYPE_PROB else -1
     if result_df is None:
         return
     pre_heatmap = os.path.join(os.path.dirname(output_figure_path), f'{genetic_model}_pre_heatmap.tsv')

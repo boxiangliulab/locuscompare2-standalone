@@ -130,7 +130,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
             create_gene_file(ranking_mg, gwas_preprocessed_file, gwas_col_dict, tissue_trait_path,
                              eqtl_col_dict, population, gene_code_file, eqtl_file_path)
         else:
-            logging.warning('this colocalization result no report data !!! so has no offline report')
+            logging.warning('this colocalization result has no report data !!! so has no offline report')
     return output_base_dir, report_list_pd
 
 
@@ -171,7 +171,7 @@ def create_gene_file(df_genes_info_path_pd=None, gwas_preprocessed_file=None, gw
 
         if not utils.file_exists(gene_file_path) and (gene_row['chrom'] is not None):
             if eqtl_file_path is None or pd.isnull(eqtl_file_path) or not utils.file_exists(eqtl_file_path):
-                logging.info(f'file no exist {eqtl_file_path}')
+                logging.info(f'file not exist {eqtl_file_path}')
             else:
                 eqtl_file_path_pd = pd.read_table(eqtl_file_path, sep=const.column_spliter, header=0,
                                                   usecols=input_read_eqtl_columns)

@@ -5,6 +5,11 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 2) {
   stop("At least 2 arguments are rquired: input_file_path, output_file_path")
 }
+
+if (!require(qvalue)) {
+  stop("qvalue not installed")
+}
+
 input_file_path = args[1]
 output_file_path = args[2]
 pval_col_name = args[3]
@@ -24,7 +29,7 @@ data = read.table(file = input_file_path, header = TRUE, fill = TRUE)
 data = subset(data, select = c("gene_id",pval_col_name))
 data = data[order(data[pval_col_name]), , drop = FALSE]
 data = data[!duplicated(data[["gene_id"]]), , drop = FALSE]
-fdr = p.adjust(data[[pval_col_name]], "BH")
-threshold_idx = which.min(abs(fdr - fdr_threshold))
-result <- data.frame (fdr  = fdr[threshold_idx], pvalue = data[[pval_col_name]][threshold_idx])
+qobj = qvalue(data[[pval_col_name]])
+threshold_idx = which.min(abs(qobj$qvalues - fdr_threshold))
+result <- data.frame (fdr  = qobj$qvalues[threshold_idx], pvalue = data[[pval_col_name]][threshold_idx])
 write.table(result, output_file_path, sep = "\t", row.names = FALSE, col.names = TRUE)

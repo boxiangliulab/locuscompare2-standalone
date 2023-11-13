@@ -200,6 +200,7 @@ class Processor:
         utils.drop_indel_snp(gwas_df, self.gwas_col_dict['effect_allele'], self.gwas_col_dict['other_allele'])
         logging.info(f'GWAS data cleaning, time: {datetime.datetime.now()}')
         utils.clean_data(gwas_df, dup_consider_subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']])
+        gwas_df.drop(index=gwas_df[gwas_df[self.gwas_col_dict['se']] == 0].index, inplace=True)
         filtered_gwas_snp_size = len(gwas_df)
         logging.info(
             f'GWAS data total {filtered_gwas_snp_size} rows, sorting by chrom and pos, time: {datetime.datetime.now()}')
