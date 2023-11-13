@@ -54,12 +54,12 @@ def read_tool_result(rpt, tool_name, sig_col_name, sig_type):
     return rpt_df
 
 
-def run_ranking(output_file_path, rpt=None, sample_size=None, method=None):
+def run_ranking(output_file_path, rpt=None, method=None):
     ranking_input_file = os.path.join(os.path.dirname(output_file_path), f'pre_{output_file_path.split(os.sep)[-1]}')
     prepare_rra_input(output_file_path=ranking_input_file, rpts=rpt)
     if not os.path.exists(ranking_input_file) or os.path.getsize(ranking_input_file) <= 0:
         return None
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'rra.R')
     os.system(f'Rscript --no-save --no-restore '
-              f'{rscript_path} {ranking_input_file} {output_file_path} {sample_size} {method}')
+              f'{rscript_path} {ranking_input_file} {output_file_path} {method}')
     return output_file_path

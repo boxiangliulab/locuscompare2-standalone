@@ -9,13 +9,7 @@ if (length(args) < 2) {
 input_file_path = args[1]
 output_file_path = args[2]
 
-if (!is.na(args[3])) {
-  sample_zie = as.integer(args[3])
-} else {
-  sample_zie = NA
-}
-
-method = args[4]
+method = args[3]
 if (is.na(method)  || tolower(method) == 'na' || tolower(method) == 'none' || tolower(method) == "geo") {
   method = "geom.mean"
 }
@@ -38,7 +32,7 @@ for (i in 1:ncol(data)) {
   col = col[!is.na(col)]
   glist = append(glist, list(col))
 }
-rra_result = aggregateRanks(glist = glist, method = method, N = sample_zie)
+rra_result = aggregateRanks(glist = glist, method = method, N = NA)
 colnames(rra_result) = c("gene_id", paste(if (method == "geom.mean") "geo" else method, "ranking", sep = "_"))
 # write result to output file
 write.table(rra_result, if (endsWith(output_file_path, ".gz")) gzfile(output_file_path) else output_file_path, sep = "\t", row.names = FALSE, col.names = TRUE)

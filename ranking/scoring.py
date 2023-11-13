@@ -13,7 +13,7 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
         Path(out_dir).mkdir(parents=True, exist_ok=True)
     geo_output_file = os.path.join(out_dir, 'geo.tsv')
     intact_output_file = os.path.join(out_dir, 'intact.tsv')
-    geo_result = rra.run_ranking(output_file_path=geo_output_file, rpt=rpt_obj, sample_size=sample_size, method='GEO')
+    geo_result = rra.run_ranking(output_file_path=geo_output_file, rpt=rpt_obj, method='GEO')
     intact_result = intact.run_ranking(rpt_obj, intact_output_file, prior_fun)
 
     geo_result_exist = geo_result is not None and os.path.exists(geo_result) and os.path.getsize(geo_result) > 0

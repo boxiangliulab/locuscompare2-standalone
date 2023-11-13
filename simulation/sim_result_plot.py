@@ -88,14 +88,14 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
             h1_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
             h1_report_df[prob_col_name] = 1 - h1_report_df[rpt_pval_col_name]
         else:
-            h1_report_df = pd.DataFrame(columns=[rpt_pval_col_name, prob_col_name, GENE_ID_COL_NAME])
+            h1_report_df = pd.DataFrame(columns=[*reading_cols, prob_col_name])
         if sec_report is not None and Path(sec_report).exists() and os.path.getsize(sec_report) > 0:
             sec_report_df = pd.read_table(sec_report, usecols=reading_cols)
             sec_report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
             # Convert p-value to probability. TODO this method is not good
             sec_report_df[prob_col_name] = 1 - sec_report_df[rpt_pval_col_name]
         else:
-            sec_report_df = pd.DataFrame(columns=[rpt_pval_col_name, prob_col_name, GENE_ID_COL_NAME])
+            sec_report_df = pd.DataFrame(columns=[*reading_cols, prob_col_name])
     else:
         if h1_report is not None and Path(h1_report).exists() and os.path.getsize(h1_report) > 0:
             h1_report_df = pd.read_table(h1_report, usecols=[rpt_prob_col_name, GENE_ID_COL_NAME])
@@ -865,6 +865,260 @@ def plot_mean_sd_combinations_bar(
         plt.savefig(output_figure_path)
     plt.close()
 
+
+# def calc_threshold_for_sim_prob_rpt(df, sig_column, label_col_name, fdr_thresh=0.05):
+#     # ecaviar threshold fix to 0.01
+#     if sig_column == 'clpp':
+#         return 0.01
+#     if df.empty:
+#         return 1
+#     df.sort_values(by=[sig_column], ascending=False, inplace=True)
+#     df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+#     df['cumulative_count'] = range(1, df.shape[0] + 1)
+#     df['fd_cum_count'] = (df[label_col_name] == 0).cumsum()
+#     df['fdr'] = df['fd_cum_count'] / df['cumulative_count']
+#     threshold_idx = (df['fdr'] - fdr_thresh).abs().idxmin()
+#     fdr = df['fdr'].loc[threshold_idx]
+#     prob_thresh = df[sig_column].loc[threshold_idx]
+#     print(f'Threshold at fdr {fdr_thresh}:\nfdr:{fdr}\nprobability:{prob_thresh}')
+#     return prob_thresh
+
+
+def plot_precision_recall_f1_comb_bar(
+        generated_file_path=None,
+        h1_rpt_obj=None, sec_rpt_obj=None,
+        sec_causal_type=1,
+        output_figure_prefix=None,
+        typ='UNION'):
+    rpt_obj = {}
+    thresh_obj = calc.calc_threshold(h1_rpt_obj)
+    for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
+        h1_rpt = h1_rpt_obj.get(tool)
+        sec_rpt = sec_rpt_obj.get(tool)
+        tool_df = prepare_plot_data(generated_file_path, h1_rpt, sec_rpt, sec_causal_type,
+                                    rpt_prob_col_name=sig_column if sig_type == RESULT_TYPE_PROB else None,
+                                    rpt_pval_col_name=sig_column if sig_type == RESULT_TYPE_PVAL else None,
+                                    tool=tool)
+        tool_df['mark'] = pd.NA
+        if sig_type == RESULT_TYPE_PVAL:
+            if tool == 'smr':
+                positive_series = (tool_df[sig_column] < thresh_obj[tool]) & (tool_df['p_HEIDI'] > 0.05)
+                tool_df['mark'].mask(positive_series, 1, inplace=True)
+                tool_df['mark'].mask(~positive_series, 0, inplace=True)
+            else:
+                tool_df['mark'].mask(tool_df[sig_column] < thresh_obj[tool], 1, inplace=True)
+                tool_df['mark'].mask(tool_df[sig_column] >= thresh_obj[tool], 0, inplace=True)
+        else:
+            tool_df['mark'].mask(tool_df[sig_column] > thresh_obj[tool], 1, inplace=True)
+            tool_df['mark'].mask(tool_df[sig_column] <= thresh_obj[tool], 0, inplace=True)
+        rpt_obj[tool] = tool_df[[GENE_ID_COL_NAME, 'mark', is_positive_col_name]]
+
+    tools = [tool for tool, _, _ in TOOL_SIG_COL_INFO]
+    count = []
+    precision_means = []
+    precision_stds = []
+    recall_means = []
+    recall_stds = []
+    f1_means = []
+    f1_stds = []
+    coms = []
+    precisions = []
+    recalls = []
+    f1s = []
+    for n in range(1, len(tools) + 1):
+        count.append(n)
+        ntool_precisions = []
+        ntool_recalls = []
+        ntool_f1s = []
+        n_coms = []
+        for com in combinations(tools, n):
+            # union n tool results, for the same gene across diff tools,
+            # keep the one with the largest mark if typ=UNION,
+            # else keep the one with the smallest mark
+            df = pd.concat([rpt_obj[tool] for tool in com])
+            df.sort_values(by='mark', ascending=typ.upper() != 'UNION', inplace=True)
+            df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+            if df.empty:
+                ntool_precisions.append(0)
+                ntool_recalls.append(0)
+                ntool_f1s.append(0)
+                continue
+            tp = sum((df[f'mark'] == 1) & (df[is_positive_col_name] == 1))
+            fp = sum((df[is_positive_col_name] == 0) & (df[f'mark'] == 1))
+            fn = sum((df[is_positive_col_name] == 1) & (df[f'mark'] == 0))
+            if tp + fp == 0:
+                precision = 0
+            else:
+                precision = tp / (tp + fp)
+            ntool_precisions.append(precision)
+            if tp + fn == 0:
+                recall = 0
+            else:
+                recall = tp / (tp + fn)
+            ntool_recalls.append(recall)
+            if 2 * tp + fp + fn == 0:
+                f1 = 0
+            else:
+                f1 = 2 * tp / (2 * tp + fp + fn)
+            ntool_f1s.append(f1)
+            n_coms.append(com)
+        n_union_df = pd.DataFrame({'precision': ntool_precisions, 'recall': ntool_recalls, 'f1': ntool_f1s})
+        precision_means.append(n_union_df['precision'].mean())
+        precision_stds.append(0 if n_union_df.shape[0] == 1 else n_union_df['precision'].std(ddof=0))
+        recall_means.append(n_union_df['recall'].mean())
+        recall_stds.append(0 if n_union_df.shape[0] == 1 else n_union_df['recall'].std(ddof=0))
+        f1_means.append(n_union_df['f1'].mean())
+        f1_stds.append(0 if n_union_df.shape[0] == 1 else n_union_df['f1'].std(ddof=0))
+        coms.append(n_coms)
+        precisions.append(ntool_precisions)
+        recalls.append(ntool_recalls)
+        f1s.append(ntool_f1s)
+    # merge all genes
+    gene_list = []
+    for tool in tools:
+        gene_list.append(rpt_obj[tool][[GENE_ID_COL_NAME, is_positive_col_name]])
+    gene_list_df = pd.concat(gene_list)
+    del gene_list
+    gene_list_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+    # merge all results in rpt_obj
+    mark_cols = []
+    merged_df = None
+    for tool in tools:
+        merged_df = pd.merge(left=gene_list_df, right=rpt_obj[tool][[GENE_ID_COL_NAME, 'mark']],
+                                 left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                                 how='outer')
+        merged_df.rename(columns={'mark': f'{tool}_mark'}, inplace=True)
+        mark_cols.append(f'{tool}_mark')
+    merged_df['mvote_positive'] = merged_df[mark_cols].sum(axis=1) >= 3
+    mv_tp = merged_df[merged_df['mvote_positive'] & (merged_df[is_positive_col_name] == 1)].shape[0]
+    mv_fp = merged_df[(merged_df[is_positive_col_name] == 0) & merged_df['mvote_positive']].shape[0]
+    mv_fn = merged_df[(merged_df[is_positive_col_name] == 1) & (~merged_df['mvote_positive'])].shape[0]
+    if mv_tp + mv_fp == 0:
+        mv_precision = 0
+    else:
+        mv_precision = mv_tp / (mv_tp + mv_fp)
+    if mv_tp + mv_fn == 0:
+        mv_recall = 0
+    else:
+        mv_recall = mv_tp / (mv_tp + mv_fn)
+    mv_f1 = 2 * mv_tp / (2 * mv_tp + mv_fp + mv_fn)
+    precision_means.append(mv_precision)
+    precision_stds.append(0)
+    recall_means.append(mv_recall)
+    recall_stds.append(0)
+    f1_means.append(mv_f1)
+    f1_stds.append(0)
+    xticklbl = [str(c) for c in count]
+    xticklbl.append(f'm_vote\nT=cnt>=3')
+    count.append(7)
+
+    # precision mean
+    plt.figure().clear()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    rects = ax.bar(count, precision_means, 0.5, label='Precision Mean')
+    ax.bar_label(rects, fmt='{:0.2f}')
+    ax.errorbar(count, precision_means, yerr=precision_stds, fmt=',', ecolor='black', capsize=5)
+    ax.set(xticks=[*count], xticklabels=xticklbl)
+    ax.set_ylabel('Precision')
+    ax.set_xlabel('Num of tools')
+    ax.set_title(f'Precision Mean of different combinations of tools')
+    plt.savefig(f'{output_figure_prefix}_precision.png')
+    plt.close()
+
+    # precision scatter
+    plt.figure().clear()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for idx, prs in enumerate(precisions):
+        ax.scatter([idx + 1] * len(prs), prs)
+        min_precision = min(prs)
+        max_precision = max(prs)
+        min_precision_com = coms[idx][prs.index(min_precision)]
+        max_precision_com = coms[idx][prs.index(max_precision)]
+        # for single_prs_idx, single_prs in enumerate(prs):
+        #     ax.text(idx + 1, single_prs, ','.join(list(map(lambda t: t[0:1], coms[idx][single_prs_idx]))))
+        # show label for min/max only
+        ax.text(idx + 1, min_precision, ','.join(list(map(lambda t: t[0:1], min_precision_com))))
+        ax.text(idx + 1, max_precision, ','.join(list(map(lambda t: t[0:1], max_precision_com))))
+        print(f'for {len(min_precision_com)} tools: '
+              f'min_precision: {min_precision}, min_precision_com: {min_precision_com}, '
+              f'max_precision: {max_precision}, max_precision_com: {max_precision_com}')
+    ax.set_ylabel('Precision')
+    ax.set_xlabel('Num of tools')
+    ax.set_title(f'Precision Mean of different combinations of tools')
+    plt.savefig(f'{output_figure_prefix}_precision_scatter.png')
+    plt.close()
+
+    # recall mean
+    plt.figure().clear()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    rects = ax.bar(count, recall_means, 0.5, label='Recall Mean')
+    ax.bar_label(rects, fmt='{:0.2f}')
+    ax.errorbar(count, recall_means, yerr=recall_stds, fmt=',', ecolor='black', capsize=5)
+    ax.set(xticks=[*count], xticklabels=xticklbl)
+    ax.set_ylabel('Recall')
+    ax.set_xlabel('Num of tools')
+    ax.set_title(f'Recall Mean of different combinations of tools')
+    plt.savefig(f'{output_figure_prefix}_recall.png')
+    plt.close()
+
+    # recall scatter
+    plt.figure().clear()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for idx, rcl in enumerate(recalls):
+        ax.scatter([idx + 1] * len(rcl), rcl)
+        min_recall = min(rcl)
+        max_recall = max(rcl)
+        min_recall_com = coms[idx][rcl.index(min_recall)]
+        max_recall_com = coms[idx][rcl.index(max_recall)]
+        # for single_rcl_idx, single_rcl in enumerate(rcl):
+        #     ax.text(idx + 1, single_rcl, ','.join(list(map(lambda t: t[0:1], coms[idx][single_rcl_idx]))))
+        # show label for min/max only
+        ax.text(idx + 1, min_recall, ','.join(list(map(lambda t: t[0:1], min_recall_com))))
+        ax.text(idx + 1, max_recall, ','.join(list(map(lambda t: t[0:1], max_recall_com))))
+        print(f'for {len(min_recall_com)} tools: '
+              f'min_recall: {min_recall}, min_recall_com: {min_recall_com}, '
+              f'max_recall: {max_recall}, max_recall_com: {max_recall_com}')
+    ax.set_ylabel('recall')
+    ax.set_xlabel('Num of tools')
+    ax.set_title(f'recall Mean of different combinations of tools')
+    plt.savefig(f'{output_figure_prefix}_recall_scatter.png')
+    plt.close()
+
+    # f1 mean
+    plt.figure().clear()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    rects = ax.bar(count, f1_means, 0.5, label='F1 Mean')
+    ax.bar_label(rects, fmt='{:0.2f}')
+    ax.errorbar(count, f1_means, yerr=f1_stds, fmt=',', ecolor='black', capsize=5)
+    ax.set(xticks=[*count], xticklabels=xticklbl)
+    ax.set_ylabel('F1')
+    ax.set_xlabel('Num of tools')
+    ax.set_title(f'F1 Mean of different combinations of tools')
+    plt.savefig(f'{output_figure_prefix}_f1.png')
+    plt.close()
+
+    # f1 scatter
+    plt.figure().clear()
+    fig, ax = plt.subplots(figsize=(8, 6))
+    for idx, cf1 in enumerate(f1s):
+        ax.scatter([idx + 1] * len(cf1), cf1)
+        min_f1 = min(cf1)
+        max_f1 = max(cf1)
+        min_f1_com = coms[idx][cf1.index(min_f1)]
+        max_f1_com = coms[idx][cf1.index(max_f1)]
+        # for single_f1_idx, single_f1 in enumerate(rcl):
+        #     ax.text(idx + 1, single_f1, ','.join(list(map(lambda t: t[0:1], coms[idx][single_f1_idx]))))
+        # show label for min/max only
+        ax.text(idx + 1, min_f1, ','.join(list(map(lambda t: t[0:1], min_f1_com))))
+        ax.text(idx + 1, max_f1, ','.join(list(map(lambda t: t[0:1], max_f1_com))))
+        print(f'for {len(min_f1_com)} tools: '
+              f'min_f1: {min_f1}, min_f1_com: {min_f1_com}, '
+              f'max_f1: {max_f1}, max_f1_com: {max_f1_com}')
+    ax.set_ylabel('F1')
+    ax.set_xlabel('Num of tools')
+    ax.set_title(f'F1 Mean of different combinations of tools')
+    plt.savefig(f'{output_figure_prefix}_F1_scatter.png')
+    plt.close()
 
 def __read_tool_info_align_to_prob(rpt, tool_name, sig_col_name, sig_type):
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
