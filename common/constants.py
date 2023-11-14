@@ -10,4 +10,4 @@ default_config = os.path.join(os.path.join(os.path.dirname(Path(__file__).resolv
 default_study = 'default'
 default_report_gene_ranking = 50
 # tools_config = os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), 'tools_config.yml')
-SNP_ALLELE = ['A', 'T', 'C', 'G']
+SNP_ALLELE = ['A', 'T', 'C', 'G', 'a', 't', 'c', 'g']
