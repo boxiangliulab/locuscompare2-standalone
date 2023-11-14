@@ -196,6 +196,11 @@ class Processor:
         logging.info(f'GWAS data dropping non-autosome data, time: {datetime.datetime.now()}')
         gwas_df.drop(labels=gwas_df[~gwas_df[self.gwas_col_dict['chrom']].isin([str(i) for i in range(1, 23)])].index,
                      inplace=True)
+        logging.info(f'GWAS data converting EA and NEA to upper case, time: {datetime.datetime.now()}')
+        gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper().astype(
+            pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper().astype(
+            pd.CategoricalDtype(const.SNP_ALLELE))
         logging.info(f'GWAS data dropping INDEL SNPs, time: {datetime.datetime.now()}')
         utils.drop_indel_snp(gwas_df, self.gwas_col_dict['effect_allele'], self.gwas_col_dict['other_allele'])
         logging.info(f'GWAS data cleaning, time: {datetime.datetime.now()}')
@@ -209,8 +214,8 @@ class Processor:
         # discontinuous index cost a lot more memory
         gwas_df.reset_index(drop=True, inplace=True)
         # Merge alt/ref from vcf into gwas file for later use
-        gwas_df['alt_'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
-        gwas_df['ref_'] = pd.Series(data=pd.NA, dtype=pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df['alt_'] = pd.Series(dtype=pd.CategoricalDtype(const.SNP_ALLELE))
+        gwas_df['ref_'] = pd.Series(dtype=pd.CategoricalDtype(const.SNP_ALLELE))
         chroms = gwas_df[self.gwas_col_dict['chrom']].unique()
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = []
@@ -223,10 +228,6 @@ class Processor:
                     logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         gwas_df.drop_duplicates(subset=[self.gwas_col_dict['chrom'], self.gwas_col_dict['position']],
                                 keep=False, inplace=True)
-        gwas_df[self.gwas_col_dict['effect_allele']] = gwas_df[self.gwas_col_dict['effect_allele']].str.upper().astype(
-            pd.CategoricalDtype(const.SNP_ALLELE))
-        gwas_df[self.gwas_col_dict['other_allele']] = gwas_df[self.gwas_col_dict['other_allele']].str.upper().astype(
-            pd.CategoricalDtype(const.SNP_ALLELE))
         # Fill SNP ref/alt by other_allele/effect_allele if the SNP is not in vcf
         gwas_df['ref_'].mask(gwas_df['ref_'].isna(), gwas_df[self.gwas_col_dict['other_allele']], inplace=True)
         gwas_df['alt_'].mask(gwas_df['alt_'].isna(), gwas_df[self.gwas_col_dict['effect_allele']], inplace=True)
