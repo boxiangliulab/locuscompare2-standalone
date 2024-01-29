@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pandas as pd
+import scipy.stats as ss
 
 import ranking.intact as intact
 import ranking.rra as rra
@@ -28,13 +29,21 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
         result_df = pd.merge(left=rgeo_df, right=intact_df,
                              left_on='gene_id', right_on='gene_id',
                              how='outer')
+        result_df['geo_ranking'] = ss.rankdata(result_df['geo_ranking'])
+        result_df['geo_ranking'] = result_df['geo_ranking'].apply(lambda x: int(x))
+        result_df['avg_ranking'] = ss.rankdata(result_df['avg_ranking'])
+        result_df['avg_ranking'] = result_df['avg_ranking'].apply(lambda x: int(x))
     elif geo_result_exist:
         # intact_probability column is not present if user run TWAS only or colocalization methods
         result_df = pd.read_table(geo_result, usecols=['gene_id', 'geo_ranking'])
+        result_df['geo_ranking'] = ss.rankdata(result_df['geo_ranking'])
+        result_df['geo_ranking'] = result_df['geo_ranking'].apply(lambda x: int(x))
         os.remove(geo_result)
     elif intact_result_exist:
         result_df = pd.read_table(intact_result,
                                   usecols=lambda col: col in ['gene_id', 'avg_ranking', 'intact_probability'])
+        result_df['avg_ranking'] = ss.rankdata(result_df['avg_ranking'])
+        result_df['avg_ranking'] = result_df['avg_ranking'].apply(lambda x: int(x))
         os.remove(intact_result)
     else:
         result_df = None
