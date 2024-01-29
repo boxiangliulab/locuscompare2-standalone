@@ -122,9 +122,13 @@ class Processor:
             logging.info(f'No required data in eQTL file {eqtl_trait_file_path}')
             return None, None
         else:
-            pval_filter_eqtl_df = \
-                utils.filter_data_frame_by_p_value(eqtl_trait_df, self.config_holder.eqtl_p_threshold,
-                                                   self.eqtl_col_dict['pvalue'], inplace=False)
+            # pval_filter_eqtl_df = \
+            #     utils.filter_data_frame_by_p_value(eqtl_trait_df, self.config_holder.eqtl_p_threshold,
+            #                                        self.eqtl_col_dict['pvalue'], inplace=False)
+            pval_filter_eqtl_df = eqtl_trait_df.drop(
+                eqtl_trait_df[(eqtl_trait_df[self.eqtl_col_dict['pvalue']] == 0.0)].index,
+                inplace=False)
+            logging.info(f"************eqtl_p_threshold: {self.config_holder.eqtl_p_threshold}")
             if pval_filter_eqtl_df.empty:
                 del eqtl_trait_df
                 del pval_filter_eqtl_df
