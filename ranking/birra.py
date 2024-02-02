@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 from pathlib import Path
 from ranking.constants import GENE_ID_COL_NAME
@@ -7,6 +8,8 @@ from ranking.constants import RESULT_TYPE_PVAL
 
 
 def prepare_birra_input(output_file_path, rpts):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if rpts is None or len(rpts) == 0:
         return
     if not any(rpts.values()):
@@ -49,6 +52,8 @@ def read_tool_result(rpt, tool_name, sig_col_name, sig_type):
 
 
 def run_ranking(output_file_path, rpt=None):
+    print.info('当前文件名称: ',os.path.basename(__file__))
+    print.info('当前函数名称: ',sys._getframe().f_code.co_name)
     ranking_input_file = os.path.join(os.path.dirname(output_file_path), f'pre_{output_file_path.split(os.sep)[-1]}')
     prepare_birra_input(output_file_path=ranking_input_file, rpts=rpt)
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'birra.R')

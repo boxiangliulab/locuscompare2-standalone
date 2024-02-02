@@ -60,6 +60,8 @@ eqtl_df = eqtl_df[match(gwas_df$var_id_, eqtl_df$var_id_),]
 # ld_matrix = ld_matrix[gwas_df$var_id_, gwas_df$var_id_]
 # ld_matrix[is.nan(ld_matrix)] = 0
 input = merge(gwas_df, eqtl_df, by = "var_id_", all = FALSE, suffixes = c("_gwas", "_eqtl"))
+print(dim(input))
+print(input)
 # if (length(setdiff(input$var_id_, colnames(ld_matrix)))) {
 #   stop("colnames in LD matrix do not contain all common SNPs")
 # }
@@ -104,7 +106,8 @@ if (is.null(result$summary)) {
 # filter rows by H4, and then write to file
 # summary_set = result$summary[result$summary$PP.H4.abf > 0.95,]
 summary_set = result$summary
-
+print("*******summary*****")
+print(summary_set)
 if (summary_set["PP.H4.abf"] < overall_h4_threshold) {
   print(paste("overall H4 is", summary_set["PP.H4.abf"], "for gene", input$gene_id[0:1], "which is too small and will not be included in the result file"))
   q(save = "no")
@@ -116,4 +119,6 @@ colnames(extra_info_df)[which(colnames(extra_info_df) == "chrom_gwas")] = "chrom
 detail_result = result$results
 detail_result$overall_H4 = summary_set["PP.H4.abf"]
 detail_result_with_gene = merge(detail_result, extra_info_df, by.x = "snp", by.y = "var_id_", all.x = TRUE)
+print("*****output_file_path*****")
+print(output_file_path)
 write.table(detail_result_with_gene, if (endsWith(output_file_path, ".gz")) gzfile(output_file_path) else output_file_path, sep = "\t", row.names = FALSE, col.names = TRUE)

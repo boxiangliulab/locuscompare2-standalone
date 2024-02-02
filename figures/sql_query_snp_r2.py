@@ -1,9 +1,12 @@
 import pymysql
 import pandas as pd
 import base64
-
+import os
+import sys
 
 def retrieve_ld(chr=None, rsid=None, population=None, rsid_col_name=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     try:
         host = base64.b64decode(
             'bG9jdXNjb21wYXJlLXVzLXdlc3QtMmEuY3ZvY3ViMzlubnJpLnVzLXdlc3QtMi5yZHMuYW1hem9uYXdzLmNvbQ==').decode()

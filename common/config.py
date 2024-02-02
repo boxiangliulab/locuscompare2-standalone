@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 import common.constants
 from common import coloc_utils as utils
 import logging
@@ -9,6 +10,8 @@ class ConfigHolder:
 
     def __init__(self, single_config_file=common.constants.default_config, study=common.constants.default_study,
                  parallel=False, tools_config_file=None):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         if study is None:
             study = common.constants.default_study
         if single_config_file is None:

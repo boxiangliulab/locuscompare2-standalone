@@ -6,7 +6,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-
+import sys
 import pandas as pd
 
 from common import coloc_utils as utils, global_data_process as gdp, constants as const
@@ -16,6 +16,8 @@ class Jlim:
     COLOC_TOOL_NAME = 'jlim'
 
     def __init__(self):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         logging.info('init Jlim')
         # defult use preprocessed eqtl
         self.is_ref_db_eqtlcatalogue = False
@@ -45,6 +47,8 @@ class Jlim:
             eqtl_output_dir=None,
             parallel=False):
 
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         start_time = datetime.now()
         logging.info(f'jlim start at: {start_time}')
 
@@ -104,6 +108,8 @@ class Jlim:
                                         reference_genotype_panel_ld_ref_file=None,
                                         eqtl_sample_size=None):
 
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         for gwas_cluster_file_name in os.listdir(gwas_cluster_output_dir):
             if gwas_cluster_file_name.startswith('chr'):
                 file_name = gwas_cluster_file_name.split('.')[0]
@@ -141,6 +147,8 @@ class Jlim:
                                      reference_genotype_panel_ld_ref_file=None,
                                      eqtl_sample_size=None,
                                      parallel=False):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         start_time = datetime.now()
 
         Path(output_gwas_dir).mkdir(parents=True, exist_ok=True)
@@ -211,6 +219,8 @@ class Jlim:
     def process_gene(self, gwas_range_file, gwas_type_dict, gwas_col_dict, row, eqtl_gene_file, eqtl_type_dict,
                      eqtl_rsid_col_name, gwas_rsid_col_name, output_gwas_dir, output_eqtl_dir, gene_id, eqtl_col_dict,
                      output_jlim_output_dir, chrom, reference_genotype_panel_ld_ref_file, eqtl_sample_size):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
         candidate_gwas_df = pd.read_table(gwas_range_file, sep=const.column_spliter, dtype=gwas_type_dict)
         if len(candidate_gwas_df) <= 1:
@@ -301,6 +311,8 @@ class Jlim:
         return output_jlim_file
 
     def analyze_result(self, output_dir, output_analyze_output_dir, output_jlim_output_whole_file):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         jlim_out_list = []
         for jlim_output_file_name in os.listdir(output_dir):
             if jlim_output_file_name.startswith('output'):

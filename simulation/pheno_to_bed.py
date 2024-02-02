@@ -3,11 +3,13 @@ import sys
 from datetime import datetime
 import random
 import argparse
-
+import os
 
 def convert_gcta_pheno_to_bed(input_pheno_file, output_bed_file, chrom, start_pos=None, end_pos=None,
                               gene_name=None, strand=None):
     # Suppose that we simulate one gene on one chromosome per time
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     start_time = datetime.now()
     print(f'Converting phenotype file {input_pheno_file} to bed file {output_bed_file} start at: {start_time}')
     pheno_df = pd.read_table(input_pheno_file, sep=r'\s+', header=None)

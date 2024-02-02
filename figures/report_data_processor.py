@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+import sys
 import pandas as pd
 from common import global_data_process as gdp, constants as const, coloc_utils as utils, config as cf
 from figures import sql_query_snp_r2 as sqr
@@ -28,6 +29,8 @@ snp_key_info = ['h_target_rsid', 'EAS_AF', 'AMR_AF', 'AFR_AF', 'EUR_AF', 'SAS_AF
 
 
 def report_data_process(report_list):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     start_time = datetime.now()
     logging.info('start report data process ')
     # create traits file
@@ -36,6 +39,8 @@ def report_data_process(report_list):
 
 
 def create_tissue_file(report_list=None, ):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('create_tissue_file ')
     report_list_pd = pd.DataFrame(list(report_list),
                                   columns=['trait', 'study1', 'tool_name', 'tissue', 'report_path', 'cfg_pro',
@@ -58,6 +63,8 @@ def create_tissue_file(report_list=None, ):
 
 
 def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('create_trait_file ')
     df_trait_list = list(tissue_df.groupby('trait'))
     output_base_dir = None
@@ -135,6 +142,8 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
 
 
 def prepare_genecode(genecode_file):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     genecode_df = pr.read_gtf(genecode_file, as_df=True)
     genecode_df.drop(labels=genecode_df[genecode_df['Feature'] != 'gene'].index, inplace=True)
     genecode_df = genecode_df[['Chromosome', 'Start', 'End', 'Strand', 'gene_id', 'gene_name']]
@@ -151,6 +160,8 @@ def prepare_genecode(genecode_file):
 
 def create_gene_file(df_genes_info_path_pd=None, gwas_preprocessed_file=None, gwas_col_dict=None, trait_path=None,
                      eqtl_col_dict=None, population=None, gene_code_file=None, eqtl_file_path_dir=None):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('create_gene_file')
     var_id = gdp.Processor.VAR_ID_COL_NAME
     input_read_eqtl_columns = [eqtl_col_dict['snp'], eqtl_col_dict['pvalue'], eqtl_col_dict['chrom'],
@@ -234,6 +245,8 @@ def create_gene_file(df_genes_info_path_pd=None, gwas_preprocessed_file=None, gw
 
 
 def create_manhattan_plot_file(gwas_col_dict=None, gwas_preprocessed_file=None, var_id=None, trait_path=None):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     input_read_gwas_columns = [gwas_col_dict['snp'], gwas_col_dict['chrom'],
                                gwas_col_dict['position'],
                                gwas_col_dict['pvalue'], var_id]
@@ -270,6 +283,8 @@ def create_manhattan_plot_file(gwas_col_dict=None, gwas_preprocessed_file=None, 
 
 
 def filter_data_frame_by_p_value(input_df, p_value, pval_max_count, pvalue_col_name, inplace=True):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     p_value_col_name = pvalue_col_name
     bind_data_df = input_df  # 存储有效数据
     bins_list = [p_value]
@@ -296,6 +311,8 @@ def filter_data_frame_by_p_value(input_df, p_value, pval_max_count, pvalue_col_n
 
 
 def __copy_static_files(source_path, target_path):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     if not os.path.exists(target_path):
         os.makedirs(target_path)
 
@@ -319,6 +336,8 @@ def __copy_static_files(source_path, target_path):
 
 def report_html_handler(output_dir):
     # 复制项目static目录文件到所需展示数据目录下
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     current_dir = os.path.dirname(Path(__file__).resolve())
     static_files_path = os.path.join(current_dir, 'static')
     output_index_path = os.path.join(output_dir, 'index.html')
