@@ -204,10 +204,7 @@ def __run_single_cfg(config_holder, report_list, parallel, study):
     start_time = datetime.now()
     print(os.path.basename(__file__))
     print(sys._getframe().f_code.co_name)
-<<<<<<< HEAD
     tools_param_list = config_holder.global_config['tools']
-=======
->>>>>>> 6c52a7b787823f4488a6e604a170a92f0b6e19b8
     logging.info(f'run tools_list: {tools_param_list}, start time: {start_time}')
     # check eqtl and gwas entry file exist
     utils.check_file_or_path_exist(config_holder.global_config['working_dir'])
