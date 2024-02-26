@@ -38,6 +38,8 @@ class Coloc:
             parallel=False,
             tools_config=None,
             parallel_worker_num=10):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         gwas_type_dict = {gwas_col_dict['chrom']: 'category',
                           gwas_col_dict['position']: 'Int64',
                           gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
@@ -91,6 +93,8 @@ class Coloc:
                         range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
                         if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
                             continue
+                        logging.info(f"********coloc1******** {self.process_gene}")
+                        logging.info(f"********coloc2******** {range_lead_snp}")
                         futures.append(executor.submit(self.process_gene, self.__get_output_dir(working_dir),
                                                        gwas_range_file, gwas_type_dict, gwas_col_dict, row,
                                                        eqtl_gene_file, eqtl_type_dict,
@@ -130,6 +134,8 @@ class Coloc:
         return output_file
 
     def __convert_positions_str_to_list(self, positions_str):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         if isinstance(positions_str, str):
             return json.loads(positions_str)
         elif isinstance(positions_str, list):
@@ -138,6 +144,8 @@ class Coloc:
             return []
 
     def __get_cluster_significant_snps_dict(self, cluster_df):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         cluster_snps_dict = {}
         for _, row in cluster_df.iterrows():
             cluster_snps_dict[row.loc['range_lead']] = self.__convert_positions_str_to_list(row.loc['positions'])
@@ -147,6 +155,8 @@ class Coloc:
                      eqtl_type_dict,
                      var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                      eqtl_sample_size, gwas_type, eqtl_type, p1, p2, p12):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
         candidate_gwas_df = pd.read_table(gwas_range_file, sep=const.column_spliter,
                                           usecols=[
@@ -189,7 +199,7 @@ class Coloc:
         # vcf_matching_file = os.path.join(vcf_output_dir, 'matching',
         #                                  f'{range_lead_snp}-chr{chrom}.tsv')
         # if not os.path.exists(vcf_matching_file) or os.path.getsize(vcf_matching_file) <= 0:
-        #     print(f'No generated vcf file for significant SNP {range_lead_snp}')
+        #     logging.info(f'No generated vcf file for significant SNP {range_lead_snp}')
         #     continue
         # vcf_matching_df = pd.read_table(vcf_matching_file,
         #                                 sep=const.column_spliter, header=0,
@@ -221,18 +231,18 @@ class Coloc:
                                   ref_df_alt_allele_col_name=eqtl_col_dict['alt'],
                                   ref_df_ref_allele_col_name=eqtl_col_dict['ref'],
                                   gbeta_col_name=gwas_col_dict['beta'])
-        # print(f'======> Generating LD for significant SNP {range_lead_snp}: {datetime.now()}')
+        # logging.info(f'======> Generating LD for significant SNP {range_lead_snp}: {datetime.now()}')
         # # Generate ld file from subset vcf file, plink will append .ld to the --out parameter
         # output_ld_path = os.path.join(coloc_input_dir, f'{range_lead_snp}_chr{chrom}')
         # output_ld_full_path = f'{output_ld_path}.ld'
         # ld_snp_list_path = f'{output_ld_path}.snplist'
-        # print(f'ld full path: {output_ld_full_path}')
+        # logging.info(f'ld full path: {output_ld_full_path}')
         # utils.delete_file_if_exists(output_ld_full_path)
         # utils.delete_file_if_exists(ld_snp_list_path)
         # plink_path = gdp.global_config['tool_path']['plink']
         # os.system(f'{plink_path} -vcf {output_vcf_path} --r --matrix  --write-snplist --out {output_ld_path}')
         # if not os.path.exists(output_ld_full_path) or os.path.getsize(output_ld_full_path) <= 0:
-        #     print(f'No generated ld file for SNP {range_lead_snp}')
+        #     logging.info(f'No generated ld file for SNP {range_lead_snp}')
         #     continue
 
         # Now gwas/eqtl/vcf have the same num of rows, write candidate data to file
@@ -261,9 +271,13 @@ class Coloc:
         return output_file
 
     def __get_output_dir(self, working_dir):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         return os.path.join(working_dir, 'output')
 
     def __get_coloc_run_params(self, tools_config):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         params = utils.get_tools_params_dict(self.COLOC_TOOL_NAME, tools_config)
         _p1 = 1.0E-4 if params.get('p1') is None else params['p1']
         _p2 = 1.0E-4 if params.get('p2') is None else params['p2']
@@ -271,6 +285,8 @@ class Coloc:
         return _p1, _p2, _p12
 
     def __analyze_result(self, output_dir, final_result_file):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         single_result_list = []
         for single_result in os.listdir(output_dir):
             if not (single_result.endswith('.tsv') or single_result.endswith('.tsv.gz')):
@@ -284,6 +300,8 @@ class Coloc:
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
 
     def get_output_file(self, working_dir):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         _output_file_name = f'{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 

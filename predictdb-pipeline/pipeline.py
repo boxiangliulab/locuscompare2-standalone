@@ -30,6 +30,8 @@ def parse_gtf(gtf_path, out_path):
     Reference from parse_gtf.py
     The start column output is different from pyranges, start column will not minus 1 here
     """
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Parse gtf start')
     header_fields = ['chr', 'gene_id', 'gene_name', 'start', 'end', 'gene_type']
     gtf_compressed = gtf_path.endswith('.gz')
@@ -72,6 +74,8 @@ def create_snp_annot_from_vcf(input_vcf, output_dir, use_varid_in_covariances=Tr
     this will cause varID mismatch between model db and covariances, further causing predixcan reporting 0% snps used.
     see PredictionModel.Model.load_model
     """
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Create snp annotation from vcf start')
     if not os.path.exists(input_vcf) or os.path.getsize(input_vcf) <= 0:
         raise ValueError(f'{input_vcf} does not exist or is empty')
@@ -117,6 +121,8 @@ def create_genotype_from_vcf(input_vcf, output_dir):
     Output files are output_dir/geno_chr{num}.tsv
     chrom in varID must be prefixed with 'chr'.
     """
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Create genotype files from vcf start')
     if not os.path.exists(input_vcf) or os.path.getsize(input_vcf) <= 0:
         raise ValueError(f'{input_vcf} does not exist or is empty')
@@ -160,6 +166,8 @@ def create_genotype_from_vcf(input_vcf, output_dir):
 
 def preprocess_gene_exp(input_bed, output_for_peer, output_for_train,
                         gene_id_col_name=None, non_individual_col_names=None):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     if non_individual_col_names is None:
         non_individual_col_names = ['#chr', 'start', 'end', 'pid', 'gid', 'strand']
     if gene_id_col_name is None:
@@ -179,6 +187,8 @@ def preprocess_gene_exp(input_bed, output_for_peer, output_for_train,
 
 
 def calc_peer_covariates(input_gene_exp, sample_size, individual_ids, output_dir, output_file_name):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Calculate peer covariates start')
     if not os.path.exists(input_gene_exp) or os.path.getsize(input_gene_exp) <= 0:
         raise ValueError(f'{input_gene_exp} does not exist or is empty')
@@ -200,6 +210,8 @@ def calc_peer_covariates(input_gene_exp, sample_size, individual_ids, output_dir
 
 def train(expression_file, gene_annot_file, covariates_file, geno_snp_input_dir,
           summary_dir, weights_dir, covariances_dir, sim_data=False):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Training model start')
     process_cnt = os.cpu_count()
     if process_cnt > 22:
@@ -224,6 +236,8 @@ def train(expression_file, gene_annot_file, covariates_file, geno_snp_input_dir,
 
 def train_for_chrom(chrom, expression_file, gene_annot_file, covariates_file, geno_snp_input_dir,
                     summary_dir, weights_dir, covariances_dir, sim_data=False):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info(F'Training model for chromosome {chrom}')
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'train_elnet.R')
     snp_annot = os.path.join(geno_snp_input_dir, f'snp_annot_chr{chrom}.tsv')
@@ -239,6 +253,8 @@ def train_for_chrom(chrom, expression_file, gene_annot_file, covariates_file, ge
 
 
 def generate_db(summary_dir, weights_dir, output_db):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Generate db start')
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'rscript', 'gen_db.R')
     os.system(f'Rscript --no-save --no-restore {rscript_path} {summary_dir} {weights_dir} {output_db}')
@@ -248,6 +264,8 @@ def generate_db(summary_dir, weights_dir, output_db):
 def run(input_geno_vcf=None, use_varid_in_covariances=True, input_exp_bed=None, exp_gene_id_col_name=None,
         exp_non_individual_col_names=None, input_gene_code=None, sim_data=False, output_dir=None):
     __init_logger()
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info('Training pipline start')
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     genecode = os.path.join(output_dir, 'genecode_parsed.tsv')

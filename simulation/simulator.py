@@ -5,7 +5,7 @@ import shutil
 import subprocess
 from datetime import datetime
 from pathlib import Path
-
+import sys
 import pandas as pd
 
 import pheno_to_bed
@@ -14,6 +14,8 @@ import pheno_to_bed
 # generate output_prefix.samples, output_prefix.hap, output_prefix.legend, output_prefix_maf.tsv
 # in current dir
 def prepare_hapgen2_input(subset_vcf, output_prefix, maf_thresh):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'converting subset_vcf to haplotype files')
     # generate output_prefix.samples, output_prefix.hap.gz, output_prefix.legend.gz
     # bcftools convert 和 bcftools view对于-i 'TYPE="snp"'的执行结果不同, view结果包含MULTI_ALLELIC
@@ -51,6 +53,8 @@ def prepare_hapgen2_input(subset_vcf, output_prefix, maf_thresh):
 def generate_cc(genetic_map_path, input_prefix, chrom, disease_loci_pos_and_allele_state_list, ctrl_cnt, case_cnt,
                 output_prefix, merge_cc=True, disease_odds_ratio=1.1, effect_population_size=11418):
     disease_param = ''
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'generating case control data, disease loci are: {disease_loci_pos_and_allele_state_list}')
     for disease_pos_and_allele_state in disease_loci_pos_and_allele_state_list:
         disease_param += f' {disease_pos_and_allele_state} {disease_odds_ratio} {disease_odds_ratio * disease_odds_ratio}'
@@ -127,6 +131,8 @@ def perform_gwas_analysis(input_prefix, output_id, maf_thresh=0.05):
 def generate_eqtl(input_prefix, causal_snplist_path, output_bed_prefix,
                   output_vcf_prefix, chrom, start_pos, end_pos,
                   gene_id, causal_mode, strand=None, heritability=0.2, simu_rep=1):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'generating eqtl expression data')
     # generate phenotype data
     pheno_output_prefix = os.path.join(os.path.dirname(output_bed_prefix),
@@ -150,6 +156,8 @@ def generate_eqtl(input_prefix, causal_snplist_path, output_bed_prefix,
 
 
 def perform_eqtl_analysis(phenotype_bed_path, genotype_vcf_path, output_path, p_val_thresh=0.1):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'performing eqtl analysis')
     # use first 3 PC as cov
     print(f'performing pca analysis')
@@ -201,6 +209,8 @@ def perform_eqtl_analysis(phenotype_bed_path, genotype_vcf_path, output_path, p_
 def simulate_for_chrom(input_vcf, chrom_num_in_vcf, gwas_causal_list, eqtl_causal_list, gene_list_path,
                        generated_file_list, genetic_map, ctrl_count, case_count, maf_thresh,
                        eqtl_genetic_models, heritability=0.2, disease_risk=1.1):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     start_time = datetime.now()
     print(f'simulate for chrom {chrom_num_in_vcf} start at {start_time}')
     gene_list_df = pd.read_table(gene_list_path)
@@ -379,6 +389,8 @@ def simulate_for_chrom(input_vcf, chrom_num_in_vcf, gwas_causal_list, eqtl_causa
 
 
 def get_vcf_records_count(vcf_file):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
         os.system(f'tabix -f -p vcf {vcf_file}')
     process = subprocess.Popen(['bcftools', 'index', '-n', vcf_file],
@@ -390,6 +402,8 @@ def get_vcf_records_count(vcf_file):
 
 
 def is_vcf_chrom_code_contains_chr(vcf_file):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
         os.system(f'tabix -f -p vcf {vcf_file}')
     process = subprocess.Popen(['tabix', '-l', vcf_file],
@@ -401,6 +415,8 @@ def is_vcf_chrom_code_contains_chr(vcf_file):
 
 
 def get_bed_chrom_count(bed_file):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if not (Path(f'{bed_file}.tbi').exists() or Path(f'{bed_file}.csi').exists()):
         os.system(f'tabix -f -p bed {bed_file}')
     process = subprocess.Popen(['tabix', '-l', bed_file],
@@ -414,6 +430,8 @@ def get_bed_chrom_count(bed_file):
 
 def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map, ctrl_count, case_count, maf_thresh,
              heritability=0.2, disease_risk=1.1, eqtl_genetic_model=2, output_dir=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     start_time = datetime.now()
     print(f'Simulate start at: {start_time}')
     # files used to track causal list
@@ -461,6 +479,8 @@ def simulate(output_suffix, src_vcf_dir, gene_list_file, genetic_map, ctrl_count
 
 def merge_raw_files(generated_file_list, output_suffix, eqtl_genetic_models, output_dir):
     start_time = datetime.now()
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'Merge raw files start at: {start_time}')
     file_list_df = pd.read_table(generated_file_list)
     file_list_df.sort_values(['chrom', 'start'], inplace=True)
@@ -511,6 +531,8 @@ def merge_raw_files(generated_file_list, output_suffix, eqtl_genetic_models, out
 def merge_sum_stat_files(generated_file_list, output_suffix, eqtl_genetic_models,
                          output_dir, heritability=0.2, disease_risk=1.1):
     start_time = datetime.now()
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'Merge sumstat files start at: {start_time}')
     file_list_df = pd.read_table(generated_file_list)
     file_list_df.sort_values(['chrom', 'start'], inplace=True)
@@ -559,6 +581,8 @@ def merge_sum_stat_files(generated_file_list, output_suffix, eqtl_genetic_models
 
 
 def get_genes(all_gene_list, output_path, gene_per_chrom=20, chrom_list=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if chrom_list is None:
         chrom_list = [str(i) for i in range(1, 23)]
     start_time = datetime.now()
@@ -606,6 +630,8 @@ def cleanup():
 def run(src_vcf_dir, ld_r2_stats, genetic_map, ctrl_count=20000, case_count=20000, maf_thresh=0.1,
         sample_cnt_per_chrom=5, candicate_loci_list=None, heritability=0.2, sim_chrom_list=None, disease_risk=1.1,
         eqtl_genetic_model=2):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     start_time = datetime.now()
     print(f'Simulator start at: {start_time}')
     output_id = datetime.now().strftime("%Y%m%d%H%M%S")

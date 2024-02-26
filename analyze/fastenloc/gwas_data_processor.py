@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-
+import sys
 import pandas as pd
 
 from common import global_data_process as gdp, constants as const, coloc_utils as utils
@@ -11,23 +11,35 @@ from common import global_data_process as gdp, constants as const, coloc_utils a
 class FastenlocGwasProcessor:
 
     def __init__(self):
+        print('当前文件名称: ',os.path.basename(__file__))
+        print('当前函数名称: ',sys._getframe().f_code.co_name)
         logging.info('init FastenlocGwasProcessor')
 
     def __loc_array_init(self, chr_str, chr_len):
+        print('当前文件名称: ',os.path.basename(__file__))
+        print('当前函数名称: ',sys._getframe().f_code.co_name)
         arr = [f'loc_{chr_str}_{x}' for x in range(chr_len)]
         return arr
 
     def get_output_gwas_dir(self, output_base_dir):
+        print('当前文件名称: ',os.path.basename(__file__))
+        print('当前函数名称: ',sys._getframe().f_code.co_name)
         return f'{output_base_dir}/gwas'
 
     def get_output_torus_output(self, output_gwas_dir):
+        print('当前文件名称: ',os.path.basename(__file__))
+        print('当前函数名称: ',sys._getframe().f_code.co_name)
         return f'{output_gwas_dir}/pip'
 
     def get_output_torus_output_file(self, output_torus_output_dir):
+        print('当前文件名称: ',os.path.basename(__file__))
+        print('当前函数名称: ',sys._getframe().f_code.co_name)
         return f'{output_torus_output_dir}/torus_output.pip'
 
     def prepare_gwas_data(self, working_dir=None, gwas_preprocessed_file=None,
                           gwas_col_dict=None, ld_block_loci_file=None):
+        print('当前文件名称: ',os.path.basename(__file__))
+        print('当前函数名称: ',sys._getframe().f_code.co_name)
         start_time = datetime.now()
         logging.info(f'Grouping fastenloc preprocessed gwas file at {start_time}')
 

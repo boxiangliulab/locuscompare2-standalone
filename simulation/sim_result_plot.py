@@ -10,7 +10,7 @@ import seaborn as sns
 from sklearn.metrics import roc_auc_score, roc_curve, average_precision_score, precision_recall_curve
 from upsetplot import plot, from_indicators
 from venn import pseudovenn
-
+import sys
 import ranking.intact as intact
 import ranking.rra as rra
 from ranking.constants import TOOL_SIG_COL_INFO, GENE_ID_COL_NAME, RESULT_TYPE_PVAL, RESULT_TYPE_PROB
@@ -21,6 +21,8 @@ is_positive_col_name = 'IS_POSITIVE'
 
 
 def retrieve_std_df(generated_list, sec_causal_type):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     generated_list_df = pd.read_table(generated_list,
                                       usecols=['gene', 'gwas_causal_snp', 'gwas_max_assoc_p', 'gwas_r2',
                                                'eqtl_max_assoc_p_1', f'eqtl_max_assoc_p_{sec_causal_type}'])
@@ -41,6 +43,8 @@ def retrieve_std_df(generated_list, sec_causal_type):
 
 
 def retrieve_positive_df(generated_list):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     generated_list_df = pd.read_table(generated_list,
                                       usecols=['gene', 'gwas_max_assoc_p', 'gwas_r2',
                                                'eqtl_max_assoc_p_1'])
@@ -54,6 +58,8 @@ def retrieve_positive_df(generated_list):
 
 
 def retrieve_negative_df(generated_list, sec_causal_type):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     generated_list_df = pd.read_table(generated_list,
                                       usecols=['gene', 'gwas_causal_snp', 'gwas_max_assoc_p', 'gwas_r2',
                                                f'eqtl_max_assoc_p_{sec_causal_type}'])
@@ -69,6 +75,8 @@ def retrieve_negative_df(generated_list, sec_causal_type):
 
 def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
                       rpt_prob_col_name=None, rpt_pval_col_name=None, tool=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if rpt_prob_col_name is None and rpt_pval_col_name is None:
         raise ValueError('p-value column name and probability column name can not be both null')
     std_df = retrieve_std_df(generated_list, sec_causal_type)
@@ -131,12 +139,16 @@ def prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type,
 
 def plot_single_roc(generated_list, h1_report, sec_report, sec_causal_type,
                     rpt_prob_col_name=None, rpt_pval_col_name=None, tool=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     result_df = prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type, rpt_prob_col_name,
                                   rpt_pval_col_name, tool=tool)
     plot_roc_curve(result_df[is_positive_col_name], result_df[prob_col_name], tool=tool)
 
 
 def plot_roc_curve(true_y, y_prob, tool):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     fpr, tpr, thresholds = roc_curve(true_y, y_prob)
     auc = roc_auc_score(true_y, y_prob)
     if tool is None:
@@ -149,6 +161,8 @@ def plot_roc_curve(true_y, y_prob, tool):
 
 
 def plot_all_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     plt.figure().clear()
     xlocs, xlabels = plt.xticks()
     for idx, loc in enumerate(xlocs):
@@ -175,12 +189,16 @@ def plot_all_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1
 
 def plot_single_prc(generated_list, h1_report, sec_report, sec_causal_type,
                     rpt_prob_col_name=None, rpt_pval_col_name=None, tool=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     result_df = prepare_plot_data(generated_list, h1_report, sec_report, sec_causal_type, rpt_prob_col_name,
                                   rpt_pval_col_name)
     plot_prc_curve(result_df[is_positive_col_name], result_df[prob_col_name], tool=tool)
 
 
 def plot_all_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     plt.figure().clear()
     plt.ylabel('Precision')
     plt.xlabel('Recall')
@@ -199,6 +217,8 @@ def plot_all_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1
 
 
 def plot_prc_curve(true_y, y_prob, tool):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     precision, recall, thresholds = precision_recall_curve(true_y, y_prob)
     ap = average_precision_score(true_y, y_prob)
     if tool is None:
@@ -213,6 +233,8 @@ def plot_prc_curve(true_y, y_prob, tool):
 def plot_all_against_ensemble_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1,
                                   output_figure_path=None,
                                   output_dir=''):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     plt.figure().clear()
     xlocs, xlabels = plt.xticks()
     for idx, loc in enumerate(xlocs):
@@ -404,6 +426,8 @@ def plot_all_against_ensemble_roc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
 def plot_all_against_ensemble_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1,
                                   output_figure_path=None,
                                   output_dir=''):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     plt.figure().clear()
     plt.ylabel('Precision')
     plt.xlabel('Recall')
@@ -457,6 +481,8 @@ def plot_all_against_ensemble_prc(generated_file_path, h1_rpt_obj, sec_rpt_obj, 
 
 
 def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, output_figure_path=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     df_list = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         h1_rpt = h1_rpt_obj.get(tool)
@@ -582,6 +608,8 @@ def plot_bar(generated_file_path, h1_rpt_obj, sec_rpt_obj, sec_causal_type=1, ou
 
 
 def calc_max_tpr_minus_fpr_threshold(generated_file_path=None, h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     tool_thresholds = {}
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         h1_rpt = h1_rpt_obj.get(tool)
@@ -598,6 +626,8 @@ def calc_max_tpr_minus_fpr_threshold(generated_file_path=None, h1_rpt_obj=None, 
 
 def calc_prc_pct_threshold(generated_file_path=None,
                            h1_rpt_obj=None, sec_rpt_obj=None, sec_causal_type=1, prc_pct=0.95):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     tool_thresholds = {}
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         h1_rpt = h1_rpt_obj.get(tool)
@@ -624,6 +654,8 @@ def plot_single_venn(
         twas_rpt=None,
         out_data_prefix=None,
         output_figure_path=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if coloc_rpt is not None and Path(coloc_rpt).exists() and os.path.getsize(coloc_rpt) > 0:
         coloc_df = pd.read_table(coloc_rpt, usecols=[GENE_ID_COL_NAME, 'overall_H4'])
         coloc_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
@@ -698,6 +730,8 @@ def plot_venn(generated_file_path=None,
               genetic_model=None,
               h1_figure_path=None,
               hgm_figure_path=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     h1_tool_thresholds = calc.calc_threshold(rpt_obj=h1_rpt_obj, work_dir=os.path.dirname(h1_figure_path))
     sec_tool_thresholds = calc.calc_threshold(rpt_obj=sec_rpt_obj, work_dir=os.path.dirname(h1_figure_path))
     print(f'H1 Thresholds: {h1_tool_thresholds}')
@@ -725,6 +759,8 @@ def plot_venn(generated_file_path=None,
 
 
 def __merge_tool_gene_id(generated_file_path, coloc_df, smr_df, fastenloc_df, predixcan_df, ecaviar_df, twas_df):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     merge_key = '__key'
     coloc_df[merge_key] = coloc_df[GENE_ID_COL_NAME]
     smr_df[merge_key] = smr_df[GENE_ID_COL_NAME]
@@ -778,6 +814,8 @@ def plot_mean_sd_combinations_bar(
         h1_rpt_obj=None, sec_rpt_obj=None,
         sec_causal_type=1,
         output_figure_path=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     tool_thresholds = calc.calc_threshold(rpt_obj=h1_rpt_obj, work_dir=os.path.dirname(output_figure_path))
     print(f'Thresholds: {tool_thresholds}')
     h1_coloc_rpt = h1_rpt_obj.get('coloc')
@@ -867,6 +905,8 @@ def plot_mean_sd_combinations_bar(
 
 
 def __read_tool_info_align_to_prob(rpt, tool_name, sig_col_name, sig_type):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     rpt_df = pd.read_table(rpt, usecols=[sig_col_name, GENE_ID_COL_NAME])
@@ -879,6 +919,8 @@ def __read_tool_info_align_to_prob(rpt, tool_name, sig_col_name, sig_type):
 
 
 def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1', tested_gene_df=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     df_list = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         tool_rpt = rpts.get(tool)
@@ -923,6 +965,8 @@ def plot_spearman_heatmap(rpts, output_figure_path=None, genetic_model='H1', tes
 
 def plot_upset(generated_file_path, h1_rpt_obj=None, sec_rpt_obj=None,
                sec_causal_type=1, output_figure_path=None, min_subset_size=3, sort_by='cardinality'):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     df_dict = {}
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         h1_rpt = h1_rpt_obj.get(tool)

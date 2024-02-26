@@ -26,6 +26,8 @@ class ECaviarDataProcessor:
     def prepare(self, working_dir, gwas_cluster_dir, gwas_cluster_summary, eqtl_group_dir, eqtl_report, ref_vcf_dir,
                 gwas_col_dict, eqtl_col_dict, population, gwas_sample_size, eqtl_sample_size, var_id_col_name,
                 parallel=False, parallel_worker_num=2):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         logging.info(f'Preparing gwas files')
         eqtl_candidate_df = pd.read_csv(eqtl_report, sep=const.column_spliter,
                                         dtype={eqtl_col_dict['chrom']: 'category'})
@@ -104,6 +106,8 @@ class ECaviarDataProcessor:
     def process_gene(self, working_dir, gwas_cluster_file_path, gene_file_path, input_vcf,
                      gwas_col_dict, eqtl_col_dict, gwas_sample_size, eqtl_sample_size, var_id_col_name,
                      output_base_dir, gene_id, variant_id, chromosome):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         gwas_cluster_df = pd.read_csv(gwas_cluster_file_path, sep=const.column_spliter,
                                       usecols=[gwas_col_dict['chrom'], gwas_col_dict['position'],
                                                gwas_col_dict['effect_allele'], gwas_col_dict['other_allele'],
@@ -213,12 +217,16 @@ class ECaviarDataProcessor:
                           f'{candidate_dir}/eqtl_log.log;{eqtl_sample_size}')
 
     def __get_cluster_significant_snps_dict(self, cluster_df):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         cluster_snps_dict = {}
         for _, row in cluster_df.iterrows():
             cluster_snps_dict[row.loc['range_lead']] = self.__convert_positions_str_to_list(row.loc['positions'])
         return cluster_snps_dict
 
     def __get_eqtl_significant_snp_positions(self, eqtl_df, chrom, gene_file_name):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         results = eqtl_df[(eqtl_df['gene_file'] == gene_file_name) & (eqtl_df['chrom'].astype(str) == str(chrom))]
         if results.empty:
             return []
@@ -226,6 +234,8 @@ class ECaviarDataProcessor:
             return self.__convert_positions_str_to_list(results.iloc[0]['positions'])
 
     def __convert_positions_str_to_list(self, positions_str):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         if isinstance(positions_str, str):
             return json.loads(positions_str)
         elif isinstance(positions_str, list):

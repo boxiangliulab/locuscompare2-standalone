@@ -1,11 +1,14 @@
 import yaml
 import os
+import sys
 from pathlib import Path
 import argparse
 import pandas as pd
 
 
 def generate_gwas_eqtl_config(output_config_dir, gwas_dir, eqtl_dir):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     default_resource_dir_path = f'{Path(__file__).parent.parent.resolve()}/resource'
     ref_resource_dir_path = f'{Path(__file__).parent.parent.resolve()}/doc'
     input_gwas_config_file_path = f'{default_resource_dir_path}/gwas_config.yml'
@@ -62,6 +65,8 @@ def generate_gwas_eqtl_config(output_config_dir, gwas_dir, eqtl_dir):
 
 
 def parse_parameters():
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', dest='output_dir', default='', type=str, nargs='*',
                         help="The generated config files output directory")

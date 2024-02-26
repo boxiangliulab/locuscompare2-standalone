@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 import pandas as pd
 import subprocess
@@ -11,6 +12,8 @@ from datetime import datetime
 
 # step 1 covariate_file no need zip
 def converting_to_sbams_format(eqtl_path, phenotype_file, genotype_file, covariate_file, tissue, current_perl_path):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'converting_to_sbams_format')
 
     output_dir = f'{eqtl_path}/{tissue}'
@@ -26,6 +29,8 @@ def converting_to_sbams_format(eqtl_path, phenotype_file, genotype_file, covaria
 
 
 def get_chroms_from_bed(vcf_file):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
         os.system(f'tabix -f -p bed {vcf_file}')
     process = subprocess.Popen(['tabix', '-l', vcf_file], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -37,6 +42,8 @@ def get_chroms_from_bed(vcf_file):
 
 # step 2 covariate_file need zip
 def estimate_priors_for_finemapping(eqtl_path, phenotype_file, genotype_file, covariate_file):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'estimate_priors_for_finemapping')
     fastqtl_dir = f'{eqtl_path}/fastqtl'
     Path(fastqtl_dir).mkdir(parents=True, exist_ok=True)
@@ -79,6 +86,8 @@ def estimate_priors_for_finemapping(eqtl_path, phenotype_file, genotype_file, co
 
 # step 3
 def annotations_finemapping_analysis(eqtl_path, sbams_files_dir, priors_files_dir):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print('annotations_finemapping_analysis')
     # dap-g to finemapping
     shell_command_dap_execute = 'dap-g -d {} -p {} -ld_control 0.5 --all -t 4 > {}'
@@ -105,6 +114,8 @@ def annotations_finemapping_analysis(eqtl_path, sbams_files_dir, priors_files_di
 # step 4
 def derive_annotations_based_on_individual_data(eqtl_path, dap_rst_dir, snp_vcf_file, tissue, current_perl_path,
                                                 output_path):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'derive_annotations_based_on_individual_data')
     # perl script to annotations vcf file
     shell_command_annotation_execute = 'perl {} -dir {} -vcf {} -tissue {} | bgzip > {}'
@@ -116,6 +127,8 @@ def derive_annotations_based_on_individual_data(eqtl_path, dap_rst_dir, snp_vcf_
 
 def prepare(parse_args):
     start_time = datetime.now()
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     print(f'prepare start at: {start_time}')
 
     eqtl_path = parse_args.target_dir
@@ -140,6 +153,8 @@ def prepare(parse_args):
 
 
 def parse_parameters():
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     parser = argparse.ArgumentParser()
     parser.add_argument('--d', dest="target_dir", help="target annotation file path")
     parser.add_argument('--g', dest="genotype_file", help="Text file with genotype vcf zip file")

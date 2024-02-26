@@ -3,12 +3,14 @@ from pathlib import Path
 
 import pandas as pd
 import scipy.stats as ss
-
+import sys
 import ranking.intact as intact
 import ranking.rra as rra
 
 
 def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size=None):
+    print('当前文件名称: ',os.path.basename(__file__))
+    print('当前函数名称: ',sys._getframe().f_code.co_name)
     out_dir = os.path.dirname(output_file_path)
     if not os.path.exists(out_dir):
         Path(out_dir).mkdir(parents=True, exist_ok=True)

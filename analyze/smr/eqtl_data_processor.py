@@ -34,6 +34,8 @@ class SmrEqtlProcessor:
                        population=None,
                        parallel=False,
                        parallel_worker_num=2):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         start_time = datetime.now()
         logging.info(f'Generating LD ref file at {start_time}')
         Path(self.__get_ldref_dir(working_dir)).mkdir(exist_ok=True, parents=True)
@@ -96,6 +98,8 @@ class SmrEqtlProcessor:
 
     def gen_plink_binary_ld_ref(self, working_dir, eqtl_gene_file, var_id_col_name, eqtl_col_dict,
                                 chrom, gene_id, input_vcf, eqtl_p_thresh):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter,
                                       usecols=[var_id_col_name, eqtl_col_dict['position'], eqtl_col_dict['pvalue']],
                                       dtype={eqtl_col_dict['position']: 'Int64'})
@@ -143,15 +147,23 @@ class SmrEqtlProcessor:
         os.system(f'plink --silent --vcf {output_vcf_full_path} --make-bed --snps-only --out {output_ld_ref_path}')
 
     def __get_output_vcf_dir(self, working_dir):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         return os.path.join(working_dir, 'vcf')
 
     def __get_output_vcf_file_pattern(self):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         return 'chr{}_{}.vcf'
 
     def __get_ldref_dir(self, working_dir):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         return os.path.join(working_dir, 'ldref')
 
     def __get_ldref_file_pattern(self):
+        print(os.path.basename(__file__))
+        print(sys._getframe().f_code.co_name)
         return 'chr{}_{}'
 
 

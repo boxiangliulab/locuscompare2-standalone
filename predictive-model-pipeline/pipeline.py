@@ -27,6 +27,8 @@ def run(rscript_path, input_geno_vcf=None, input_exp_bed=None, exp_gene_id_col_n
         start_col_name=None, end_col_name=None, strand_col_name=None, exp_non_individual_col_names=None,
         tissue_name=None, additional_compute_weight_params='', cis_len=1000, output_dir=None):
     __init_logger()
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     if exp_non_individual_col_names is None:
         exp_non_individual_col_names = ['#chr', 'start', 'end', 'pid', 'gid', 'strand']
     if exp_gene_id_col_name is None:
