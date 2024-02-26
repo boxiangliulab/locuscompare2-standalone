@@ -12,8 +12,8 @@ from common import coloc_utils as utils
 
 
 def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir='', fdr_thresh=0.05):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
+    
+    
     if rpt is None or len(rpt) == 0:
         return 0
     if not os.path.exists(rpt) or os.path.getsize(rpt) <= 0:
@@ -30,8 +30,8 @@ def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir='', fdr_thresh=0.0
 
 
 def calc_threshold_for_prob_rpt(rpt, prob_col_name, fdr_thresh=0.05):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
+    
+    
     if rpt is None or len(rpt) == 0:
         return 1
     if not os.path.exists(rpt) or os.path.getsize(rpt) <= 0:
@@ -54,8 +54,8 @@ def calc_threshold_for_prob_rpt(rpt, prob_col_name, fdr_thresh=0.05):
 
 
 def calc_threshold(rpt_obj=None, work_dir=''):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
+    
+    
     thresholds = {}
     if rpt_obj is None or len(rpt_obj) == 0:
         logging.warning('No reports provided')

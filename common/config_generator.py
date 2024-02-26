@@ -7,8 +7,8 @@ import argparse
 
 def generate_gwas_eqtl_config(output_config_dir, config_template_path=None, gwas_config_file_path=None,
                               eqtl_config_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     default_resource_dir_path = f'{Path(__file__).parent.parent.resolve()}/resource'
     input_gwas_config_file_path = gwas_config_file_path if gwas_config_file_path else os.path.abspath(
         f'{default_resource_dir_path}/gwas_config.yml')
@@ -40,8 +40,8 @@ def generate_gwas_eqtl_config(output_config_dir, config_template_path=None, gwas
 
 
 def parse_parameters():
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('--out', dest='output_dir', default='', type=str, nargs='*',
                         help="The generated config files output directory")

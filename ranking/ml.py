@@ -23,8 +23,8 @@ SIM_MODEL_ORDER = ['h0', 'h1', 'h2004', 'h20407', 'h20709']
 
 
 def retrieve_sim_label_df(generated_list, causal_types=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if causal_types is None:
         causal_types = [i for i in range(0, len(SIM_MODEL_ORDER))]
     generated_list_df = pd.read_table(generated_list,
@@ -44,8 +44,8 @@ def retrieve_sim_label_df(generated_list, causal_types=None):
 
 
 def read_sim_result(tool, rpts, sig_column):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     tool_df_list = []
     for idx, sim_model in enumerate(SIM_MODEL_ORDER):
         report = rpts.get(sim_model)
@@ -62,8 +62,8 @@ def read_sim_result(tool, rpts, sig_column):
 
 
 def prepare_sim_train_data(generated_file_path, rpts):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     tool_df_list = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
         tool_rpts = rpts.get(tool)
@@ -108,8 +108,8 @@ def prepare_sim_train_data(generated_file_path, rpts):
 
 
 def train_xgb(x_train, y_train, model_save_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     model = xgb.XGBRegressor()
     model.fit(x_train, y_train, verbose=True)
     if model_save_path is not None:
@@ -118,8 +118,8 @@ def train_xgb(x_train, y_train, model_save_path=None):
 
 
 def train_model_xgb(input_df, test_result_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if input_df is None or input_df.shape[0] == 0:
         print('input is empty, nothing to do')
         return
@@ -146,8 +146,8 @@ def train_model_xgb(input_df, test_result_file):
 
 
 def train_xgb_rf(x_train, y_train, model_save_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     model = xgb.XGBRFRegressor()
     model.fit(x_train, y_train, verbose=True)
     if model_save_path is not None:
@@ -156,8 +156,8 @@ def train_xgb_rf(x_train, y_train, model_save_path=None):
 
 
 def train_model_xgb_rf(input_df, test_result_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if input_df is None or input_df.shape[0] == 0:
         print('input is empty, nothing to do')
         return
@@ -184,8 +184,8 @@ def train_model_xgb_rf(input_df, test_result_file):
 
 
 def train_svm(x_train, y_train, model_save_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     model = svm.LinearSVR(max_iter=10000)
     model.fit(x_train, y_train)
     if model_save_path is not None:
@@ -194,8 +194,8 @@ def train_svm(x_train, y_train, model_save_path=None):
 
 
 def train_svm_model(input_df, test_result_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if input_df is None or input_df.shape[0] == 0:
         print('input is empty, nothing to do')
         return
@@ -221,8 +221,8 @@ def train_svm_model(input_df, test_result_file):
 
 
 def train_rf(x_train, y_train, model_save_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     model = ensemble.RandomForestRegressor(n_estimators=10000, max_depth=10)
     model.fit(x_train, y_train)
     if model_save_path is not None:
@@ -231,8 +231,8 @@ def train_rf(x_train, y_train, model_save_path=None):
 
 
 def train_rf_model(input_df, test_result_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if input_df is None or input_df.shape[0] == 0:
         print('input is empty, nothing to do')
         return
@@ -259,8 +259,8 @@ def train_rf_model(input_df, test_result_file):
 
 
 def train_lr(x_train, y_train, model_save_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     model = linear_model.LogisticRegression(max_iter=10000)
     model.fit(x_train, y_train)
     if model_save_path is not None:
@@ -269,8 +269,8 @@ def train_lr(x_train, y_train, model_save_path=None):
 
 
 def train_lr_model(input_df, test_result_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if input_df is None or input_df.shape[0] == 0:
         print('input is empty, nothing to do')
         return
@@ -296,8 +296,8 @@ def train_lr_model(input_df, test_result_file):
 
 
 def train_pu(x_train, y_train, model_save_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     rf = ensemble.RandomForestClassifier(n_estimators=10000, max_depth=10)
     pu_estimator = BaggingPuClassifier(
         base_estimator=rf, n_estimators=10000)
@@ -308,8 +308,8 @@ def train_pu(x_train, y_train, model_save_path=None):
 
 
 def train_pu_model(input_df, test_result_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if input_df is None or input_df.shape[0] == 0:
         print('input is empty, nothing to do')
         return
@@ -335,8 +335,8 @@ def train_pu_model(input_df, test_result_file):
 
 
 def read_tool_result(rpt, tool_name, sig_col_name):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     rpt_df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, sig_col_name])
@@ -346,8 +346,8 @@ def read_tool_result(rpt, tool_name, sig_col_name):
 
 
 def prepare_ranking_input(rpts):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpts is None:
         print('No reports provided')
         return None
@@ -399,8 +399,8 @@ def prepare_ranking_input(rpts):
 
 
 def run_ranking(rpt=None, output_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None:
         print('No data provided')
         return None
@@ -424,8 +424,8 @@ def run_ranking(rpt=None, output_file_path=None):
 
 
 def run_ranking_xgb_rf(rpt=None, output_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None:
         print('No data provided')
         return None
@@ -449,8 +449,8 @@ def run_ranking_xgb_rf(rpt=None, output_file_path=None):
 
 
 def run_ranking_svm(rpt=None, output_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None:
         print('No data provided')
         return None
@@ -473,8 +473,8 @@ def run_ranking_svm(rpt=None, output_file_path=None):
 
 
 def run_ranking_rf(rpt=None, output_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None:
         print('No data provided')
         return None
@@ -497,8 +497,8 @@ def run_ranking_rf(rpt=None, output_file_path=None):
 
 
 def run_ranking_lr(rpt=None, output_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None:
         print('No data provided')
         return None
@@ -521,8 +521,8 @@ def run_ranking_lr(rpt=None, output_file_path=None):
 
 
 def run_ranking_pu(rpt=None, output_file_path=None):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpt is None:
         print('No data provided')
         return None

@@ -11,8 +11,8 @@ from ranking.constants import AVG_RANKING_COL_NAME
 
 
 def read_tool_result(rpt, tool_name, sig_col_name):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
+    
+    
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     additional_reading_cols = []
@@ -37,8 +37,8 @@ def read_tool_result(rpt, tool_name, sig_col_name):
 
 
 def prepare_ranking_input(output_file_path, rpts):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
+    
+    
     if rpts is None:
         logging.warning('No reports provided')
         return None
@@ -97,8 +97,8 @@ def prepare_ranking_input(output_file_path, rpts):
 
 
 def run_ranking(rpt=None, output_file_path=None, prior_fun=None):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
+    
+    
     ranking_input_file = os.path.join(os.path.dirname(output_file_path), f'pre_{output_file_path.split(os.sep)[-1]}')
     prepare_ranking_input(output_file_path=ranking_input_file, rpts=rpt)
     if not os.path.exists(ranking_input_file) or os.path.getsize(ranking_input_file) <= 0:

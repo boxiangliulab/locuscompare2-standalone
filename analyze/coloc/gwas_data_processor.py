@@ -23,8 +23,8 @@ class ColocGwasProcessor:
                 ref_vcf_dir=None,
                 var_id_col_name=None,
                 gwas_col_dict=None):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         start_time = datetime.now()
         vcf_output_dir = self.get_output_vcf_dir(working_dir)
         utils.delete_dir(vcf_output_dir)
@@ -52,13 +52,13 @@ class ColocGwasProcessor:
         return vcf_output_dir
 
     def get_output_vcf_dir(self, working_dir):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         return os.path.join(working_dir, 'vcf')
 
     def get_output_vcf_file_pattern(self):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         return '{}-{}.vcf'
 
 

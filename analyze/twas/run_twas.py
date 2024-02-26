@@ -32,8 +32,8 @@ class TWAS:
             parallel=False,
             tools_config_file=None,
             parallel_worker_num=4):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         start_time = datetime.now()
         logging.info(f'run_twas start at: {start_time}')
         output_file = self.__get_output_file(working_dir)
@@ -82,8 +82,8 @@ class TWAS:
         return output_file
 
     def __ensure_chrom_ld_ref(self, chrom_group_file, ref_vcf_dir, population):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         if not (chrom_group_file.endswith('.tsv') or chrom_group_file.endswith('.tsv.gz')):
             return None
         chr_nums = re.findall(r'\d+', chrom_group_file)
@@ -106,8 +106,8 @@ class TWAS:
 
     def process_chrom(self, chrom, gwas_file, ld_ref_prefix, gwas_col_dict, input_dir, twas_path,
                       weights_path, tools_config_file):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         logging.warning(f'Processing for chromosome {chrom} start')
         gwas_chrom_df = pd.read_table(gwas_file, sep=const.column_spliter,
                                       usecols=[gwas_col_dict['snp'], gwas_col_dict['chrom'], gwas_col_dict['position'],
@@ -149,16 +149,16 @@ class TWAS:
         logging.warning(f'Processing for chromosome {chrom} completed')
 
     def __get_output_file(self, working_dir):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         _output_file_name = f'{TWAS.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 
     def __analyze_result(self, output_dir,
                          final_report_file):
         # Merge every single result
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         single_result_list = []
         for single_result in os.listdir(output_dir):
             if not single_result.endswith('_result.tsv'):

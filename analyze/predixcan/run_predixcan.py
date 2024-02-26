@@ -26,8 +26,8 @@ class Predixcan:
             gwas_processed_file=None,
             gwas_col_dict=None,
             eqtl_output_report=None):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         start_time = datetime.now()
         output_file = self.__get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
@@ -72,8 +72,8 @@ class Predixcan:
         return output_file
 
     def __get_predixcan_path(self, config_predixan_path):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         actual_predixcan_path = config_predixan_path
         if not config_predixan_path.endswith('SPrediXcan.py'):
             if config_predixan_path.endswith('software') or config_predixan_path.endswith('software/'):
@@ -83,8 +83,8 @@ class Predixcan:
         return actual_predixcan_path
 
     def __analyze_result(self, output_file_path):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         report_df = pd.read_table(output_file_path, dtype={'chrom': 'category'})
         report_df.dropna(subset='pvalue', inplace=True)
         report_df.sort_values(by='pvalue', ascending=True, inplace=True)
@@ -94,8 +94,8 @@ class Predixcan:
             report_df.to_csv(output_file_path, sep=const.output_spliter, header=True, index=False)
 
     def __get_output_file(self, working_dir):
-        print(os.path.basename(__file__))
-        print(sys._getframe().f_code.co_name)
+        
+        
         _output_file_name = f'{gpr.PredixcanGwasProcessor.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 

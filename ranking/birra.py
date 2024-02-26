@@ -8,8 +8,8 @@ from ranking.constants import RESULT_TYPE_PVAL
 
 
 def prepare_birra_input(output_file_path, rpts):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
+    
+    
     if rpts is None or len(rpts) == 0:
         return
     if not any(rpts.values()):
