@@ -10,8 +10,6 @@ class ConfigHolder:
 
     def __init__(self, single_config_file=common.constants.default_config, study=common.constants.default_study,
                  parallel=False, tools_config_file=None):
-        
-        
         if study is None:
             study = common.constants.default_study
         if single_config_file is None:
@@ -19,7 +17,8 @@ class ConfigHolder:
 
         self.global_config = utils.read_config(single_config_file)
         self.root_work_dir = self.global_config['working_dir']
-        self.tools = self.global_config['tools']
+        _tools = self.global_config['tools']
+        self.tools = _tools.split(',') # convert str to list
         self.output_preprocessed_dir = os.path.join(self.root_work_dir, 'preprocessed')
         self.output_processed_dir = os.path.join(self.root_work_dir, 'processed')
         Path(self.output_preprocessed_dir).mkdir(exist_ok=True, parents=True)
