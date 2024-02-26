@@ -23,16 +23,22 @@ from ranking import scoring as sc
 
 
 def __before_run_fastenloc_tools_check(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info(f'start check fastenloc')
     utils.check_file_or_path_exist(global_config['input']['ld_block_loci_file'])
     utils.check_file_or_path_exist(global_config['input']['eqtl_finemapping_file'])
 
 
 def __before_run_coloc_tools_check(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info(f'start check coloc')
 
 
 def __before_run_predixcan_tools_check(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info(f'start check predixcan')
     _model_db_path, _prediction_snp_covariance_path = utils.get_predixcan_ref_files(global_config)
     logging.info(f'Predixcan model db path: {_model_db_path}')
@@ -42,17 +48,23 @@ def __before_run_predixcan_tools_check(global_config):
 
 
 def __before_run_smr_tools_check(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info(f'start check smr')
     utils.check_file_or_path_exist(global_config['input']['genecode'])
     __check_vcf(global_config)
 
 
 def __before_run_ecaviar_tools_check(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     # no ref config to check
     logging.info(f'start check eCAVIAR')
 
 
 def __before_run_twas_tools_check(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     logging.info(f'start check TWAS')
     twas_pos_path = utils.get_twas_ref_files(global_config)
     logging.info(f'TWAS pos file path: {twas_pos_path}')
@@ -61,6 +73,8 @@ def __before_run_twas_tools_check(global_config):
 
 
 def __check_vcf(global_config):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     population = global_config.get('population', 'EUR').upper()
     ref_vcf_dir = global_config['input']['vcf']
     for chromosome in range(1, 23):
@@ -100,9 +114,13 @@ tools_func_map = {
 }
 
 
-def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_config=None, no_report=False):
-    if tools_list is None:
-        tools_list = ['all']
+# def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_config=None, no_report=False):
+def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_report=False):
+
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
+    # if tools_list is None:
+    #     tools_list = ['all']
     cfg_list = []
     # retrieve config and study info
     if config_file is None:
@@ -136,7 +154,8 @@ def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_
         config_holder = common.config.ConfigHolder(single_config_file=cfg, study=study, parallel=parallel,
                                                    tools_config_file=tools_config)
         __init_logger(os.path.join(config_holder.study_dir, f'{log_file}'))
-        __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
+        # __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
+        __run_single_cfg(config_holder, report_list, parallel, study)
         try:
             utils.cleanup_output(config_holder.tool_parent_dir)
         except:
@@ -164,14 +183,20 @@ def __init_logger(logfile):
 
 
 def get_tools_path(dir_path, tool_name):
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
     for path_name in os.listdir(os.path.join(dir_path, tool_name, 'analyzed')):
         if os.path.isfile(os.path.join(dir_path, tool_name, 'analyzed', path_name)) and (
                 path_name.startswith(tool_name) or path_name.startswith('report')):
             return os.path.join(dir_path, tool_name, 'analyzed', path_name)
 
 
-def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, study):
+# def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, study):
+def __run_single_cfg(config_holder, report_list, parallel, study):
     start_time = datetime.now()
+    print(os.path.basename(__file__))
+    print(sys._getframe().f_code.co_name)
+    tools_param_list = config_holder.global_config['tools']
     logging.info(f'run tools_list: {tools_param_list}, start time: {start_time}')
     # check eqtl and gwas entry file exist
     utils.check_file_or_path_exist(config_holder.global_config['working_dir'])
@@ -266,6 +291,8 @@ if __name__ == '__main__':
     start_time = datetime.now()
     logging.info(f'start run all coloctools, start time: {start_time}')
     parse_args = utils.parse_parameters()
-    run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel,
+    # run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel,
+    #     parse_args.tools_config, parse_args.no_report)
+    run(parse_args.config_file, parse_args.log_file, parse_args.parallel,
         parse_args.tools_config, parse_args.no_report)
     logging.info(f'all coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')
