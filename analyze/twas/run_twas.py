@@ -182,6 +182,7 @@ class TWAS:
         if len(report_df) <= 0:
             utils.delete_file_if_exists(final_report_file)
         else:
+            report_df['TWAS.P'] = report_df['TWAS.P'].apply(lambda x: "{:.3e}".format(x))
             report_df.to_csv(final_report_file, sep=const.output_spliter, header=True, index=False)
 
 

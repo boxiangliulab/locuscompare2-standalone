@@ -93,6 +93,7 @@ class ECaviar:
                                   'clpp': gene_clpps})
         report_df.sort_values(by='clpp', ascending=False, inplace=True)
         if report_df.shape[0] > 0:
+            report_df = report_df.round(4)
             report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
         return output_report_path
 

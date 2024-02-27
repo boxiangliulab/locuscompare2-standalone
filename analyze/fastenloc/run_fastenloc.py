@@ -63,6 +63,7 @@ class Fastenloc:
 
                 df_output_sig_mg = pd.merge(df_output_sig, filtered_gene[['gene_id', 'chrom']], on=['gene_id'],
                                             how='left')
+                df_output_sig_mg = df_output_sig_mg.round(4)
                 df_output_sig_mg.to_csv(report_output_sig_tsv_file, sep=const.output_spliter, header=True, index=False)
         return report_output_sig_tsv_file
 

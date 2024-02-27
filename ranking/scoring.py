@@ -51,6 +51,7 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
         result_df = None
 
     if result_df is not None:
+        result_df = result_df.round(4)
         result_df.to_csv(output_file_path, sep='\t', header=True, index=False, na_rep='NA')
 
     return output_file_path

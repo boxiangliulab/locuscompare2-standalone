@@ -297,6 +297,7 @@ class Coloc:
         report_df = pd.concat(single_result_list)
         report_df.sort_values(by=['overall_H4', 'SNP.PP.H4'], ascending=False, inplace=True)
         report_df.drop_duplicates(subset=['snp', 'SNP.PP.H4', 'gene_id'], inplace=True)
+        report_df = report_df.round(4)
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
 
     def get_output_file(self, working_dir):

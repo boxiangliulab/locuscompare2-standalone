@@ -91,6 +91,7 @@ class Predixcan:
         if report_df.shape[0] == 0:
             utils.delete_file_if_exists(output_file_path)
         else:
+            report_df['pvalue'] = report_df['pvalue'].apply(lambda x: "{:.3e}".format(x))
             report_df.to_csv(output_file_path, sep=const.output_spliter, header=True, index=False)
 
     def __get_output_file(self, working_dir):
