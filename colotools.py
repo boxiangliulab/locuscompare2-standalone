@@ -114,7 +114,6 @@ tools_func_map = {
 }
 
 
-<<<<<<< HEAD
 # def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_config=None, no_report=False):
 def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_report=False):
 
@@ -122,13 +121,6 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
     print(sys._getframe().f_code.co_name)
     # if tools_list is None:
     #     tools_list = ['all']
-=======
-def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_config=None, no_report=False):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
-    if tools_list is None:
-        tools_list = ['all']
->>>>>>> 6c52a7b787823f4488a6e604a170a92f0b6e19b8
     cfg_list = []
     # retrieve config and study info
     if config_file is None:
@@ -202,9 +194,7 @@ def get_tools_path(dir_path, tool_name):
 # def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, study):
 def __run_single_cfg(config_holder, report_list, parallel, study):
     start_time = datetime.now()
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
-    tools_param_list = config_holder.global_config['tools']
+    tools_param_list = list(config_holder.global_config['tools'])
     logging.info(f'run tools_list: {tools_param_list}, start time: {start_time}')
     # check eqtl and gwas entry file exist
     utils.check_file_or_path_exist(config_holder.global_config['working_dir'])
@@ -213,16 +203,19 @@ def __run_single_cfg(config_holder, report_list, parallel, study):
     # utils.check_file_or_path_exist(global_config['input']['vcf'])
 
     # check tool require file exist
+    print(type(tools_param_list))
     actually_tools_list = []
     if 'all' in tools_param_list:
         actually_tools_list = tools_func_map.keys()
     else:
         for tool in tools_param_list:
+            print(tool)
             if tools_func_map.get(tool):
                 actually_tools_list.append(tool)
             else:
                 logging.error(f'The {tool} tool is not recognized')
-
+    print("*****actually_tools_list*****")
+    print(actually_tools_list)
     # check tool require file exist
     for tool in actually_tools_list:
         tools_func_map[tool]['check_fun'](config_holder.global_config)

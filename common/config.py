@@ -17,8 +17,7 @@ class ConfigHolder:
 
         self.global_config = utils.read_config(single_config_file)
         self.root_work_dir = self.global_config['working_dir']
-        _tools = self.global_config['tools']
-        self.tools = _tools.split(',') # convert str to list
+        self.tools = self.global_config['tools']
         self.output_preprocessed_dir = os.path.join(self.root_work_dir, 'preprocessed')
         self.output_processed_dir = os.path.join(self.root_work_dir, 'processed')
         Path(self.output_preprocessed_dir).mkdir(exist_ok=True, parents=True)
