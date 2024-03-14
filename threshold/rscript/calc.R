@@ -27,7 +27,7 @@ if (is.na(fdr_threshold) || tolower(fdr_threshold) == 'na' || tolower(fdr_thresh
 
 data = read.table(file = input_file_path, header = TRUE, fill = TRUE)
 data = subset(data, select = c("gene_id",pval_col_name))
-data = data[order(data[pval_col_name]), , drop = FALSE]
+data = data[order(data[,pval_col_name]), , drop = FALSE]
 data = data[!duplicated(data[["gene_id"]]), , drop = FALSE]
 qobj = qvalue(data[[pval_col_name]])
 threshold_idx = which.min(abs(qobj$qvalues - fdr_threshold))
