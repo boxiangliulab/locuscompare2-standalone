@@ -299,12 +299,15 @@ class Processor:
                 range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
                                 header=True,
                                 index=False)
-                del range_df
-                pval_filter_range_df = pval_filter_gwas_df[(pval_filter_gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
-                        cluster_start <= pval_filter_gwas_df[self.gwas_col_dict['position']]) & (
-                                                                   pval_filter_gwas_df[
-                                                                       self.gwas_col_dict['position']] <= cluster_end)]
-                positions_list.append(pval_filter_range_df[self.gwas_col_dict['position']].tolist())
+                # del range_df
+                # pval_filter_range_df = pval_filter_gwas_df[(pval_filter_gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
+                #         cluster_start <= pval_filter_gwas_df[self.gwas_col_dict['position']]) & (
+                #                                                    pval_filter_gwas_df[
+                #                                                        self.gwas_col_dict['position']] <= cluster_end)]
+                # positions_list.append(pval_filter_range_df[self.gwas_col_dict['position']].tolist())
+
+                positions_list.append(range_df[self.gwas_col_dict['position']].tolist())
+                del range_df                
                 del pval_filter_range_df
         del pval_filter_gwas_df
         # neighbor_range = self.global_config['neighbour_snp_range']
