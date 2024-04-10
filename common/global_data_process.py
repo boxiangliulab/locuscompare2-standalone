@@ -308,7 +308,7 @@ class Processor:
 
                 positions_list.append(range_df[self.gwas_col_dict['position']].tolist())
                 del range_df                
-                del pval_filter_range_df
+                #del pval_filter_range_df
         del pval_filter_gwas_df
         # neighbor_range = self.global_config['neighbour_snp_range']
         logging.info(
