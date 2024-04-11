@@ -93,8 +93,6 @@ class Coloc:
                         range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
                         if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
                             continue
-                        logging.info(f"********coloc1******** {self.process_gene}")
-                        logging.info(f"********coloc2******** {range_lead_snp}")
                         futures.append(executor.submit(self.process_gene, self.__get_output_dir(working_dir),
                                                        gwas_range_file, gwas_type_dict, gwas_col_dict, row,
                                                        eqtl_gene_file, eqtl_type_dict,
