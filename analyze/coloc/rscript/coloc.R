@@ -70,8 +70,8 @@ if (nrow(input) == 0) {
   q(save = "no")
 }
 
-d1 = list(snp = input$var_id_, beta = input$beta_gwas, varbeta = input$varbeta_gwas, position = input$position_gwas, type = gwas_type, N = gwas_sample_size, MAF = input$maf)
-d2 = list(snp = input$var_id_, beta = input$beta_eqtl, varbeta = input$varbeta_eqtl, position = input$position_eqtl, type = eqtl_type, N = eqtl_sample_size, MAF = input$maf)
+d1 = list(snp = input$var_id_, beta = input$beta_gwas, varbeta = input$varbeta_gwas, position = input$position_gwas, type = gwas_type, N = gwas_sample_size, MAF = as.numeric(input$maf))
+d2 = list(snp = input$var_id_, beta = input$beta_eqtl, varbeta = input$varbeta_eqtl, position = input$position_eqtl, type = eqtl_type, N = eqtl_sample_size, MAF = as.numeric(input$maf))
 # runsusie without extra arguments may occur error: "The estimated prior variance is unreasonably large"
 # s1 = runsusie(d1)
 # s2 = runsusie(d2)
