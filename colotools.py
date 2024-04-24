@@ -294,6 +294,7 @@ if __name__ == '__main__':
     parse_args = utils.parse_parameters()
     # run(parse_args.config_file, parse_args.tools_list, parse_args.log_file, parse_args.parallel,
     #     parse_args.tools_config, parse_args.no_report)
-    run(parse_args.config_file, parse_args.log_file, parse_args.parallel,
+    # run(parse_args.config_file, parse_args.log_file, parse_args.parallel,
+    run(parse_args.config_file, parse_args.log_file, True,
         parse_args.tools_config, parse_args.no_report)
     logging.info(f'all coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')
