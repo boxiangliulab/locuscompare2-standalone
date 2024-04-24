@@ -103,8 +103,12 @@ class SmrEqtlProcessor:
         eqtl_trait_df = pd.read_table(eqtl_gene_file, sep=const.column_spliter,
                                       usecols=[var_id_col_name, eqtl_col_dict['position'], eqtl_col_dict['pvalue']],
                                       dtype={eqtl_col_dict['position']: 'Int64'})
-        candidate_eqtl_trait_df = utils.filter_data_frame_by_p_value(eqtl_trait_df, eqtl_p_thresh,
-                                                                     eqtl_col_dict['pvalue'], inplace=False)
+        # candidate_eqtl_trait_df = utils.filter_data_frame_by_p_value(eqtl_trait_df, eqtl_p_thresh,
+        #                                                              eqtl_col_dict['pvalue'], inplace=False)
+        # candidate_eqtl_trait_df = eqtl_trait_df.drop(
+        #         eqtl_trait_df[(eqtl_trait_df[self.eqtl_col_dict['pvalue']] == 0.0)].index,
+        #         inplace=False)
+        candidate_eqtl_trait_df = eqtl_trait_df
         del eqtl_trait_df
         if candidate_eqtl_trait_df.shape[0] == 0:
             logging.warning(f'{eqtl_gene_file} does not contain significant records')
