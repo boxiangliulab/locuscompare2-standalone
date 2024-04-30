@@ -150,12 +150,20 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
         log_file = f'{uuid.uuid4().hex}.log'
 
     report_list = []
+    single_cfg_ensemble_result_ls = []
     for cfg in cfg_list:
-        config_holder = common.config.ConfigHolder(single_config_file=cfg, study=study, parallel=parallel,
+        config_holder = common.config.ConfigHolder(single_config_file=cfg, 
+                                                   study=study, parallel=parallel,
                                                    tools_config_file=tools_config)
         __init_logger(os.path.join(config_holder.study_dir, f'{log_file}'))
         # __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
-        __run_single_cfg(config_holder, report_list, parallel, study)
+        single_cfg_ensemble_result = __run_single_cfg(config_holder, report_list, 
+                                                      parallel, study)
+        if os.path.exists(single_cfg_ensemble_result): 
+            if os.path.getsize(single_cfg_ensemble_result):
+                single_cfg_ensemble_result_ls.append(single_cfg_ensemble_result)
+        if len(single_cfg_ensemble_result_ls) > 1:
+            union_result_gene(single_cfg_ensemble_result_ls)
         try:
             utils.cleanup_output(config_holder.tool_parent_dir)
         except:
@@ -189,6 +197,26 @@ def get_tools_path(dir_path, tool_name):
         if os.path.isfile(os.path.join(dir_path, tool_name, 'analyzed', path_name)) and (
                 path_name.startswith(tool_name) or path_name.startswith('report')):
             return os.path.join(dir_path, tool_name, 'analyzed', path_name)
+
+def union_result_gene(tissues_ensemble_result_ls):
+    # 把每个tissue的基因统一
+    all_tissue_df = pd.DataFrame()
+    for single_cfg_ensemble_result in tissues_ensemble_result_ls:
+        tmp = pd.read_csv(single_cfg_ensemble_result,sep='\t',usecols=['gene_id'])
+        all_tissue_df = pd.concat([all_tissue_df,tmp],axis=0)
+    all_tissue_df = all_tissue_df.dropna()
+    all_gene = pd.DataFrame(list(set(all_tissue_df['gene_id'])))
+    all_gene.columns = ['ensemble_gene_id']
+    all_gene.index = all_gene['ensemble_gene_id']
+
+    for single_cfg_ensemble_result in tissues_ensemble_result_ls:
+        tmp = pd.read_csv(single_cfg_ensemble_result,sep='\t')
+        tmp.index = tmp['gene_id']
+        tmp = pd.concat([tmp,all_gene],axis=1)
+        tmp['gene_id'] = tmp['ensemble_gene_id']
+        tmp = tmp.iloc[:,:-1]
+        tmp.to_csv(single_cfg_ensemble_result,sep='\t',index=False)
+    pass
 
 
 # def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, study):
@@ -286,6 +314,7 @@ def __run_single_cfg(config_holder, report_list, parallel, study):
                    sample_size=processor.global_config['input']['gwas']['sample_size'])
     logging.info(f'coloctools complete at: {datetime.now()},duration: {datetime.now() - start_time}')
     logging.info(f'tissue: {config_holder.eqtl_tissue},trait: {config_holder.gwas_trait} coloctools complete')
+    return rank_output_file
 
 
 if __name__ == '__main__':
