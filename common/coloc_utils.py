@@ -675,7 +675,15 @@ def get_twas_ref_files(global_config, filtered_pos=False):
                 no_filter_pos_name = filename
             else:
                 pos_name = filename
-    pos_file_name = pos_name if filtered_pos else no_filter_pos_name
+    print(f"pos_name: {pos_name}")
+    print(f"path: {os.path.join(twas_model_dir, pos_name)}")
+    if no_filter_pos_name is not None:
+        pos_file_name = no_filter_pos_name
+    else:
+        pos_file_name = pos_name
+    # pos_file_name = pos_name if filtered_pos else no_filter_pos_name
+    print(f"pos_file_name: {pos_file_name}")
+    print(f"filtered_pos: {filtered_pos}")
     return os.path.join(twas_model_dir, pos_file_name)
 
 
