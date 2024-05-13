@@ -158,6 +158,10 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
         # __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
         single_cfg_ensemble_result = __run_single_cfg(config_holder, report_list, 
                                                       parallel, study, currenttissuenum, numoftissues)
+        calculated_schedule = int(80/numoftissues * (currenttissuenum - 1))
+        with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+        schedule.close()
         if os.path.exists(single_cfg_ensemble_result): 
             if os.path.getsize(single_cfg_ensemble_result):
                 single_cfg_ensemble_result_ls.append(single_cfg_ensemble_result)
