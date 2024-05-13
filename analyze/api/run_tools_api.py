@@ -14,7 +14,7 @@ from common import coloc_utils as util
 import logging
 import sys
 
-def __preprocess_and_run_jlim(global_processor):
+def __preprocess_and_run_jlim(global_processor, currenttissuenum, numoftissues):
     
     
     global_config = global_processor.global_config
@@ -37,7 +37,7 @@ def __preprocess_and_run_jlim(global_processor):
                         parallel=global_processor.config_holder.parallel)
 
 
-def __preprocess_and_run_fastenloc(processor):
+def __preprocess_and_run_fastenloc(processor, currenttissuenum, numoftissues):
     
     
     _working_dir = os.path.join(processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
@@ -58,7 +58,7 @@ def __preprocess_and_run_fastenloc(processor):
                       tools_config_file=processor.tools_config_file)
 
 
-def __preprocess_and_run_coloc(glob_processor):
+def __preprocess_and_run_coloc(glob_processor, currenttissuenum, numoftissues):
     
     
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rc.Coloc.COLOC_TOOL_NAME)
@@ -85,7 +85,7 @@ def __preprocess_and_run_coloc(glob_processor):
                      parallel=glob_processor.config_holder.parallel)
 
 
-def __preprocess_and_run_predixcan(glob_processor):
+def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissues):
     
     
     _working_dir = os.path.join(glob_processor.tool_parent_dir, pgdp.PredixcanGwasProcessor.COLOC_TOOL_NAME)
@@ -110,7 +110,7 @@ def __preprocess_and_run_predixcan(glob_processor):
                          glob_processor.eqtl_output_report)
 
 
-def __preprocess_and_run_smr(glob_processor):
+def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues):
     
     
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rs.Smr.COLOC_TOOL_NAME)
@@ -127,7 +127,10 @@ def __preprocess_and_run_smr(glob_processor):
                                                         glob_processor.eqtl_col_dict,
                                                         glob_processor.config_holder.eqtl_p_threshold,
                                                         glob_processor.ref_vcf_dir,
-                                                        pop)
+                                                        pop,
+                                                        glob_processor.rank_dir,
+                                                        currenttissuenum,
+                                                        numoftissues)
     # prepare ldref file finished
     if len(os.listdir(glob_processor.gwas_output_dir)) == 0:
         logging.warning('Dependent files not found, did you run gwas_data_processor?')
@@ -161,7 +164,7 @@ def __preprocess_and_run_smr(glob_processor):
                    tools_config_file=glob_processor.tools_config_file)
 
 
-def __preprocess_and_run_ecaviar(glob_processor):
+def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues):
     
     
     _working_dir = os.path.join(glob_processor.tool_parent_dir, run_e.ECaviar.ECAVIAR_TOOL_NAME)
@@ -191,7 +194,7 @@ def __preprocess_and_run_ecaviar(glob_processor):
                                    tools_config=glob_processor.tools_config_file))
 
 
-def __preprocess_and_run_twas(glob_processor):
+def __preprocess_and_run_twas(glob_processor, currenttissuenum, numoftissues):
     
     
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rt.TWAS.COLOC_TOOL_NAME)

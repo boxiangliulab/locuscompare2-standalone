@@ -14,6 +14,12 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import coloc_utils as utils, global_data_process as gdp, constants as const
 
+def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+        schedule.write(str(calculated_schedule))
+    schedule.close()
+
 
 class SmrEqtlProcessor:
     SMR_MIN_SNP = 2
@@ -32,6 +38,9 @@ class SmrEqtlProcessor:
                        eqtl_p_thresh=None,
                        ref_vcf_dir=None,
                        population=None,
+                       rank_dir = None,
+                       currenttissuenum = None,
+                       numoftissues = None,
                        parallel=False,
                        parallel_worker_num=2):
         
@@ -47,11 +56,17 @@ class SmrEqtlProcessor:
         eqtl_summary_df = pd.read_csv(eqtl_output_report, sep=const.column_spliter,
                                       dtype={eqtl_col_dict['chrom']: 'category'})
         # Loop to process all eQTL trait file
+        totalnumof_eqtlloci = len(eqtl_summary_df)
         gwas_chroms = pval_filtered_gwas_df[gwas_col_dict['chrom']].unique().tolist()
         if parallel:
             with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
-                for _, row in eqtl_summary_df.iterrows():
+                for ix, row in eqtl_summary_df.iterrows():
+                    outputschedule(rownum=ix,
+                                   numofeqtlloci=totalnumof_eqtlloci,
+                                   currenttissuenum = currenttissuenum,
+                                   numoftissues=numoftissues,
+                                   rank_dir=rank_dir)
                     chrom = str(row.loc['chrom'])
                     if chrom not in gwas_chroms:
                         continue
@@ -73,7 +88,12 @@ class SmrEqtlProcessor:
                     except Exception as exc:
                         logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         else:
-            for _, row in eqtl_summary_df.iterrows():
+            for ix, row in eqtl_summary_df.iterrows():
+                outputschedule(rownum=ix,
+                                numofeqtlloci=totalnumof_eqtlloci,
+                                currenttissuenum = currenttissuenum,
+                                numoftissues=numoftissues,
+                                rank_dir=rank_dir)
                 chrom = str(row.loc['chrom'])
                 if chrom not in gwas_chroms:
                     continue

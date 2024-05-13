@@ -23,16 +23,12 @@ from ranking import scoring as sc
 
 
 def __before_run_fastenloc_tools_check(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     logging.info(f'start check fastenloc')
     utils.check_file_or_path_exist(global_config['input']['ld_block_loci_file'])
     utils.check_file_or_path_exist(global_config['input']['eqtl_finemapping_file'])
 
 
 def __before_run_coloc_tools_check(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     logging.info(f'start check coloc')
 
 
@@ -151,14 +147,17 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
 
     report_list = []
     single_cfg_ensemble_result_ls = []
+    numoftissues = len(cfg_list)
+    currenttissuenum = 0
     for cfg in cfg_list:
+        currenttissuenum = currenttissuenum + 1
         config_holder = common.config.ConfigHolder(single_config_file=cfg, 
                                                    study=study, parallel=parallel,
                                                    tools_config_file=tools_config)
         __init_logger(os.path.join(config_holder.study_dir, f'{log_file}'))
         # __run_single_cfg(tools_list, config_holder, report_list, parallel, study)
         single_cfg_ensemble_result = __run_single_cfg(config_holder, report_list, 
-                                                      parallel, study)
+                                                      parallel, study, currenttissuenum, numoftissues)
         if os.path.exists(single_cfg_ensemble_result): 
             if os.path.getsize(single_cfg_ensemble_result):
                 single_cfg_ensemble_result_ls.append(single_cfg_ensemble_result)
@@ -168,6 +167,11 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
             utils.cleanup_output(config_holder.tool_parent_dir)
         except:
             logging.warning(f'failed to clean {config_holder.tool_parent_dir}')
+
+    with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
+        schedule.write(str(90))
+    schedule.close()
+
     if len(report_list) == 0:
         logging.warning(f'No results of specified tools found')
         return
@@ -220,7 +224,7 @@ def union_result_gene(tissues_ensemble_result_ls):
 
 
 # def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, study):
-def __run_single_cfg(config_holder, report_list, parallel, study):
+def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuenum, numoftissues):
     start_time = datetime.now()
     tools_param_list = list(config_holder.global_config['tools'])
     logging.info(f'run tools_list: {tools_param_list}, start time: {start_time}')
@@ -278,7 +282,7 @@ def __run_single_cfg(config_holder, report_list, parallel, study):
         with ProcessPoolExecutor(max_workers=len(actually_tools_list)) as executor:
             tool_futures = {}
             for tool in actually_tools_list:
-                tool_futures[executor.submit(tools_func_map[tool]['run_fun'], processor)] = tool
+                tool_futures[executor.submit(tools_func_map[tool]['run_fun'], processor, currenttissuenum, numoftissues)] = tool
             exceptions = []
             for future in concurrent.futures.as_completed(tool_futures.keys()):
                 current_tool = tool_futures[future]
@@ -301,7 +305,7 @@ def __run_single_cfg(config_holder, report_list, parallel, study):
         for tool in actually_tools_list:
             logging.info(f'Tool {tool} start running')
             try:
-                report_file_path = tools_func_map[tool]['run_fun'](processor)
+                report_file_path = tools_func_map[tool]['run_fun'](processor, currenttissuenum, numoftissues)
                 logging.info(f'Tool {tool} completed successfully!')
             except Exception as error:
                 logging.info(f'Tool {tool} failed with error: {error}!')
