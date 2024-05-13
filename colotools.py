@@ -169,7 +169,7 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
             logging.warning(f'failed to clean {config_holder.tool_parent_dir}')
 
     with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
-        schedule.write(str(90))
+        schedule.write(str(95))
     schedule.close()
 
     if len(report_list) == 0:
