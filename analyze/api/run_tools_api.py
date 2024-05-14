@@ -15,8 +15,7 @@ import logging
 import sys
 
 def __preprocess_and_run_jlim(global_processor, currenttissuenum, numoftissues):
-    
-    
+
     global_config = global_processor.global_config
     eqtl_file_path = f'{global_config["input"]["eqtl"]["file"]}'
     reference_genotype_panel_ld_ref_file = global_config['input']['reference_genotype_panel_ld_ref_file']
@@ -38,8 +37,7 @@ def __preprocess_and_run_jlim(global_processor, currenttissuenum, numoftissues):
 
 
 def __preprocess_and_run_fastenloc(processor, currenttissuenum, numoftissues):
-    
-    
+
     _working_dir = os.path.join(processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
     fgdp_obj = fgdp.FastenlocGwasProcessor()
     fastenloc_gwas_result, gwas_snp_count = fgdp_obj.prepare_gwas_data(working_dir=_working_dir,
@@ -59,8 +57,7 @@ def __preprocess_and_run_fastenloc(processor, currenttissuenum, numoftissues):
 
 
 def __preprocess_and_run_coloc(glob_processor, currenttissuenum, numoftissues):
-    
-    
+
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rc.Coloc.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     _gwas_sample_size = glob_processor.global_config['input']['gwas']['sample_size']
@@ -86,8 +83,7 @@ def __preprocess_and_run_coloc(glob_processor, currenttissuenum, numoftissues):
 
 
 def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissues):
-    
-    
+
     _working_dir = os.path.join(glob_processor.tool_parent_dir, pgdp.PredixcanGwasProcessor.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     gwas_data_processor = pgdp.PredixcanGwasProcessor()
@@ -111,8 +107,7 @@ def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissue
 
 
 def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues):
-    
-    
+
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rs.Smr.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     # prepare gwas file finished
@@ -165,8 +160,7 @@ def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues):
 
 
 def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues):
-    
-    
+
     _working_dir = os.path.join(glob_processor.tool_parent_dir, run_e.ECaviar.ECAVIAR_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     _gwas_sample_size = glob_processor.global_config['input']['gwas']['sample_size']
@@ -195,8 +189,7 @@ def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues)
 
 
 def __preprocess_and_run_twas(glob_processor, currenttissuenum, numoftissues):
-    
-    
+
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rt.TWAS.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
     if len(os.listdir(glob_processor.gwas_output_dir)) == 0:

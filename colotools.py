@@ -33,8 +33,6 @@ def __before_run_coloc_tools_check(global_config):
 
 
 def __before_run_predixcan_tools_check(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     logging.info(f'start check predixcan')
     _model_db_path, _prediction_snp_covariance_path = utils.get_predixcan_ref_files(global_config)
     logging.info(f'Predixcan model db path: {_model_db_path}')
@@ -44,23 +42,17 @@ def __before_run_predixcan_tools_check(global_config):
 
 
 def __before_run_smr_tools_check(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     logging.info(f'start check smr')
     utils.check_file_or_path_exist(global_config['input']['genecode'])
     __check_vcf(global_config)
 
 
 def __before_run_ecaviar_tools_check(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     # no ref config to check
     logging.info(f'start check eCAVIAR')
 
 
 def __before_run_twas_tools_check(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     logging.info(f'start check TWAS')
     twas_pos_path = utils.get_twas_ref_files(global_config)
     logging.info(f'TWAS pos file path: {twas_pos_path}')
@@ -69,8 +61,6 @@ def __before_run_twas_tools_check(global_config):
 
 
 def __check_vcf(global_config):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     population = global_config.get('population', 'EUR').upper()
     ref_vcf_dir = global_config['input']['vcf']
     for chromosome in range(1, 23):
@@ -113,8 +103,6 @@ tools_func_map = {
 # def run(config_file=None, tools_list=None, log_file=None, parallel=False, tools_config=None, no_report=False):
 def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_report=False):
 
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     # if tools_list is None:
     #     tools_list = ['all']
     cfg_list = []
@@ -199,8 +187,6 @@ def __init_logger(logfile):
 
 
 def get_tools_path(dir_path, tool_name):
-    print(os.path.basename(__file__))
-    print(sys._getframe().f_code.co_name)
     for path_name in os.listdir(os.path.join(dir_path, tool_name, 'analyzed')):
         if os.path.isfile(os.path.join(dir_path, tool_name, 'analyzed', path_name)) and (
                 path_name.startswith(tool_name) or path_name.startswith('report')):

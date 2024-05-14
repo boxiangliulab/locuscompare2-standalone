@@ -171,23 +171,15 @@ class SmrEqtlProcessor:
         os.system(f'plink --silent --vcf {output_vcf_full_path} --make-bed --snps-only --out {output_ld_ref_path}')
 
     def __get_output_vcf_dir(self, working_dir):
-        
-        
         return os.path.join(working_dir, 'vcf')
 
     def __get_output_vcf_file_pattern(self):
-        
-        
         return 'chr{}_{}.vcf'
 
     def __get_ldref_dir(self, working_dir):
-        
-        
         return os.path.join(working_dir, 'ldref')
 
     def __get_ldref_file_pattern(self):
-        
-        
         return 'chr{}_{}'
 
 

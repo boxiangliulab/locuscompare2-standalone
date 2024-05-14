@@ -26,8 +26,6 @@ def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefi
 
     output file names: {working_dir}/{by_dir_col}/{by_file_prefix_col}.tsv.gz
     """
-    
-    
     if not os.path.exists(src_file_path) or os.path.getsize(src_file_path) <= 0:
         warnings.warn(
             f'Input file {src_file_path} does not exist or size is 0, nothing to split')
@@ -55,8 +53,6 @@ def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefi
 
 
 def filter_file_by_p_value(working_dir, input_file_path, p_value_threshold, p_value_col_name, out_file_path=None):
-    
-    
     result_df = None
     if not os.path.exists(input_file_path) or os.path.getsize(input_file_path) <= 0:
         warnings.warn(
@@ -79,8 +75,6 @@ def filter_file_by_p_value(working_dir, input_file_path, p_value_threshold, p_va
 
 
 def filter_data_frame_by_p_value(input_df, p_value_threshold, p_value_col_name, inplace=True):
-    
-    
     if not isinstance(input_df, pd.DataFrame):
         warnings.warn('input_df is not an instance of DataFrame, unable to filter')
         return None
@@ -91,8 +85,6 @@ def filter_data_frame_by_p_value(input_df, p_value_threshold, p_value_col_name, 
 
 
 def find_col_name_by_regex(regex, col_name_array):
-    
-    
     for col in col_name_array:
         if re.search(regex, col, re.I):
             return col
@@ -101,22 +93,16 @@ def find_col_name_by_regex(regex, col_name_array):
 
 def get_file_name(file_path):
     # return file name without extension
-    
-    
     return file_path.split(os.sep)[-1].split('.')[0]
 
 
 def file_exists(file_path):
-    
-    
     if file_path is None:
         return False
     return Path(file_path).exists()
 
 
 def delete_file_if_exists(file_path):
-    
-    
     if file_exists(file_path):
         try:
             os.remove(file_path)
@@ -125,8 +111,6 @@ def delete_file_if_exists(file_path):
 
 
 def delete_dir(file_path):
-    
-    
     os.system(f'rm -rf {file_path}')
     # too slow, replace by rm -rf
     # if file_exists(file_path):
@@ -161,8 +145,6 @@ def clean_chunk_data(input_df, dup_consider_col, complete_dup_set_df, na_conside
     """
     Similar to clean_data but useful when perform cleaning on iterator chunk data
     """
-    
-    
     if not isinstance(input_df, pd.DataFrame):
         warnings.warn('input_df is not an instance of DataFrame, unable to filter')
         return
@@ -190,8 +172,7 @@ def find_peak_range_df(chrom, pos, target_df, chrom_col_name, pos_col_name, neig
         Range threshold
     """
     # get first value of a Int64Index
-    
-    
+
     common_snp_index = target_df.loc[(target_df[chrom_col_name] == chrom) & (target_df[pos_col_name] == pos)].index[0]
     snp_index_pos = target_df.index.get_loc(common_snp_index)
     range_start_pos = max(snp_index_pos - neighbor_range, 0)
@@ -237,8 +218,7 @@ def find_peak_range_from_file(input_file_path, common_snp, target_snp_df,
 
 def extract_vcf_data(chromosome, target_pos_rsid_df, ref_vcf_file_path, output_vcf_dir, output_vcf_file_name,
                      target_position_col_name, target_snp_col_name, extract_step_size=500000):
-    
-    
+
     if target_pos_rsid_df.shape[0] == 0:
         logging.info(f'**** end process, target df is empty, nothing to extract')
         return
@@ -399,8 +379,6 @@ def union_range(subset_df, target_df, snp_col_name, chrom_col_name, pos_col_name
         the directory that the union range files to write to, if specified
     """
     # target_df is assumed sorted by chrom_col_name & pos_col_name
-    
-    
     cols = subset_df.columns.to_list()
     cols.extend([range_min_pos_col_name, range_max_pos_col_name])
     subset_types = subset_df.dtypes.to_dict()
@@ -508,8 +486,6 @@ def adjust_allele_order(gwas_df, ea_col_name, oa_col_name, gwas_chrom_col_name, 
         drop_ref_df_non_intersect_items
             whether to drop non-intersect records in eqtl_df
         """
-    
-    
     merged_alt_col_name = f'{ref_df_alt_allele_col_name}_eqtl' \
         if ref_df_alt_allele_col_name in [ea_col_name, oa_col_name] else ref_df_alt_allele_col_name
     merged_ref_col_name = f'{ref_df_ref_allele_col_name}_eqtl' \
@@ -567,15 +543,11 @@ def drop_indel_snp(target_df, allele_col_name1, allele_col_name2):
         allele_col_name2
             the other_allele/ref or effect_allele/alt column name in target_df
         """
-    
-    
     indel_bool_series = (target_df[allele_col_name1].str.len() != 1) | (target_df[allele_col_name2].str.len() != 1)
     target_df.drop(labels=target_df[indel_bool_series].index, inplace=True)
 
 
 def check_path_exist_and_has_size(file, raise_error=True):
-    
-    
     if not os.path.exists(file) or os.path.getsize(file) <= 0:
         if raise_error:
             raise ValueError(f'file: {file} ,Dependant files not found')
@@ -584,8 +556,6 @@ def check_path_exist_and_has_size(file, raise_error=True):
 
 
 def check_file_or_path_exist(file_path, raise_error=True):
-    
-    
     if not file_exists(file_path):
         if raise_error:
             raise ValueError(f'{file_path} no such file or directory')
@@ -596,8 +566,6 @@ def check_file_or_path_exist(file_path, raise_error=True):
 def mapping_var_id_to_rsid(result_df, result_df_var_id_col_name,
                            result_df_gene_id_col_name, gwas_preprocessed_file=None,
                            ref_var_id_col_name=None, gwas_col_dict=None, eqtl_col_dict=None):
-    
-    
     if result_df is None or result_df.shape[0] == 0:
         return result_df
     if gwas_preprocessed_file is not None and gwas_col_dict.get('snp') is not None and ref_var_id_col_name is not None:
@@ -644,8 +612,6 @@ def mapping_var_id_to_rsid(result_df, result_df_var_id_col_name,
 
 
 def get_predixcan_ref_files(global_config):
-    
-    
     prediction_source_dir = global_config['input']['prediction_dir']
     eqtl_issue_name = global_config['input']['eqtl']['tissue']
     model_db_path = None
@@ -661,8 +627,6 @@ def get_predixcan_ref_files(global_config):
 
 
 def get_twas_ref_files(global_config, filtered_pos=False):
-    
-    
     twas_model_dir = global_config['input']['twas_model_dir']
     eqtl_issue_name = global_config['input']['eqtl']['tissue']
     pos_name = None
@@ -688,8 +652,6 @@ def get_twas_ref_files(global_config, filtered_pos=False):
 
 
 def is_vcf_chrom_code_contains_chr(vcf_file):
-    
-    
     if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
         os.system(f'tabix -f -p vcf {vcf_file}')
     process = subprocess.Popen(['tabix', '-l', vcf_file],
@@ -738,8 +700,6 @@ async def gather_with_limit(limit, *coros):
 
 
 def run_logging_command(command):
-    
-    
     p = subprocess.Popen(command,
                          stdout=subprocess.PIPE,
                          stderr=sys.stdout)
@@ -752,8 +712,6 @@ def run_logging_command(command):
 
 
 def cleanup_output(tools_output_base):
-    
-    
     if file_exists(tools_output_base):
         for tool_output_dir in os.listdir(tools_output_base):
             if tool_output_dir == 'rank':
@@ -774,8 +732,6 @@ def cleanup_output(tools_output_base):
 
 # remove nan rows and columns in ld_file, return removed column names
 def remove_nan_from_ld(ld_file, header):
-    
-    
     # remove last empty column generated by plink
     ld_df = pd.read_csv(ld_file, sep=' ', header=None)
     ld_row_size = len(ld_df)
@@ -795,8 +751,6 @@ def remove_nan_from_ld(ld_file, header):
 
 
 def get_tools_params(tool_name, tools_config_file, param_prefix='--', params_without_value=[]):
-    
-    
     params_str = ''
     param_dict = get_tools_params_dict(tool_name, tools_config_file)
     if param_dict is not None:
@@ -812,8 +766,6 @@ def get_tools_params(tool_name, tools_config_file, param_prefix='--', params_wit
 
 
 def get_tools_params_dict(tool_name, tool_config_file):
-    
-    
     params = None
     if tool_config_file and file_exists(tool_config_file):
         with open(tool_config_file, 'r') as cfg_file:

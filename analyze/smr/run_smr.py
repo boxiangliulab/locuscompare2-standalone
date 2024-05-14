@@ -40,7 +40,6 @@ class Smr:
             ld_ref_file_pattern=None,
             tools_config_file=None):
         
-        
         start_time = datetime.now()
         logging.info(f'run_smr start at: {start_time}')
         input_dir = self.__get_input_dir(working_dir)
@@ -250,24 +249,16 @@ class Smr:
         return output_file
 
     def get_output_file(self, working_dir):
-        
-        
         _output_file_name = f'{Smr.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 
     def __get_input_dir(self, working_dir):
-        
-        
         return os.path.join(working_dir, 'input')
 
     def __get_output_dir(self, working_dir):
-        
-        
         return os.path.join(working_dir, 'output')
 
     def __prepare_genecode(self, genecode_file):
-        
-        
         genecode_df = pr.read_gtf(genecode_file, as_df=True)
         genecode_df.drop(labels=genecode_df[genecode_df['Feature'] != 'gene'].index, inplace=True)
         genecode_df.reset_index(drop=True, inplace=True)
@@ -287,8 +278,6 @@ class Smr:
     def __analyze_result(self, output_dir,
                          final_report_file):
         # Merge every single result
-        
-        
         single_result_list = []
         for single_result in os.listdir(output_dir):
             if not single_result.endswith('.smr'):

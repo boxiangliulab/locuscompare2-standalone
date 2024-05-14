@@ -23,7 +23,6 @@ class PredixcanGwasProcessor:
                 var_id_col_name=None,
                 gwas_col_dict=None):
         
-        
         start_time = datetime.now()
         logging.info(f'Preparing gwas file at {start_time}')
         output_processed_file = self.__get_output_file(working_dir)
@@ -64,8 +63,6 @@ class PredixcanGwasProcessor:
         return output_processed_file
 
     def __get_output_file(self, working_dir):
-        
-        
         return os.path.join(working_dir, 'gwas_processed.tsv.gz')
 
 

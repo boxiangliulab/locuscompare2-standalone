@@ -10,8 +10,6 @@ import pandas as pd
 
 
 def get_vcf_records_count(vcf_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
         os.system(f'tabix -f -p vcf {vcf_file}')
     process = subprocess.Popen(['bcftools', 'index', '-n', vcf_file],
@@ -23,8 +21,6 @@ def get_vcf_records_count(vcf_file):
 
 
 def is_vcf_chrom_code_contains_chr(vcf_file):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
     if not (Path(f'{vcf_file}.tbi').exists() or Path(f'{vcf_file}.csi').exists()):
         os.system(f'tabix -f -p vcf {vcf_file}')
     process = subprocess.Popen(['tabix', '-l', vcf_file],
@@ -36,8 +32,6 @@ def is_vcf_chrom_code_contains_chr(vcf_file):
 
 
 def find_closest_from_list(target_list, value):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
     pos = bisect.bisect_left(target_list, value)
     if pos == 0:
         return target_list[0]
@@ -52,8 +46,6 @@ def find_closest_from_list(target_list, value):
 
 
 def calc_for_chrom(full_gene_list_file, chrom, input_vcf, maf_thresh=0.1):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
     start_time = datetime.now()
     chrom_code_in_vcf = f'chr{chrom}' if is_vcf_chrom_code_contains_chr(input_vcf) else chrom
     result_file = f'ld_r2_stats_{chrom_code_in_vcf}.tsv'
@@ -151,8 +143,6 @@ def calc_for_chrom(full_gene_list_file, chrom, input_vcf, maf_thresh=0.1):
 
 
 def run(src_vcf_dir, gene_list, start, end, maf_thresh, proc_count):
-    print('当前文件名称: ',os.path.basename(__file__))
-    print('当前函数名称: ',sys._getframe().f_code.co_name)
     result_file = 'ld_r2_stats.tsv'
     if proc_count > 22:
         proc_count = 22

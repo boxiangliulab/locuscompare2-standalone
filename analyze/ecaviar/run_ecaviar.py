@@ -19,8 +19,7 @@ class ECaviar:
         logging.info('init eCaviar')
 
     async def run(self, working_dir, candidate_data_dir, parallel=False, tools_config=None, parallel_worker_num=3):
-        
-        
+
         logging.info('eCaviar start to run...')
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
         coros = []
@@ -50,8 +49,6 @@ class ECaviar:
         return self.generate_report(working_dir=working_dir, finemap_reports=finemap_snp_files)
 
     def generate_report(self, working_dir, finemap_reports):
-        
-        
         output_report_path = f'{working_dir}/analyzed/{self.ECAVIAR_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         var_ids, chroms, gene_ids, gwas_pips, eqtl_pips, gene_clpps = [], [], [], [], [], [],
         for gwas_snp, eqtl_snp in finemap_reports:

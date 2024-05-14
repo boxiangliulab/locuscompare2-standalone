@@ -20,8 +20,7 @@ class Fastenloc:
             output_torus_output_file=None,
             gwas_snp_count=None,
             tools_config_file=None):
-        
-        
+
         start_time = datetime.now()
         logging.info(f'fastenloc start at: {start_time}')
 
@@ -43,8 +42,6 @@ class Fastenloc:
         return report_output_snp_tsv_file
 
     def __analyze_result(self, output_dir, final_report_file, eqtl_output_report):
-        
-        
         report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
 
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'

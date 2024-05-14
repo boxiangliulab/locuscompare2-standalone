@@ -72,8 +72,6 @@ class Predixcan:
         return output_file
 
     def __get_predixcan_path(self, config_predixan_path):
-        
-        
         actual_predixcan_path = config_predixan_path
         if not config_predixan_path.endswith('SPrediXcan.py'):
             if config_predixan_path.endswith('software') or config_predixan_path.endswith('software/'):
@@ -83,8 +81,6 @@ class Predixcan:
         return actual_predixcan_path
 
     def __analyze_result(self, output_file_path):
-        
-        
         report_df = pd.read_table(output_file_path, dtype={'chrom': 'category'})
         report_df.dropna(subset='pvalue', inplace=True)
         report_df.sort_values(by='pvalue', ascending=True, inplace=True)
@@ -95,8 +91,6 @@ class Predixcan:
             report_df.to_csv(output_file_path, sep=const.output_spliter, header=True, index=False)
 
     def __get_output_file(self, working_dir):
-        
-        
         _output_file_name = f'{gpr.PredixcanGwasProcessor.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 

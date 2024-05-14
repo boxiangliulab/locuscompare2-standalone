@@ -28,7 +28,6 @@ import constants as const
 class Processor:
     # column to identify a unique record in gwas & eqtl files, in chromosome_position format
     VAR_ID_COL_NAME = 'var_id_'
-
     def __init__(self, cfg_holder=None):
         logging.info('init Processor')
         self.config_holder = cfg_holder
@@ -67,8 +66,6 @@ class Processor:
         self.tools_config_file = self.config_holder.tools_config_file
 
     def preprocess_eqtl(self):
-        
-        
         # group by trait
         logging.info('start to split eQTL file by gene')
         utils.delete_dir(self.eqtl_output_dir)
@@ -106,8 +103,6 @@ class Processor:
         return eqtl_filter_result
 
     def __prepare_eqtl_data(self, eqtl_trait_file_path):
-        
-        
         try:
             eqtl_trait_df = pd.read_table(eqtl_trait_file_path, sep=const.column_spliter, header=0,
                                           usecols=self.eqtl_col_dict.values(),
@@ -144,9 +139,7 @@ class Processor:
                 eqtl_trait_df.to_csv(eqtl_trait_file_path, sep=const.output_spliter, index=False)
                 return eqtl_trait_df, pval_filter_eqtl_df
 
-    def __merge_alt_ref(self, gwas_df, chrom, population):
-        
-        
+    def __merge_alt_ref(self, gwas_df, chrom, population):        
         logging.info(f'Merging alt ref for chrom {chrom}')
         input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
         vcf_df = pd.read_table(input_vcf, header=None, comment='#', usecols=[0, 1, 3, 4],
@@ -189,8 +182,6 @@ class Processor:
     #     logging.info(f'Clumping for chrom {chrom} completed')
 
     def preprocess_gwas(self):
-        
-        
         utils.delete_dir(self.gwas_preprocessed_dir)
         Path(self.gwas_preprocessed_dir).mkdir(exist_ok=True, parents=True)
         gwas_file_path = self.global_config['input']['gwas']['file']

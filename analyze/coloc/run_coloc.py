@@ -132,8 +132,7 @@ class Coloc:
         return output_file
 
     def __convert_positions_str_to_list(self, positions_str):
-        
-        
+
         if isinstance(positions_str, str):
             return json.loads(positions_str)
         elif isinstance(positions_str, list):
@@ -142,8 +141,7 @@ class Coloc:
             return []
 
     def __get_cluster_significant_snps_dict(self, cluster_df):
-        
-        
+
         cluster_snps_dict = {}
         for _, row in cluster_df.iterrows():
             cluster_snps_dict[row.loc['range_lead']] = self.__convert_positions_str_to_list(row.loc['positions'])
@@ -153,8 +151,7 @@ class Coloc:
                      eqtl_type_dict,
                      var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                      eqtl_sample_size, gwas_type, eqtl_type, p1, p2, p12):
-        
-        
+
         range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
         candidate_gwas_df = pd.read_table(gwas_range_file, sep=const.column_spliter,
                                           usecols=[
@@ -269,13 +266,9 @@ class Coloc:
         return output_file
 
     def __get_output_dir(self, working_dir):
-        
-        
         return os.path.join(working_dir, 'output')
 
     def __get_coloc_run_params(self, tools_config):
-        
-        
         params = utils.get_tools_params_dict(self.COLOC_TOOL_NAME, tools_config)
         _p1 = 1.0E-4 if params.get('p1') is None else params['p1']
         _p2 = 1.0E-4 if params.get('p2') is None else params['p2']
@@ -283,8 +276,6 @@ class Coloc:
         return _p1, _p2, _p12
 
     def __analyze_result(self, output_dir, final_result_file):
-        
-        
         single_result_list = []
         for single_result in os.listdir(output_dir):
             if not (single_result.endswith('.tsv') or single_result.endswith('.tsv.gz')):
@@ -299,8 +290,6 @@ class Coloc:
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
 
     def get_output_file(self, working_dir):
-        
-        
         _output_file_name = f'{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         return os.path.join(working_dir, 'analyzed', _output_file_name)
 
