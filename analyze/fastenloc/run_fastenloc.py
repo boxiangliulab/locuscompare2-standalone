@@ -62,8 +62,8 @@ class Fastenloc:
                 filtered_gene = pd.read_csv(eqtl_output_report, sep=const.column_spliter)
                 filtered_gene['gene_id'] = filtered_gene['gene_file'].str.split('.').str[0]
 
-                df_output_sig_mg = pd.merge(df_output_sig, filtered_gene['chrom'], on=['gene_id'],
-                                            how='left')
+                df_output_sig_mg = pd.merge(df_output_sig, filtered_gene[['gene_id','chrom']], 
+                                            on=['gene_id'], how='left')
                 df_output_sig_mg = df_output_sig_mg.round(4)
                 df_output_sig_mg.to_csv(report_output_sig_tsv_file, sep=const.output_spliter, header=True, index=False)
         return report_output_sig_tsv_file
