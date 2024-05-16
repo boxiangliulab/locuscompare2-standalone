@@ -6,7 +6,7 @@ import scipy.stats as ss
 import sys
 import ranking.intact as intact
 import ranking.rra as rra
-
+import numpy as np
 
 def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size=None):
     
@@ -40,6 +40,8 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
         result_df = pd.read_table(geo_result, usecols=['gene_id', 'geo_ranking'])
         result_df['geo_ranking'] = ss.rankdata(result_df['geo_ranking'])
         result_df['geo_ranking'] = result_df['geo_ranking'].apply(lambda x: int(x))
+
+        result_df['avg_ranking'] = result_df['geo_ranking']
         os.remove(geo_result)
     elif intact_result_exist:
         result_df = pd.read_table(intact_result,

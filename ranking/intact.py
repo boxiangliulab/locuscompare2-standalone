@@ -26,7 +26,7 @@ def read_tool_result(rpt, tool_name, sig_col_name):
     report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
     if tool_name == 'predixcan':
         report_df.rename(columns={'zscore': f'{tool_name}_zscore'}, inplace=True)
-    if tool_name == 'twas':
+    if tool_name == 'fusion':
         report_df.rename(columns={'TWAS.Z': f'{tool_name}_zscore'}, inplace=True)
     elif tool_name == 'smr':
         report_df[f'{tool_name}_zscore'] = report_df['b_SMR'] / report_df['se_SMR']
