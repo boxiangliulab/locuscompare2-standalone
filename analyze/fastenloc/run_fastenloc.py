@@ -42,23 +42,27 @@ class Fastenloc:
         return report_output_snp_tsv_file
 
     def __analyze_result(self, output_dir, final_report_file, eqtl_output_report):
-        report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
+        # report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
+        report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.gene.out'
 
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         # sort sig file LCP(locus-level colocalization probability)
+        # sort sig file GLCP(gene locus-level colocalization probability)
         if utils.file_exists(report_output_sig_file):
             df_output_sig = pd.read_csv(report_output_sig_file, sep='\s+')
             if len(df_output_sig) > 0:
-                df_output_sig.columns = ['Signal', 'Num_SNP', 'CPIP_qtl', 'CPIP_gwas_marginal',
-                                         'CPIP_gwas_qtl_prior',
-                                         'RCP', 'LCP']
-                df_output_sig.sort_values(by='LCP', ascending=False, inplace=True)
-                df_output_sig['gene_id'] = df_output_sig['Signal'].str.split(':').str[0]
+                # df_output_sig.columns = ['Signal', 'Num_SNP', 'CPIP_qtl', 'CPIP_gwas_marginal',
+                #                          'CPIP_gwas_qtl_prior',
+                #                          'RCP', 'LCP']
+                # df_output_sig.sort_values(by='LCP', ascending=False, inplace=True)
+                # df_output_sig['gene_id'] = df_output_sig['Signal'].str.split(':').str[0]
+                df_output_sig.columns = ['gene_id', 'GRCP', 'GLCP']
+                df_output_sig.sort_values(by='GLCP', ascending=False, inplace=True)
 
                 filtered_gene = pd.read_csv(eqtl_output_report, sep=const.column_spliter)
                 filtered_gene['gene_id'] = filtered_gene['gene_file'].str.split('.').str[0]
 
-                df_output_sig_mg = pd.merge(df_output_sig, filtered_gene[['gene_id', 'chrom']], on=['gene_id'],
+                df_output_sig_mg = pd.merge(df_output_sig, filtered_gene['chrom'], on=['gene_id'],
                                             how='left')
                 df_output_sig_mg = df_output_sig_mg.round(4)
                 df_output_sig_mg.to_csv(report_output_sig_tsv_file, sep=const.output_spliter, header=True, index=False)
