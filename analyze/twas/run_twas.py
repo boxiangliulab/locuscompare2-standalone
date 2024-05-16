@@ -17,10 +17,10 @@ from common import coloc_utils as utils, global_data_process as gdp, constants a
 
 
 class TWAS:
-    COLOC_TOOL_NAME = 'twas'
+    COLOC_TOOL_NAME = 'fusion'
 
     def __init__(self):
-        logging.info('init TWAS')
+        logging.info('init FUSION')
 
     def run(self,
             working_dir=None,
@@ -35,7 +35,7 @@ class TWAS:
         
         
         start_time = datetime.now()
-        logging.info(f'run_twas start at: {start_time}')
+        logging.info(f'run_fusion start at: {start_time}')
         output_file = self.__get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
         input_dir = os.path.join(working_dir, 'input')

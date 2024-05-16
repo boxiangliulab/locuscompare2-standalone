@@ -53,7 +53,7 @@ def __before_run_ecaviar_tools_check(global_config):
 
 
 def __before_run_twas_tools_check(global_config):
-    logging.info(f'start check TWAS')
+    logging.info(f'start check FUSION')
     twas_pos_path = utils.get_twas_ref_files(global_config)
     logging.info(f'TWAS pos file path: {twas_pos_path}')
     utils.check_file_or_path_exist(twas_pos_path)
@@ -93,7 +93,7 @@ tools_func_map = {
         'check_fun': __before_run_ecaviar_tools_check,
         'run_fun': run_tools_api.__preprocess_and_run_ecaviar,
     },
-    'twas': {
+    'fusion': {
         'check_fun': __before_run_twas_tools_check,
         'run_fun': run_tools_api.__preprocess_and_run_twas,
     }
