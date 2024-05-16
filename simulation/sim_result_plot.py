@@ -656,9 +656,9 @@ def plot_single_venn(
     else:
         smr_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
     if fastenloc_rpt is not None and Path(fastenloc_rpt).exists() and os.path.getsize(fastenloc_rpt) > 0:
-        fastenloc_df = pd.read_table(fastenloc_rpt, usecols=[GENE_ID_COL_NAME, 'LCP'])
+        fastenloc_df = pd.read_table(fastenloc_rpt, usecols=[GENE_ID_COL_NAME, 'GLCP'])
         fastenloc_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-        fastenloc_df.drop(labels=fastenloc_df[fastenloc_df['LCP'] <= tool_thresholds['fastenloc']].index, inplace=True)
+        fastenloc_df.drop(labels=fastenloc_df[fastenloc_df['GLCP'] <= tool_thresholds['fastenloc']].index, inplace=True)
         fastenloc_df.drop(columns=[col for col in fastenloc_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         fastenloc_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
@@ -818,9 +818,9 @@ def plot_mean_sd_combinations_bar(
         smr_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
     h1_fastenloc_rpt = h1_rpt_obj.get('fastenloc')
     if h1_fastenloc_rpt is not None and Path(h1_fastenloc_rpt).exists() and os.path.getsize(h1_fastenloc_rpt) > 0:
-        fastenloc_df = pd.read_table(h1_fastenloc_rpt, usecols=[GENE_ID_COL_NAME, 'LCP'])
+        fastenloc_df = pd.read_table(h1_fastenloc_rpt, usecols=[GENE_ID_COL_NAME, 'GLCP'])
         fastenloc_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-        fastenloc_df.drop(labels=fastenloc_df[fastenloc_df['LCP'] <= tool_thresholds['fastenloc']].index, inplace=True)
+        fastenloc_df.drop(labels=fastenloc_df[fastenloc_df['GLCP'] <= tool_thresholds['fastenloc']].index, inplace=True)
         fastenloc_df.drop(columns=[col for col in fastenloc_df.columns if col != GENE_ID_COL_NAME], inplace=True)
     else:
         fastenloc_df = pd.DataFrame(columns=[GENE_ID_COL_NAME])
