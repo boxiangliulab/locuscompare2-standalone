@@ -218,7 +218,6 @@ def find_peak_range_from_file(input_file_path, common_snp, target_snp_df,
 
 def extract_vcf_data(chromosome, target_pos_rsid_df, ref_vcf_file_path, output_vcf_dir, output_vcf_file_name,
                      target_position_col_name, target_snp_col_name, extract_step_size=500000):
-
     if target_pos_rsid_df.shape[0] == 0:
         logging.info(f'**** end process, target df is empty, nothing to extract')
         return
@@ -267,31 +266,36 @@ def extract_vcf_data(chromosome, target_pos_rsid_df, ref_vcf_file_path, output_v
     duplicate_exists = False
     pos_df = pd.DataFrame(matching_positions)
     pos_df.drop_duplicates(keep=False, inplace=True)
-    unique_positions = pos_df[0].to_list()
-    if len(matching_positions) != len(unique_positions):
-        matching_positions = unique_positions
-        duplicate_exists = True
-    if duplicate_exists:
-        with open(tmp_vcf_file_full_path) as tmp_vcf, open(output_file_full_path, mode='w') as result_vcf:
-            for line in tmp_vcf:
-                if line.startswith('#'):
-                    result_vcf.write(line)
-                    continue
-                snp_pos = int(line.split('\t')[1])
-                if snp_pos not in matching_positions:
-                    # record at snp_pos is a duplicate record
-                    continue
-                result_vcf.write(line)
-        os.remove(tmp_vcf_file_full_path)
+    print('*********pos_df********')
+    print(pos_df)
+    if pos_df.empty:
+        logging.info(f'**** end process, pos_df is empty')
     else:
-        shutil.move(tmp_vcf_file_full_path, output_file_full_path)
-    matching_report_df = target_pos_rsid_df[
-        target_pos_rsid_df[target_position_col_name].isin(matching_positions)]
-    matching_report_df.to_csv(output_matching_snp_report, sep=const.output_spliter, index=False)
-    missing_df = target_pos_rsid_df[~target_pos_rsid_df[target_position_col_name].isin(matching_positions)]
-    missing_df.to_csv(output_missing_snp_report, sep=const.output_spliter, index=False)
-    logging.debug(f'matching {len(matching_report_df)} snps, missing {len(missing_df)} snps')
-    logging.info(f'**** end process, output file is {output_file_full_path}')
+        unique_positions = pos_df[0].to_list()
+        if len(matching_positions) != len(unique_positions):
+            matching_positions = unique_positions
+            duplicate_exists = True
+        if duplicate_exists:
+            with open(tmp_vcf_file_full_path) as tmp_vcf, open(output_file_full_path, mode='w') as result_vcf:
+                for line in tmp_vcf:
+                    if line.startswith('#'):
+                        result_vcf.write(line)
+                        continue
+                    snp_pos = int(line.split('\t')[1])
+                    if snp_pos not in matching_positions:
+                        # record at snp_pos is a duplicate record
+                        continue
+                    result_vcf.write(line)
+            os.remove(tmp_vcf_file_full_path)
+        else:
+            shutil.move(tmp_vcf_file_full_path, output_file_full_path)
+        matching_report_df = target_pos_rsid_df[
+            target_pos_rsid_df[target_position_col_name].isin(matching_positions)]
+        matching_report_df.to_csv(output_matching_snp_report, sep=const.output_spliter, index=False)
+        missing_df = target_pos_rsid_df[~target_pos_rsid_df[target_position_col_name].isin(matching_positions)]
+        missing_df.to_csv(output_missing_snp_report, sep=const.output_spliter, index=False)
+        logging.debug(f'matching {len(matching_report_df)} snps, missing {len(missing_df)} snps')
+        logging.info(f'**** end process, output file is {output_file_full_path}')
 
 
 def get_chromosome_number(chrom):
