@@ -36,6 +36,13 @@ Specification of config file example:
 ```yaml
 # Required. The output root dir
 working_dir: '/Volumes/HD/biodata/colotools-tools'
+tools:
+- coloc
+- smr
+- ecaviar
+- fusion
+- predixcan
+- fastenloc
 input:
   gwas:
     # Required. Input GWAS file path, the position should base on hg38
@@ -193,8 +200,7 @@ python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools t
 ```
 | Parameter        | Description                                                                                                                                                                                                                                                                           |
 |------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| config           | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        |
-| tools            | Optional. The tools you want to run, support run multiple tools just split the tools name with space (e.g. --tools coloc smr predixcan). Tools name could be **coloc**, **fastenloc**, **smr**, **predixcan**, **ecaviar**, **twas**. All tools will be run if this param is omitted. |
+| config           | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        
 | tools_config     | Optional. Parameters for each tool, example is in [/resource/tools_config.yml](/resource/tools_config.yml)                                                                                                                                                                            |
 | disable_parallel | Optional. Disable parallel mode (enabled by default), parallel run requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                         |
 | no_report        | Optional. Generate offline site                                                                                                                                                                                                                                                       |
