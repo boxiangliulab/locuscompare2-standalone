@@ -1,4 +1,11 @@
 working_dir: '/Volumes/HD/biodata/colocalization-tools'
+tools:
+- coloc
+- smr
+- ecaviar
+- fusion
+- predixcan
+- fastenloc
 input:
   gwas:
     file: '/Volumes/HD/biodata/colocalization-tools/raw/gwas/cS2G-gwas-catalog/32242144-GCST90000616-EFO_0004631.h.tsv.gz'
