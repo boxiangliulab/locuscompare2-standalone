@@ -196,7 +196,7 @@ python colotools_project_path/common/config_generator.py --out output_dir
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run Colotools in command line
 ```shell
-python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools tools_names_seperated_by_space] [--tools_config parameter_config_file_for_each_tool] [--disable_parallel] [--log path_to_logfile] [--no_report]
+python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools_config parameter_config_file_for_each_tool] [--disable_parallel] [--log path_to_logfile] [--no_report]
 ```
 | Parameter        | Description                                                                                                                                                                                                                                                                           |
 |------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
