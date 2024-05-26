@@ -147,8 +147,12 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
         single_cfg_ensemble_result = __run_single_cfg(config_holder, report_list, 
                                                       parallel, study, currenttissuenum, numoftissues)
         calculated_schedule = int(80/numoftissues * (currenttissuenum - 1))
-        with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
-            schedule.write(str(calculated_schedule))
+        if os.path.exists('/process/'):
+            with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+                schedule.write(str(calculated_schedule))
+        else:
+            with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
+                schedule.write(str(calculated_schedule))
         schedule.close()
         if os.path.exists(single_cfg_ensemble_result): 
             if os.path.getsize(single_cfg_ensemble_result):
@@ -159,9 +163,12 @@ def run(config_file=None, log_file=None, parallel=False, tools_config=None, no_r
             utils.cleanup_output(config_holder.tool_parent_dir)
         except:
             logging.warning(f'failed to clean {config_holder.tool_parent_dir}')
-
-    with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
-        schedule.write(str(95))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(95))
+    else:
+        with open(f"{os.path.join(config_holder.rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(95))
     schedule.close()
 
     if len(report_list) == 0:

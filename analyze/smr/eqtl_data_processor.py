@@ -16,8 +16,12 @@ from common import coloc_utils as utils, global_data_process as gdp, constants a
 
 def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
     calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
-    with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
-        schedule.write(str(calculated_schedule))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    else:
+        with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
     schedule.close()
 
 
