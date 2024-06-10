@@ -52,6 +52,10 @@ def run_ranking(rpt_obj=None, output_file_path=None, prior_fun=None, sample_size
     else:
         result_df = None
 
+    if 'intact_probability' not in result_df.columns:
+        result_df['intact_probability'] = np.nan
+
+
     if result_df is not None:
         result_df = result_df.round(4)
         result_df.to_csv(output_file_path, sep='\t', header=True, index=False, na_rep='NA')
