@@ -16,6 +16,7 @@ from common import constants as const, coloc_utils as utils, global_data_process
 
 def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
     calculated_schedule = int(rownum/numofeqtlloci * 40/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    print("start process ecaviar schedual")
     if os.path.exists('/process/'):
         with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
             schedule.write(str(calculated_schedule))
