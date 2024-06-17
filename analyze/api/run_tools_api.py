@@ -47,7 +47,7 @@ def __preprocess_and_run_fastenloc(glob_processor, currenttissuenum, numoftissue
                     ld_block_loci_file=glob_processor.global_config['input']['ld_block_loci_file'], 
                     rank_dir = glob_processor.rank_dir,
                     currenttissuenum=currenttissuenum, numoftissues=numoftissues, 
-                    whether_scheduals=whether_schedual)
+                    whether_schedual=whether_schedual)
 
     rf_obj = rf.Fastenloc()
     return rf_obj.run(eqtl_tissue=glob_processor.eqtl_tissue,
