@@ -266,8 +266,8 @@ def extract_vcf_data(chromosome, target_pos_rsid_df, ref_vcf_file_path, output_v
     duplicate_exists = False
     pos_df = pd.DataFrame(matching_positions)
     pos_df.drop_duplicates(keep=False, inplace=True)
-    print('*********pos_df********')
-    print(pos_df)
+    # print('*********pos_df********')
+    # print(pos_df)
     if pos_df.empty:
         logging.info(f'**** end process, pos_df is empty')
     else:
