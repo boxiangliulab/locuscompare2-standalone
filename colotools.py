@@ -245,6 +245,42 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
                 logging.error(f'The {tool} tool is not recognized')
     print("*****actually_tools_list*****")
     print(actually_tools_list)
+
+    smr_schedual = False
+    ecaviar_schedual = False
+    coloc_schedual = False
+    fastenloc_schedual = False
+    fusion_schedual = False
+    predixcan_schedual = False
+
+    for tool in actually_tools_list:
+        if tool == 'smr':
+            smr_schedual = True
+            break
+        if tool == 'ecaviar':
+            ecaviar_schedual = True
+            break
+        if tool == 'coloc':
+            coloc_schedual = True
+            break
+        if tool == 'fastenloc':
+            fastenloc_schedual = True
+            break
+        if tool == 'predixcan':
+            predixcan_schedual = True
+            break
+        if tool == 'fusion':
+            fusion_schedual = True
+            break
+
+        
+    config_schedual = {'smr': smr_schedual,
+                        'ecaviar': ecaviar_schedual,
+                        'coloc': coloc_schedual,
+                        'fastenloc': fastenloc_schedual,
+                        'fusion': fusion_schedual,
+                        'predixcan': predixcan_schedual}
+
     # check tool require file exist
     for tool in actually_tools_list:
         tools_func_map[tool]['check_fun'](config_holder.global_config)
@@ -279,7 +315,7 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
         with ProcessPoolExecutor(max_workers=len(actually_tools_list)) as executor:
             tool_futures = {}
             for tool in actually_tools_list:
-                tool_futures[executor.submit(tools_func_map[tool]['run_fun'], processor, currenttissuenum, numoftissues)] = tool
+                tool_futures[executor.submit(tools_func_map[tool]['run_fun'], processor, currenttissuenum, numoftissues, whether_schedual = config_schedual[tool])] = tool
             exceptions = []
             for future in concurrent.futures.as_completed(tool_futures.keys()):
                 current_tool = tool_futures[future]
@@ -302,7 +338,7 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
         for tool in actually_tools_list:
             logging.info(f'Tool {tool} start running')
             try:
-                report_file_path = tools_func_map[tool]['run_fun'](processor, currenttissuenum, numoftissues)
+                report_file_path = tools_func_map[tool]['run_fun'](processor, currenttissuenum, numoftissues, whether_schedual = config_schedual[tool])
                 logging.info(f'Tool {tool} completed successfully!')
             except Exception as error:
                 logging.info(f'Tool {tool} failed with error: {error}!')

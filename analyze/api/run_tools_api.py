@@ -36,27 +36,30 @@ def __preprocess_and_run_jlim(global_processor, currenttissuenum, numoftissues):
                         parallel=global_processor.config_holder.parallel)
 
 
-def __preprocess_and_run_fastenloc(processor, currenttissuenum, numoftissues):
+def __preprocess_and_run_fastenloc(glob_processor, currenttissuenum, numoftissues, whether_schedual):
 
-    _working_dir = os.path.join(processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
+    _working_dir = os.path.join(glob_processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
     fgdp_obj = fgdp.FastenlocGwasProcessor()
-    fastenloc_gwas_result, gwas_snp_count = fgdp_obj.prepare_gwas_data(working_dir=_working_dir,
-                                                       gwas_preprocessed_file=processor.gwas_preprocessed_file,
-                                                       gwas_col_dict=processor.gwas_col_dict,
-                                                       ld_block_loci_file=processor.global_config['input'][
-                                                           'ld_block_loci_file'])
+    fastenloc_gwas_result, gwas_snp_count = fgdp_obj.prepare_gwas_data(\
+                    working_dir=_working_dir,
+                    gwas_preprocessed_file=glob_processor.gwas_preprocessed_file,
+                    gwas_col_dict=glob_processor.gwas_col_dict,
+                    ld_block_loci_file=glob_processor.global_config['input']['ld_block_loci_file'], 
+                    rank_dir = glob_processor.rank_dir,
+                    currenttissuenum=currenttissuenum, numoftissues=numoftissues, 
+                    whether_scheduals=whether_schedual)
 
     rf_obj = rf.Fastenloc()
-    return rf_obj.run(eqtl_tissue=processor.eqtl_tissue,
+    return rf_obj.run(eqtl_tissue=glob_processor.eqtl_tissue,
                       working_dir=_working_dir,
-                      eqtl_finemapping_file=processor.global_config['input']['eqtl_finemapping_file'],
-                      eqtl_output_report=processor.eqtl_output_report,
+                      eqtl_finemapping_file=glob_processor.global_config['input']['eqtl_finemapping_file'],
+                      eqtl_output_report=glob_processor.eqtl_output_report,
                       output_torus_output_file=fastenloc_gwas_result,
                       gwas_snp_count=gwas_snp_count,
-                      tools_config_file=processor.tools_config_file)
+                      tools_config_file=glob_processor.tools_config_file)
 
 
-def __preprocess_and_run_coloc(glob_processor, currenttissuenum, numoftissues):
+def __preprocess_and_run_coloc(glob_processor, currenttissuenum, numoftissues, whether_schedual):
 
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rc.Coloc.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
@@ -79,10 +82,14 @@ def __preprocess_and_run_coloc(glob_processor, currenttissuenum, numoftissues):
                      _gwas_type,
                      _eqtl_type,
                      tools_config=glob_processor.tools_config_file,
-                     parallel=glob_processor.config_holder.parallel)
+                     parallel=glob_processor.config_holder.parallel,
+                     rank_dir = glob_processor.rank_dir,
+                     currenttissuenum = currenttissuenum, 
+                     numoftissues = numoftissues, 
+                     whether_schedual = whether_schedual)
 
 
-def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissues):
+def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissues, whether_schedual):
 
     _working_dir = os.path.join(glob_processor.tool_parent_dir, pgdp.PredixcanGwasProcessor.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
@@ -90,7 +97,12 @@ def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissue
     _gwas_processed_file = gwas_data_processor.prepare(_working_dir,
                                                        glob_processor.gwas_preprocessed_file,
                                                        gdp.Processor.VAR_ID_COL_NAME,
-                                                       glob_processor.gwas_col_dict)
+                                                       glob_processor.gwas_col_dict,
+                                                       rank_dir = glob_processor.rank_dir,
+                                                       currenttissuenum = currenttissuenum, 
+                                                       numoftissues = numoftissues, 
+                                                       whether_schedual = whether_schedual)
+    
     # prepare gwas file finished
     if not os.path.exists(_gwas_processed_file) or os.path.getsize(_gwas_processed_file) <= 0:
         logging.warning(f'Dependent files not found, did you run gwas_data_processor?')
@@ -106,7 +118,7 @@ def __preprocess_and_run_predixcan(glob_processor, currenttissuenum, numoftissue
                          glob_processor.eqtl_output_report)
 
 
-def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues):
+def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues, whether_schedual):
 
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rs.Smr.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
@@ -125,7 +137,8 @@ def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues):
                                                         pop,
                                                         glob_processor.rank_dir,
                                                         currenttissuenum,
-                                                        numoftissues)
+                                                        numoftissues,
+                                                        whether_schedual)
     # prepare ldref file finished
     if len(os.listdir(glob_processor.gwas_output_dir)) == 0:
         logging.warning('Dependent files not found, did you run gwas_data_processor?')
@@ -159,7 +172,7 @@ def __preprocess_and_run_smr(glob_processor, currenttissuenum, numoftissues):
                    tools_config_file=glob_processor.tools_config_file)
 
 
-def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues):
+def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues, whether_schedual):
 
     _working_dir = os.path.join(glob_processor.tool_parent_dir, run_e.ECaviar.ECAVIAR_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
@@ -167,19 +180,24 @@ def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues)
     _eqtl_sample_size = glob_processor.global_config['input']['eqtl'].get('sample_size', 948)
 
     ecaviar_data_processor = edp.ECaviarDataProcessor()
-    preproc_rst_dir = ecaviar_data_processor.prepare(working_dir=_working_dir,
-                                                     gwas_cluster_dir=glob_processor.gwas_cluster_output_dir,
-                                                     gwas_cluster_summary=glob_processor.gwas_cluster_summary,
-                                                     eqtl_group_dir=glob_processor.eqtl_output_dir,
-                                                     eqtl_report=glob_processor.eqtl_output_report,
-                                                     ref_vcf_dir=glob_processor.ref_vcf_dir,
-                                                     gwas_col_dict=glob_processor.gwas_col_dict,
-                                                     eqtl_col_dict=glob_processor.eqtl_col_dict,
-                                                     population=glob_processor.global_config.get('population',
-                                                                                                 'EUR').upper(),
-                                                     gwas_sample_size=_gwas_sample_size,
-                                                     eqtl_sample_size=_eqtl_sample_size,
-                                                     var_id_col_name=gdp.Processor.VAR_ID_COL_NAME)
+    preproc_rst_dir = ecaviar_data_processor.prepare(\
+                            working_dir=_working_dir,
+                            gwas_cluster_dir=glob_processor.gwas_cluster_output_dir,
+                            gwas_cluster_summary=glob_processor.gwas_cluster_summary,
+                            eqtl_group_dir=glob_processor.eqtl_output_dir,
+                            eqtl_report=glob_processor.eqtl_output_report,
+                            ref_vcf_dir=glob_processor.ref_vcf_dir,
+                            gwas_col_dict=glob_processor.gwas_col_dict,
+                            eqtl_col_dict=glob_processor.eqtl_col_dict,
+                            population=glob_processor.global_config.get('population',
+                                                                        'EUR').upper(),
+                            gwas_sample_size=_gwas_sample_size,
+                            eqtl_sample_size=_eqtl_sample_size,
+                            parallel_worker_num=gdp.Processor.VAR_ID_COL_NAME,
+                            rank_dir = glob_processor.rank_dir,
+                            currenttissuenum = currenttissuenum, 
+                            numoftissues = numoftissues, 
+                            whether_schedual = whether_schedual)
 
     ecaviar = run_e.ECaviar()
     return asyncio.run(ecaviar.run(working_dir=_working_dir,
@@ -188,7 +206,7 @@ def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues)
                                    tools_config=glob_processor.tools_config_file))
 
 
-def __preprocess_and_run_twas(glob_processor, currenttissuenum, numoftissues):
+def __preprocess_and_run_twas(glob_processor, currenttissuenum, numoftissues, whether_schedual):
 
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rt.TWAS.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)

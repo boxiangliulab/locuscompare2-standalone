@@ -9,6 +9,15 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import coloc_utils as utils, global_data_process as gdp, constants as const
 
+def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    else:
+        with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    schedule.close()
 
 class PredixcanGwasProcessor:
     COLOC_TOOL_NAME = 'predixcan'
@@ -21,12 +30,18 @@ class PredixcanGwasProcessor:
                 working_dir=None,
                 gwas_preprocessed_file=None,
                 var_id_col_name=None,
-                gwas_col_dict=None):
+                gwas_col_dict=None, rank_dir=None,
+                currenttissuenum=None, numoftissues=None, 
+                whether_schedual=False):
         
         start_time = datetime.now()
         logging.info(f'Preparing gwas file at {start_time}')
         output_processed_file = self.__get_output_file(working_dir)
         utils.delete_file_if_exists(output_processed_file)
+        tmp = pd.read_csv(gwas_preprocessed_file, sep=const.column_spliter)
+        total_num = len(tmp)
+        del tmp
+        ix = 0
         with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter,
                            usecols=[gwas_col_dict['chrom'], gwas_col_dict['position'], gwas_col_dict['effect_allele'],
                                     gwas_col_dict['other_allele'], gwas_col_dict['beta'], gwas_col_dict['se'], 'alt_',
@@ -39,6 +54,13 @@ class PredixcanGwasProcessor:
                                   'alt_': pd.CategoricalDtype(const.SNP_ALLELE)},
                            iterator=True, chunksize=500000, header=0) as reader:
             for chunk in reader:
+                ix = ix + len(chunk)
+                if whether_schedual == True:
+                    outputschedule(rownum=ix,
+                                numofeqtlloci=total_num,
+                                currenttissuenum = currenttissuenum,
+                                numoftissues=numoftissues,
+                                rank_dir=rank_dir)
                 chunk[PredixcanGwasProcessor.PREDIXCAN_VAR_ID_COL_NAME] = \
                     'chr' + chunk[gwas_col_dict['chrom']].astype(str) \
                     + '_' + chunk[gwas_col_dict['position']].astype(str) \

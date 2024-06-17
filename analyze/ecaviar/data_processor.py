@@ -14,6 +14,15 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import constants as const, coloc_utils as utils, global_data_process as gdp, config
 
+def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/numofeqtlloci * 40/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    else:
+        with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    schedule.close()
 
 class ECaviarDataProcessor:
     ECAVIAR_TOOL_NAME = 'ecaviar'
@@ -23,9 +32,13 @@ class ECaviarDataProcessor:
     def __init__(self):
         logging.info('init ECaviarEQTLProcessor')
 
-    def prepare(self, working_dir, gwas_cluster_dir, gwas_cluster_summary, eqtl_group_dir, eqtl_report, ref_vcf_dir,
-                gwas_col_dict, eqtl_col_dict, population, gwas_sample_size, eqtl_sample_size, var_id_col_name,
-                parallel=False, parallel_worker_num=2):
+    def prepare(self, working_dir, gwas_cluster_dir, gwas_cluster_summary, 
+                eqtl_group_dir, eqtl_report, ref_vcf_dir,
+                gwas_col_dict, eqtl_col_dict, population, gwas_sample_size, 
+                eqtl_sample_size, var_id_col_name,
+                parallel=False, parallel_worker_num=2, 
+                rank_dir=None, currenttissuenum=None, numoftissues=None, 
+                whether_schedual=False):
         logging.info(f'Preparing gwas files')
         eqtl_candidate_df = pd.read_csv(eqtl_report, sep=const.column_spliter,
                                         dtype={eqtl_col_dict['chrom']: 'category'})
@@ -35,11 +48,20 @@ class ECaviarDataProcessor:
         output_base_dir = f'{working_dir}/candidate'
         Path(output_base_dir).mkdir(exist_ok=True, parents=True)
 
+        total_len = len(os.listdir(gwas_cluster_dir))
+        ix = 1
         if parallel:
             # Too many workers will cause error "Error: Failed to open"
             with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for gwas_cluster_file in os.listdir(gwas_cluster_dir):
+                    if whether_schedual:
+                        outputschedule(rownum=ix,
+                            totalnum=total_len,
+                            currenttissuenum = currenttissuenum,
+                            numoftissues=numoftissues,
+                            rank_dir=rank_dir)
+                        ix = ix + 1
                     # cluster file name example: chr{chromosome}_{position}-chr{}.tsv.gz
                     result = re.match(r'^(.*)\.tsv(\.gz)?$', gwas_cluster_file)
                     if not result or gwas_cluster_file.startswith('.'):
@@ -73,6 +95,13 @@ class ECaviarDataProcessor:
                         logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         else:
             for gwas_cluster_file in os.listdir(gwas_cluster_dir):
+                if whether_schedual:
+                    outputschedule(rownum=ix,
+                        totalnum=total_len,
+                        currenttissuenum = currenttissuenum,
+                        numoftissues=numoftissues,
+                        rank_dir=rank_dir)
+                    ix = ix + 1
                 # cluster file name example: chr{chromosome}_{position}-chr{}.tsv.gz
                 result = re.match(r'^(.*)\.tsv(\.gz)?$', gwas_cluster_file)
                 if not result or gwas_cluster_file.startswith('.'):

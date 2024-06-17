@@ -15,6 +15,15 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import coloc_utils as utils, global_data_process as gdp, constants as const
 
+def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    else:
+        with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    schedule.close()
 
 class Coloc:
     COLOC_TOOL_NAME = 'coloc'
@@ -37,7 +46,11 @@ class Coloc:
             eqtl_type=None,
             parallel=False,
             tools_config=None,
-            parallel_worker_num=10):
+            parallel_worker_num=10, 
+            rank_dir = None,
+            currenttissuenum = None, 
+            numoftissues = None, 
+            whether_schedual = False):
         
         
         gwas_type_dict = {gwas_col_dict['chrom']: 'category',
@@ -79,10 +92,18 @@ class Coloc:
         gwas_chroms = gwas_range_files.keys()
         _p1, _p2, _p12 = self.__get_coloc_run_params(tools_config)
 
+        total_len = len(eqtl_summary_df)
         if parallel:
             with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
-                for _, row in eqtl_summary_df.iterrows():
+                for ix, row in eqtl_summary_df.iterrows():
+                    if whether_schedual:
+                        outputschedule(rownum=ix,
+                            totalnum=total_len,
+                            currenttissuenum = currenttissuenum,
+                            numoftissues=numoftissues,
+                            rank_dir=rank_dir)
+                        
                     chrom = str(row.loc['chrom'])
                     if chrom not in gwas_chroms:
                         continue
@@ -107,7 +128,14 @@ class Coloc:
                         logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
 
         else:
-            for _, row in eqtl_summary_df.iterrows():
+            for ix, row in eqtl_summary_df.iterrows():
+                if whether_schedual:
+                    outputschedule(rownum=ix,
+                        totalnum=total_len,
+                        currenttissuenum = currenttissuenum,
+                        numoftissues=numoftissues,
+                        rank_dir=rank_dir)
+                        
                 chrom = str(row.loc['chrom'])
                 if chrom not in gwas_chroms:
                     continue

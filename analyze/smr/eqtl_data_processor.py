@@ -45,6 +45,7 @@ class SmrEqtlProcessor:
                        rank_dir = None,
                        currenttissuenum = None,
                        numoftissues = None,
+                       whether_schedual = False,
                        parallel=False,
                        parallel_worker_num=2):
         
@@ -66,11 +67,12 @@ class SmrEqtlProcessor:
             with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
                 futures = []
                 for ix, row in eqtl_summary_df.iterrows():
-                    outputschedule(rownum=ix,
-                                   numofeqtlloci=totalnumof_eqtlloci,
-                                   currenttissuenum = currenttissuenum,
-                                   numoftissues=numoftissues,
-                                   rank_dir=rank_dir)
+                    if whether_schedual == True:
+                        outputschedule(rownum=ix,
+                                    numofeqtlloci=totalnumof_eqtlloci,
+                                    currenttissuenum = currenttissuenum,
+                                    numoftissues=numoftissues,
+                                    rank_dir=rank_dir)
                     chrom = str(row.loc['chrom'])
                     if chrom not in gwas_chroms:
                         continue
@@ -93,11 +95,12 @@ class SmrEqtlProcessor:
                         logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
         else:
             for ix, row in eqtl_summary_df.iterrows():
-                outputschedule(rownum=ix,
-                                numofeqtlloci=totalnumof_eqtlloci,
-                                currenttissuenum = currenttissuenum,
-                                numoftissues=numoftissues,
-                                rank_dir=rank_dir)
+                if whether_schedual == True:
+                    outputschedule(rownum=ix,
+                                    numofeqtlloci=totalnumof_eqtlloci,
+                                    currenttissuenum = currenttissuenum,
+                                    numoftissues=numoftissues,
+                                    rank_dir=rank_dir)
                 chrom = str(row.loc['chrom'])
                 if chrom not in gwas_chroms:
                     continue

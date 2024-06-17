@@ -7,6 +7,16 @@ import pandas as pd
 
 from common import global_data_process as gdp, constants as const, coloc_utils as utils
 
+def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    else:
+        with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    schedule.close()
+
 
 class FastenlocGwasProcessor:
 
@@ -27,7 +37,9 @@ class FastenlocGwasProcessor:
         return f'{output_torus_output_dir}/torus_output.pip'
 
     def prepare_gwas_data(self, working_dir=None, gwas_preprocessed_file=None,
-                          gwas_col_dict=None, ld_block_loci_file=None):
+                          gwas_col_dict=None, ld_block_loci_file=None, rank_dir=None,
+                          currenttissuenum=None, numoftissues=None, 
+                          whether_schedual=False):
         start_time = datetime.now()
         logging.info(f'Grouping fastenloc preprocessed gwas file at {start_time}')
 
@@ -51,6 +63,10 @@ class FastenlocGwasProcessor:
         Path(output_torus_input_dir).mkdir(parents=True, exist_ok=True)
         Path(output_torus_output_dir).mkdir(parents=True, exist_ok=True)
         gwas_snp_count = 0
+        tmp = pd.read_csv(gwas_preprocessed_file, sep=const.column_spliter)
+        total_num = len(tmp)
+        del tmp
+        ix = 0
         with pd.read_table(gwas_preprocessed_file, sep=const.column_spliter, usecols=dap_use_col,
                            dtype={gwas_col_dict['position']: 'Int64',
                                   gwas_col_dict['chrom']: 'category',
@@ -60,6 +76,13 @@ class FastenlocGwasProcessor:
                                   'alt_': pd.CategoricalDtype(const.SNP_ALLELE)},
                            iterator=True, chunksize=500000) as reader:
             for chunk in reader:
+                ix = ix + len(chunk)
+                if whether_schedual == True:
+                    outputschedule(rownum=ix,
+                                numofeqtlloci=total_num,
+                                currenttissuenum = currenttissuenum,
+                                numoftissues=numoftissues,
+                                rank_dir=rank_dir)
                 gwas_snp_count += chunk.shape[0]
                 chunk['zscore'] = chunk[gwas_col_dict['beta']] / chunk[gwas_col_dict['se']]
                 chunk.drop(columns=[gwas_col_dict['beta'], gwas_col_dict['se']], inplace=True)

@@ -10,6 +10,15 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import coloc_utils as utils, constants as const
 
+def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(40/numoftissues+ rownum/numofeqtlloci * 40/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+    if os.path.exists('/process/'):
+        with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    else:
+        with open(f"{os.path.join(rank_dir, 'process_schedule.log')}", 'w') as schedule:
+            schedule.write(str(calculated_schedule))
+    schedule.close()
 
 class ECaviar:
     ECAVIAR_TOOL_NAME = 'ecaviar'
@@ -18,7 +27,9 @@ class ECaviar:
     def __init__(self):
         logging.info('init eCaviar')
 
-    async def run(self, working_dir, candidate_data_dir, parallel=False, tools_config=None, parallel_worker_num=3):
+    async def run(self, working_dir, candidate_data_dir, parallel=False, 
+                  tools_config=None, parallel_worker_num=3, rank_dir = None,
+                  currenttissuenum = None, numoftissues = None, whether_schedual = False):
 
         logging.info('eCaviar start to run...')
         Path(f'{working_dir}/analyzed').mkdir(parents=True, exist_ok=True)
@@ -28,7 +39,16 @@ class ECaviar:
         custom_params = utils.get_tools_params('finemap', tools_config_file=tools_config)
         if custom_params and custom_params != '':
             finemap_params = custom_params
+        total_len = len(os.listdir(candidate_data_dir))
+        ix = 1
         for gene_dir in os.listdir(candidate_data_dir):
+            if whether_schedual:
+                outputschedule(rownum=ix,
+                    totalnum=total_len,
+                    currenttissuenum = currenttissuenum,
+                    numoftissues=numoftissues,
+                    rank_dir=rank_dir)
+                ix = ix + 1
             if gene_dir.startswith('.'):
                 continue
             for causal_snp_dir in os.listdir(f'{candidate_data_dir}/{gene_dir}'):
