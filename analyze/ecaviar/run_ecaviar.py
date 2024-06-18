@@ -77,6 +77,7 @@ class ECaviar:
                 logging.warning(f'{gwas_snp} or {eqtl_snp} is not found.')
                 continue
             try:
+                print("generate report for ecaviar")
                 gwas_snp_df = pd.read_csv(gwas_snp, sep=' ', usecols=['snp', 'snp_prob'])
                 eqtl_snp_df = pd.read_csv(eqtl_snp, sep=' ', usecols=['snp', 'snp_prob'])
             except Exception as e:
