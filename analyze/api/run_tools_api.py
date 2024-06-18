@@ -203,7 +203,11 @@ def __preprocess_and_run_ecaviar(glob_processor, currenttissuenum, numoftissues,
     return asyncio.run(ecaviar.run(working_dir=_working_dir,
                                    candidate_data_dir=preproc_rst_dir,
                                    parallel=glob_processor.config_holder.parallel,
-                                   tools_config=glob_processor.tools_config_file))
+                                   tools_config=glob_processor.tools_config_file,
+                                   rank_dir = glob_processor.rank_dir,
+                                   currenttissuenum = currenttissuenum, 
+                                   numoftissues = numoftissues, 
+                                   whether_schedual = whether_schedual))
 
 
 def __preprocess_and_run_twas(glob_processor, currenttissuenum, numoftissues, whether_schedual):
