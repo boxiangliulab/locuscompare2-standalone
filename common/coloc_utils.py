@@ -39,8 +39,8 @@ def split_file_by_col_name(working_dir, src_file_path, by_dir_col, by_file_prefi
                 subdir = os.path.join(working_dir, f'{chrom}')
                 Path(subdir).mkdir(parents=True, exist_ok=True)
                 csv_file = os.path.join(subdir, f'{name}.tsv.gz')
-                print(f"*****csv_file*****: {csv_file}")
-                print(f"*****name*****: {name}")
+                # print(f"*****csv_file*****: {csv_file}")
+                # print(f"*****name*****: {name}")
                 # csv_file = os.path.join(subdir, f'{name}.tsv.gz')
                 # check csv_file existence and determine write mode
                 if os.path.exists(csv_file) and os.path.getsize(csv_file) > 0:
