@@ -14,8 +14,8 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import constants as const, coloc_utils as utils, global_data_process as gdp, config
 
-def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
-    calculated_schedule = int(rownum/numofeqtlloci * 40/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+def outputschedule(rownum, totalnum,currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/totalnum * 40/numoftissues + 80/numoftissues * (currenttissuenum - 1))
     print("start process ecaviar schedual")
     if os.path.exists('/process/'):
         with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
