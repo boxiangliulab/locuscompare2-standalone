@@ -15,8 +15,8 @@ sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import coloc_utils as utils, global_data_process as gdp, constants as const
 
-def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
-    calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+def outputschedule(rownum, totalnum, currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/totalnum * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
     if os.path.exists('/process/'):
         with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
             schedule.write(str(calculated_schedule))

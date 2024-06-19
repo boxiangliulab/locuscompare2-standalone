@@ -7,8 +7,8 @@ import pandas as pd
 
 from common import global_data_process as gdp, constants as const, coloc_utils as utils
 
-def outputschedule(rownum, numofeqtlloci,currenttissuenum, numoftissues, rank_dir):
-    calculated_schedule = int(rownum/numofeqtlloci * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
+def outputschedule(rownum, totalnum, currenttissuenum, numoftissues, rank_dir):
+    calculated_schedule = int(rownum/totalnum * 80/numoftissues + 80/numoftissues * (currenttissuenum - 1))
     if os.path.exists('/process/'):
         with open(f"{os.path.join('/process/', 'process_schedule.log')}", 'w') as schedule:
             schedule.write(str(calculated_schedule))
@@ -79,7 +79,7 @@ class FastenlocGwasProcessor:
                 ix = ix + len(chunk)
                 if whether_schedual == True:
                     outputschedule(rownum=ix,
-                                numofeqtlloci=total_num,
+                                totalnum=total_num,
                                 currenttissuenum = currenttissuenum,
                                 numoftissues=numoftissues,
                                 rank_dir=rank_dir)
