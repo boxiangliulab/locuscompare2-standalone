@@ -187,8 +187,8 @@ class Processor:
         gwas_file_path = self.global_config['input']['gwas']['file']
         population = self.global_config.get('population', 'EUR').upper()
         logging.info(f'Reading GWAS file {gwas_file_path}')
-        gwas_df = pd.read_table(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
-                                usecols=self.gwas_col_dict.values(),
+        gwas_df = pd.read_csv(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
+                                # usecols=self.gwas_col_dict.values(),
                                 dtype={self.gwas_col_dict['position']: 'Int64', self.gwas_col_dict['chrom']: 'category',
                                        self.gwas_col_dict['effect_allele']: pd.CategoricalDtype(const.SNP_ALLELE),
                                        self.gwas_col_dict['other_allele']: pd.CategoricalDtype(const.SNP_ALLELE)})
