@@ -35,6 +35,7 @@ class Fastenloc:
                                                          eqtl_tissue, gwas_snp_count,
                                                          f'{output_analyze_output_dir}/{eqtl_tissue}',
                                                          fastenloc_params)
+        logging.info(f'fastenloc com_str: {com_str}')
         os.system(com_str)
         report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue, eqtl_output_report)
 

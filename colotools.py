@@ -220,6 +220,15 @@ def union_result_gene(tissues_ensemble_result_ls):
     pass
 
 
+
+# def output_gwas_info(num_of_sig_gwas_SNP, gwas_cluster, extraFile_path):
+#     gwas_cluster_df = pd.read_csv(gwas_cluster, sep='\t')
+#     num_of_gwas_loci = len(gwas_cluster_df)
+#     with open(f"{extraFile_path}", 'w') as output:
+#         output.write(f"num_of_gwas_loci\t{num_of_gwas_loci}")
+#     output.close()
+
+
 # def __run_single_cfg(tools_param_list, config_holder, report_list, parallel, study):
 def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuenum, numoftissues):
     start_time = datetime.now()
@@ -290,7 +299,9 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
     if not utils.file_exists(processor.gwas_preprocessed_file):
         processor.preprocess_gwas()
     gwas_sig_df = pd.read_table(config_holder.gwas_filter_file, nrows=2)
-    if gwas_sig_df.shape[0] == 0:
+    num_of_sig_gwas_SNP = gwas_sig_df.shape[0]
+
+    if num_of_sig_gwas_SNP == 0:
         gwas_file = config_holder.global_config['input']['gwas']['file']
         logging.warning(f'No significant records found in GWAS file {gwas_file} '
                         f'by threshold {config_holder.gwas_p_threshold}')
@@ -307,6 +318,11 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
     utils.check_path_exist_and_has_size(processor.eqtl_output_report)
     utils.check_path_exist_and_has_size(processor.gwas_preprocessed_file)
     utils.check_file_or_path_exist(processor.gwas_cluster_output_dir)
+
+    # extraFile_path = os.path.join(processor.rank_dir, f'extra_info.tsv')
+    # output_gwas_info(num_of_sig_gwas_SNP, processor.gwas_cluster_output_dir, extraFile_path)
+
+
     results = dict()
     rank_output_file = os.path.join(processor.rank_dir,
                                     f'ensemble_ranking_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv')

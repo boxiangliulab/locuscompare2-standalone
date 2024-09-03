@@ -136,12 +136,16 @@ class FastenlocGwasProcessor:
                 # torus input file include columns variant_id、loc、zscore
                 df_input_torus.to_csv(output_torus_input_file, columns=['variant_id', 'loc', 'zscore'],
                                       sep=const.output_spliter, mode=mode, header=header, index=False)
+                
                 del df_gwas_list, df_input_torus
         logging.info(f'prepare fastenloc gwas file all columns duration {datetime.now() - start_time}')
         os.system(shell_compress_file.format(output_torus_input_file))
-        #
+        os.system(f"cp {output_torus_input_file}.gz ~/scratch/torus.input")
+
         os.system(shell_command_torus_execute.format(f'{output_torus_input_file}.gz', output_torus_output_file))
+        logging.info(f'torus cmd: {shell_command_torus_execute}')
         os.system(shell_compress_file.format(output_torus_output_file))
+        os.system(f"cp {output_torus_output_file}.gz ~/scratch/torus.output")
         logging.info(f'prepare fastenloc gwas file at: {datetime.now()}, duration： {datetime.now() - start_time}')
         return output_torus_output_file, gwas_snp_count
         # clean temp file folder
