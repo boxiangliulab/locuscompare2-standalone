@@ -14,14 +14,17 @@ GENE_ID_COL_NAME = 'gene_id'
 def calc_threshold_for_prob_rpt(rpt, prob_col_name, fdr_thresh=0.05):
     print(f"calc_threshold_for_prob_rpt")
     if rpt is None or len(rpt) == 0:
+        print(f"calc_threshold_for_prob_rpt {rpt} is None")
         return 1
     if not os.path.exists(rpt) or os.path.getsize(rpt) <= 0:
+        print(f"calc_threshold_for_prob_rpt {rpt} file not exist")
         return 1
     # ecaviar threshold fix to 0.01
     if prob_col_name == 'clpp':
         return 0.01
     df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, prob_col_name])
     if df.empty:
+        print(f"calc_threshold_for_prob_rpt {rpt} df empty")
         return 1
     df.sort_values(by=[prob_col_name], ascending=False, inplace=True)
     df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)

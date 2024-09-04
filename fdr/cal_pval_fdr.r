@@ -1,5 +1,7 @@
 # input file must contain "gene_id" column
 # results are tab seperated table with 2 column (1 row): fdr, pvalue
+library(qvalue)
+
 args <- commandArgs(trailingOnly = TRUE)
 
 if (length(args) < 2) {
