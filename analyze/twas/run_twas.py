@@ -89,7 +89,7 @@ class TWAS:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
             ## FDR threshold
-            pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
+            pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'TWAS.P', working_dir)
             config = {
                 'value': float(pval_thresh),
                 'note': notes,

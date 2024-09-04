@@ -1,6 +1,7 @@
 # input file must contain "gene_id" column
 # results are tab seperated table with 2 column (1 row): fdr, pvalue
 library(qvalue)
+library(dplyr)
 
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -28,6 +29,11 @@ if (is.na(fdr_threshold) || tolower(fdr_threshold) == 'na' || tolower(fdr_thresh
 }
 
 data = read.table(file = input_file_path, header = TRUE, fill = TRUE)
+# 将pval_col_name这一列的NA值替换为1
+data[[pval_col_name]][is.na(data[[pval_col_name]])] <- 1
+# 确保pval_col_name列的值在[0, 1]范围内
+data = data %>% filter(data[[pval_col_name]] >= 0 & data[[pval_col_name]] <= 1)
+
 data = subset(data, select = c("gene_id",pval_col_name))
 data = data[order(data[,pval_col_name]), , drop = FALSE]
 data = data[!duplicated(data[["gene_id"]]), , drop = FALSE]

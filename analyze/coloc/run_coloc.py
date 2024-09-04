@@ -153,7 +153,7 @@ class Coloc:
                                       eqtl_sample_size, gwas_type, eqtl_type, _p1, _p2, _p12)
 
 
-        prob_thresh, notes = self.__analyze_result(self.__get_output_dir(working_dir), output_file, working_dir)
+        self.__analyze_result(self.__get_output_dir(working_dir), output_file, working_dir)
         fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             config = {
@@ -162,8 +162,10 @@ class Coloc:
             }
             with open(fdrthreshold_outfile, 'w') as file:
                 yaml.dump(config, file, default_flow_style=False, sort_keys=False)
-            logging.warning(f'COLOC Process completed, duration {datetime.now() - start_time}, no result found')
+            logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
+            ## FDR threshold
+            prob_thresh, notes = prob_fdr.calc_threshold_for_prob_rpt(output_file, 'overall_H4')
             config = {
                 'value': float(prob_thresh),
                 'note': notes,
@@ -171,7 +173,7 @@ class Coloc:
             with open(fdrthreshold_outfile, 'w') as file:
                 yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.info(
-                f'COLOC Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
+                f'Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
             
         return output_file
 
@@ -332,10 +334,7 @@ class Coloc:
         report_df.drop_duplicates(subset=['snp', 'SNP.PP.H4', 'gene_id'], inplace=True)
         report_df = report_df.round(4)
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
-        prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(final_result_file, 'overall_H4')
 
-        return prob_thresh, "FDR < 0.05"
-        ## FDR threshold
 
 
     def get_output_file(self, working_dir):
