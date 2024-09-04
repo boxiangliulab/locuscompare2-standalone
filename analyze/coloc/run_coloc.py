@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from fdr import prob_fdr
 import pandas as pd
+import yaml
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
@@ -151,12 +152,26 @@ class Coloc:
                                       var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                                       eqtl_sample_size, gwas_type, eqtl_type, _p1, _p2, _p12)
 
-        self.__analyze_result(self.__get_output_dir(working_dir), output_file, working_dir)
+        prob_thresh, notes = self.__analyze_result(self.__get_output_dir(working_dir), output_file, working_dir)
+        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
+            config = {
+                'value': 1,
+                'note': "No result found",
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
+            config = {
+                'value': prob_thresh,
+                'note': notes,
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
+            
         return output_file
 
     def __convert_positions_str_to_list(self, positions_str):
@@ -316,13 +331,11 @@ class Coloc:
         report_df.drop_duplicates(subset=['snp', 'SNP.PP.H4', 'gene_id'], inplace=True)
         report_df = report_df.round(4)
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
-        ## FDR threshold
-        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(final_result_file, 'overall_H4')
-        print(f"colocthreshold: {prob_thresh}")
-        with open(fdrthreshold_outfile, 'w') as f:
-            f.write(str(prob_thresh))
-        f.close()
+
+        return prob_thresh, "FDR < 0.05"
+        ## FDR threshold
+
 
     def get_output_file(self, working_dir):
         _output_file_name = f'{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'

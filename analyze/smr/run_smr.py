@@ -5,7 +5,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
-
+import yaml
 import pandas as pd
 import pyranges as pr
 
@@ -242,20 +242,30 @@ class Smr:
         output_file = self.get_output_file(working_dir)
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
         self.__analyze_result(output_dir, output_file)
+
+        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
+            ## FDR threshold
+            config = {
+                'value': 0,
+                'note': "No result found",
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
             ## FDR threshold
-            fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
-            # qvalue_output_file = os.path.join(working_dir, 'analyzed', 'run_qvalue.txt')
-            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
-            print(f"smrthreshold: {pval_thresh}")
-            with open(fdrthreshold_outfile, 'w') as f:
-                f.write(str(pval_thresh))
-            f.close()
+            pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
+            config = {
+                'value': pval_thresh,
+                'note': notes,
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
         return output_file
+    
 
     def get_output_file(self, working_dir):
         _output_file_name = f'{Smr.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'

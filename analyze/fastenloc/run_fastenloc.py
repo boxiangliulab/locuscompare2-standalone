@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import sys
 import pandas as pd
-
+import yaml
 from common import global_data_process as gdp, coloc_utils as utils, constants as const
 from fdr import prob_fdr
 
@@ -49,6 +49,7 @@ class Fastenloc:
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         # sort sig file LCP(locus-level colocalization probability)
         # sort sig file GLCP(gene locus-level colocalization probability)
+        fdrthreshold_outfile = f'{output_dir}/fdr_threshold.txt'
         if utils.file_exists(report_output_sig_file):
             df_output_sig = pd.read_csv(report_output_sig_file, sep='\s+')
             if len(df_output_sig) > 0:
@@ -70,13 +71,32 @@ class Fastenloc:
                 
                 
                 ## FDR threshold
-                fdrthreshold_outfile = f'{output_dir}/fdr_threshold.txt'
-                prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(report_output_sig_tsv_file, 'GLCP')
+                prob_thresh, notes = prob_fdr.calc_threshold_for_prob_rpt(report_output_sig_tsv_file, 'GLCP')
                 print(f"fastenlocthreshold: {prob_thresh}")
-                with open(fdrthreshold_outfile, 'w') as f:
-                    f.write(str(prob_thresh))
-                f.close()
+                config = {
+                    'value': prob_thresh,
+                    'note': notes,
+                }
+                with open(fdrthreshold_outfile, 'w') as file:
+                    yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+            else:
+                ## FDR threshold
+                config = {
+                    'value': 1,
+                    'note': "No result found",
+                }
+                with open(fdrthreshold_outfile, 'w') as file:
+                    yaml.dump(config, file, default_flow_style=False, sort_keys=False)
 
+        else:
+            ## FDR threshold
+            config = {
+                'value': 1,
+                'note': "No result found",
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+                
         return report_output_sig_tsv_file
 
 

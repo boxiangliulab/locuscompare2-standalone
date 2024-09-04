@@ -15,10 +15,10 @@ def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir="~/", fdr_thresh=0
     print(f"calc_threshold_for_pval_rpt")
     if rpt is None or len(rpt) == 0:
         print(f"calc_threshold_for_pval_rpt {rpt} is None")
-        return 0
+        return 0, "No result found"
     if not os.path.exists(rpt) or os.path.getsize(rpt) <= 0:
         print(f"calc_threshold_for_pval_rpt {rpt} file not exist")
-        return 0
+        return 0, "No result found"
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'cal_pval_fdr.r')
     output_file = os.path.join(str(work_dir), 'qvalue.txt')
 
@@ -34,7 +34,7 @@ def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir="~/", fdr_thresh=0
     fdr = thresh_df.at[0, 'fdr']
     pvalue = thresh_df.at[0, 'pvalue']
     print(f'Threshold for {rpt} at fdr {fdr_thresh}:\nfdr:{fdr}\npvalue:{pvalue}')
-    return thresh_df.at[0, 'pvalue']
+    return thresh_df.at[0, 'pvalue'], "FDR < 0.05"
 
 
 if __name__ == '__main__':

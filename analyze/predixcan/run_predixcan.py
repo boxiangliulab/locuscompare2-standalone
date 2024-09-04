@@ -4,7 +4,7 @@ import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
-
+import yaml
 import pandas as pd
 from fdr import pval_fdr
 import analyze.predixcan.gwas_data_processor as gpr
@@ -64,20 +64,31 @@ class Predixcan:
         result_df.rename(columns={'gene': 'gene_id'}, inplace=True)
         result_df.to_csv(output_file, sep=const.output_spliter, header=True, index=False)
         self.__analyze_result(output_file)
+
+        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
+            ## FDR threshold
+            config = {
+                'value': 0,
+                'note': "No result found",
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
             ## FDR threshold
-            fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
-            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
-            print(f"predixcanthreshold: {pval_thresh}")
-            with open(fdrthreshold_outfile, 'w') as f:
-                f.write(str(pval_thresh))
-            f.close()
+            pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
+            config = {
+                'value': pval_thresh,
+                'note': notes,
+            }
+            with open(fdrthreshold_outfile, 'w') as file:
+                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
 
         return output_file
+
 
     def __get_predixcan_path(self, config_predixan_path):
         actual_predixcan_path = config_predixan_path
