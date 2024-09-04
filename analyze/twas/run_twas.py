@@ -91,7 +91,7 @@ class TWAS:
             ## FDR threshold
             pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
             config = {
-                'value': pval_thresh,
+                'value': float(pval_thresh),
                 'note': notes,
             }
             with open(fdrthreshold_outfile, 'w') as file:

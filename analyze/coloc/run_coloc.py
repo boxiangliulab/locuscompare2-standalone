@@ -164,7 +164,7 @@ class Coloc:
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
             config = {
-                'value': prob_thresh,
+                'value': float(prob_thresh),
                 'note': notes,
             }
             with open(fdrthreshold_outfile, 'w') as file:

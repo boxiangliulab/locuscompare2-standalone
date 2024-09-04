@@ -74,7 +74,7 @@ class Fastenloc:
                 prob_thresh, notes = prob_fdr.calc_threshold_for_prob_rpt(report_output_sig_tsv_file, 'GLCP')
                 print(f"fastenlocthreshold: {prob_thresh}")
                 config = {
-                    'value': prob_thresh,
+                    'value': float(prob_thresh),
                     'note': notes,
                 }
                 with open(fdrthreshold_outfile, 'w') as file:
@@ -96,7 +96,7 @@ class Fastenloc:
             }
             with open(fdrthreshold_outfile, 'w') as file:
                 yaml.dump(config, file, default_flow_style=False, sort_keys=False)
-                
+
         return report_output_sig_tsv_file
 
 
