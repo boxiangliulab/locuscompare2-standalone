@@ -18,7 +18,7 @@ def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir="~/", fdr_thresh=0
     if not os.path.exists(rpt) or os.path.getsize(rpt) <= 0:
         return 0
     rscript_path = os.path.join(os.path.dirname(Path(__file__).resolve()), 'cal_pval_fdr.r')
-    output_file = os.path.join(str(work_dir), str(uuid.uuid4()))
+    output_file = os.path.join(str(work_dir), 'qvalue.txt')
 
     print(f"Using R script at: {rscript_path}")
     print(f"rscript_path: {rscript_path}")

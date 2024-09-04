@@ -97,7 +97,7 @@ class SmrEqtlProcessor:
             for ix, row in eqtl_summary_df.iterrows():
                 if whether_schedual == True:
                     outputschedule(rownum=ix,
-                                    numofeqtlloci=totalnumof_eqtlloci,
+                                    totalnum=totalnumof_eqtlloci,
                                     currenttissuenum = currenttissuenum,
                                     numoftissues=numoftissues,
                                     rank_dir=rank_dir)
