@@ -12,6 +12,7 @@ GENE_ID_COL_NAME = 'gene_id'
 
 
 def calc_threshold_for_prob_rpt(rpt, prob_col_name, fdr_thresh=0.05):
+    print(f"calc_threshold_for_prob_rpt")
     if rpt is None or len(rpt) == 0:
         return 1
     if not os.path.exists(rpt) or os.path.getsize(rpt) <= 0:

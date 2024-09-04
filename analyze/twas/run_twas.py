@@ -84,6 +84,7 @@ class TWAS:
             fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
             # qvalue_output_file = os.path.join(working_dir, 'analyzed', 'run_qvalue.txt')
             pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
+            print(f"twasthreshold: {pval_thresh}")
             with open(fdrthreshold_outfile, 'w') as f:
                 f.write(pval_thresh)
             f.close()

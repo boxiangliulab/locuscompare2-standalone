@@ -319,6 +319,7 @@ class Coloc:
         ## FDR threshold
         fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(final_result_file, 'overall_H4')
+        print(f"colocthreshold: {prob_thresh}")
         with open(fdrthreshold_outfile, 'w') as f:
             f.write(prob_thresh)
         f.close()
