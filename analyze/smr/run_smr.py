@@ -249,8 +249,8 @@ class Smr:
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
             ## FDR threshold
             fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
-            qvalue_output_file = os.path.join(working_dir, 'analyzed', 'run_qvalue.txt')
-            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', qvalue_output_file)
+            # qvalue_output_file = os.path.join(working_dir, 'analyzed', 'run_qvalue.txt')
+            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
             with open(fdrthreshold_outfile, 'w') as f:
                 f.write(pval_thresh)
             f.close()
