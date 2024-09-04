@@ -152,6 +152,7 @@ class Coloc:
                                       var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                                       eqtl_sample_size, gwas_type, eqtl_type, _p1, _p2, _p12)
 
+
         prob_thresh, notes = self.__analyze_result(self.__get_output_dir(working_dir), output_file, working_dir)
         fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
@@ -161,7 +162,7 @@ class Coloc:
             }
             with open(fdrthreshold_outfile, 'w') as file:
                 yaml.dump(config, file, default_flow_style=False, sort_keys=False)
-            logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
+            logging.warning(f'COLOC Process completed, duration {datetime.now() - start_time}, no result found')
         else:
             config = {
                 'value': float(prob_thresh),
@@ -170,7 +171,7 @@ class Coloc:
             with open(fdrthreshold_outfile, 'w') as file:
                 yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.info(
-                f'Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
+                f'COLOC Process completed, duration {datetime.now() - start_time}, with params p1: {_p1} p2:{_p2} p12:{_p12}, check {output_file} for result!')
             
         return output_file
 
