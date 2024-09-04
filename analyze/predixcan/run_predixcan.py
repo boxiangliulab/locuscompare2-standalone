@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-
+from fdr import pval_fdr
 import analyze.predixcan.gwas_data_processor as gpr
 
 sys.path.append(
@@ -69,6 +69,13 @@ class Predixcan:
         else:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
+            ## FDR threshold
+            fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
+            with open(fdrthreshold_outfile, 'w') as f:
+                f.write(pval_thresh)
+            f.close()
+
         return output_file
 
     def __get_predixcan_path(self, config_predixan_path):

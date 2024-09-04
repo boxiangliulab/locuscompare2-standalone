@@ -8,7 +8,7 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
-
+from fdr import prob_fdr
 import pandas as pd
 
 sys.path.append(
@@ -151,7 +151,7 @@ class Coloc:
                                       var_id_col_name, coloc_input_dir, gene_id, eqtl_col_dict, gwas_sample_size,
                                       eqtl_sample_size, gwas_type, eqtl_type, _p1, _p2, _p12)
 
-        self.__analyze_result(self.__get_output_dir(working_dir), output_file)
+        self.__analyze_result(self.__get_output_dir(working_dir), output_file, working_dir)
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
@@ -303,7 +303,7 @@ class Coloc:
         _p12 = 1.0E-5 if params.get('p12') is None else params['p12']
         return _p1, _p2, _p12
 
-    def __analyze_result(self, output_dir, final_result_file):
+    def __analyze_result(self, output_dir, final_result_file, working_dir):
         single_result_list = []
         for single_result in os.listdir(output_dir):
             if not (single_result.endswith('.tsv') or single_result.endswith('.tsv.gz')):
@@ -316,6 +316,12 @@ class Coloc:
         report_df.drop_duplicates(subset=['snp', 'SNP.PP.H4', 'gene_id'], inplace=True)
         report_df = report_df.round(4)
         report_df.to_csv(final_result_file, sep=const.output_spliter, header=True, index=False)
+        ## FDR threshold
+        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+        prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(final_result_file, 'overall_H4')
+        with open(fdrthreshold_outfile, 'w') as f:
+            f.write(prob_thresh)
+        f.close()
 
     def get_output_file(self, working_dir):
         _output_file_name = f'{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'

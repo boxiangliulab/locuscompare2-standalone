@@ -6,7 +6,7 @@ import sys
 import pandas as pd
 
 from common import global_data_process as gdp, coloc_utils as utils, constants as const
-
+from fdr import prob_fdr
 
 class Fastenloc:
     COLOC_TOOL_NAME = 'fastenloc'
@@ -67,6 +67,15 @@ class Fastenloc:
                                             on=['gene_id'], how='left')
                 df_output_sig_mg = df_output_sig_mg.round(4)
                 df_output_sig_mg.to_csv(report_output_sig_tsv_file, sep=const.output_spliter, header=True, index=False)
+                
+                
+                ## FDR threshold
+                fdrthreshold_outfile = f'{output_dir}/fdr_threshold.txt'
+                prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(report_output_sig_tsv_file, 'GLCP')
+                with open(fdrthreshold_outfile, 'w') as f:
+                    f.write(prob_thresh)
+                f.close()
+
         return report_output_sig_tsv_file
 
 

@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-
+from fdr import prob_fdr
 sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
 from common import coloc_utils as utils, constants as const
@@ -114,6 +114,11 @@ class ECaviar:
         if report_df.shape[0] > 0:
             report_df = report_df.round(4)
             report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
+            # FDR threshold
+            fdrthreshold_outfile = f'{working_dir}/analyzed/fdr_threshold.txt'
+            with open(fdrthreshold_outfile, 'w') as f:
+                f.write('0.01')
+            f.close()
         return output_report_path
 
 

@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from fdr import pval_fdr
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
@@ -79,6 +80,14 @@ class TWAS:
         else:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
+            ## FDR threshold
+            fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+            qvalue_output_file = os.path.join(working_dir, 'analyzed', 'run_qvalue.txt')
+            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', qvalue_output_file)
+            with open(fdrthreshold_outfile, 'w') as f:
+                f.write(pval_thresh)
+            f.close()
+
         return output_file
 
     def __ensure_chrom_ld_ref(self, chrom_group_file, ref_vcf_dir, population):

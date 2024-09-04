@@ -10,6 +10,7 @@ import pandas as pd
 import pyranges as pr
 
 import analyze.smr.eqtl_data_processor as edp
+from fdr import pval_fdr
 
 sys.path.append(
     os.path.abspath(os.path.join(os.path.join(os.path.dirname(Path(__file__).resolve()), os.pardir), os.pardir)))
@@ -246,6 +247,13 @@ class Smr:
         else:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
+            ## FDR threshold
+            fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+            qvalue_output_file = os.path.join(working_dir, 'analyzed', 'run_qvalue.txt')
+            pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', qvalue_output_file)
+            with open(fdrthreshold_outfile, 'w') as f:
+                f.write(pval_thresh)
+            f.close()
         return output_file
 
     def get_output_file(self, working_dir):

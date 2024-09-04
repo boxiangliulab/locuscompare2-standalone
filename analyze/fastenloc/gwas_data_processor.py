@@ -140,13 +140,13 @@ class FastenlocGwasProcessor:
                 del df_gwas_list, df_input_torus
         logging.info(f'prepare fastenloc gwas file all columns duration {datetime.now() - start_time}')
         os.system(shell_compress_file.format(output_torus_input_file))
-        os.system(f"cp {output_torus_input_file}.gz ~/scratch/torus.input")
-
-        os.system(shell_command_torus_execute.format(f'{output_torus_input_file}.gz', output_torus_output_file))
-        logging.info(f'torus cmd: {shell_command_torus_execute}')
+        # os.system(f"cp {output_torus_input_file}.gz ~/scratch/torus.input")
+        torus_cmd = shell_command_torus_execute.format(f'{output_torus_input_file}.gz', output_torus_output_file)
+        os.system(torus_cmd)
+        logging.info(f'torus cmd: {torus_cmd}')
         os.system(shell_compress_file.format(output_torus_output_file))
-        os.system(f"cp {output_torus_output_file}.gz ~/scratch/torus.output")
-        logging.info(f'prepare fastenloc gwas file at: {datetime.now()}, duration： {datetime.now() - start_time}')
+        # os.system(f"cp {output_torus_output_file}.gz ~/scratch/torus.output")
+        logging.info(f'prepare fastenloc gwas file at: {datetime.now()}, duration: {datetime.now() - start_time}')
         return output_torus_output_file, gwas_snp_count
         # clean temp file folder
         # utils.delete_dir(output_torus_input_dir)
