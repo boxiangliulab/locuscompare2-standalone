@@ -74,7 +74,7 @@ class Fastenloc:
                 prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(report_output_sig_tsv_file, 'GLCP')
                 print(f"fastenlocthreshold: {prob_thresh}")
                 with open(fdrthreshold_outfile, 'w') as f:
-                    f.write(prob_thresh)
+                    f.write(str(prob_thresh))
                 f.close()
 
         return report_output_sig_tsv_file

@@ -321,7 +321,7 @@ class Coloc:
         prob_thresh = prob_fdr.calc_threshold_for_prob_rpt(final_result_file, 'overall_H4')
         print(f"colocthreshold: {prob_thresh}")
         with open(fdrthreshold_outfile, 'w') as f:
-            f.write(prob_thresh)
+            f.write(str(prob_thresh))
         f.close()
 
     def get_output_file(self, working_dir):

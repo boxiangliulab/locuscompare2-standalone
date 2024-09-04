@@ -74,7 +74,7 @@ class Predixcan:
             pval_thresh = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'pvalue', working_dir)
             print(f"predixcanthreshold: {pval_thresh}")
             with open(fdrthreshold_outfile, 'w') as f:
-                f.write(pval_thresh)
+                f.write(str(pval_thresh))
             f.close()
 
         return output_file
