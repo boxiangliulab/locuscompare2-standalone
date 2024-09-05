@@ -111,7 +111,7 @@ class ECaviar:
                                   'eqtl_pip': eqtl_pips,
                                   'clpp': gene_clpps})
         report_df.sort_values(by='clpp', ascending=False, inplace=True)
-        fdrthreshold_outfile = f'{working_dir}/fdr_threshold.txt'
+        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if report_df.shape[0] > 0:
             report_df = report_df.round(4)
             report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
