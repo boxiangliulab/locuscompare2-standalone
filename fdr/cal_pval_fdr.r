@@ -29,10 +29,17 @@ if (is.na(fdr_threshold) || tolower(fdr_threshold) == 'na' || tolower(fdr_thresh
 }
 
 data = read.table(file = input_file_path, header = TRUE, fill = TRUE)
-# 将pval_col_name这一列的NA值替换为1
+
+# Replace -Inf with 0
+data[[pval_col_name]][is.infinite(data[[pval_col_name]])] <- 0
+print("Replace -Inf with 0")
+# Replace NA with 1
 data[[pval_col_name]][is.na(data[[pval_col_name]])] <- 1
+print("Replace NA with 1")
 # 确保pval_col_name列的值在[0, 1]范围内
 data = data %>% filter(data[[pval_col_name]] >= 0 & data[[pval_col_name]] <= 1)
+print("Range01")
+
 
 data = subset(data, select = c("gene_id",pval_col_name))
 data = data[order(data[,pval_col_name]), , drop = FALSE]

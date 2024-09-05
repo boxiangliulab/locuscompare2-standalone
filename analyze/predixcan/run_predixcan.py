@@ -65,7 +65,7 @@ class Predixcan:
         result_df.to_csv(output_file, sep=const.output_spliter, header=True, index=False)
         self.__analyze_result(output_file)
 
-        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+        fdrthreshold_outfile = os.path.join(working_dir, 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             ## FDR threshold
             config = {

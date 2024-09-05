@@ -37,19 +37,19 @@ class Fastenloc:
                                                          fastenloc_params)
         logging.info(f'fastenloc com_str: {com_str}')
         os.system(com_str)
-        report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue, eqtl_output_report)
+        report_output_snp_tsv_file = self.__analyze_result(output_analyze_output_dir, eqtl_tissue, eqtl_output_report, working_dir)
 
         logging.info(f'fastenloc complete at: {datetime.now()},duration: {datetime.now() - start_time}, with params {fastenloc_params}')
         return report_output_snp_tsv_file
 
-    def __analyze_result(self, output_dir, final_report_file, eqtl_output_report):
+    def __analyze_result(self, output_dir, final_report_file, eqtl_output_report, working_dir):
         # report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.sig.out'
         report_output_sig_file = f'{output_dir}/{final_report_file}.enloc.gene.out'
 
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         # sort sig file LCP(locus-level colocalization probability)
         # sort sig file GLCP(gene locus-level colocalization probability)
-        fdrthreshold_outfile = f'{output_dir}/fdr_threshold.txt'
+        fdrthreshold_outfile = f'{working_dir}/fdr_threshold.txt'
         if utils.file_exists(report_output_sig_file):
             df_output_sig = pd.read_csv(report_output_sig_file, sep='\s+')
             if len(df_output_sig) > 0:
