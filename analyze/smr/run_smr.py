@@ -243,7 +243,7 @@ class Smr:
         Path(os.path.dirname(output_file)).mkdir(parents=True, exist_ok=True)
         self.__analyze_result(output_dir, output_file)
 
-        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+        fdrthreshold_outfile = os.path.join(working_dir, 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             ## FDR threshold
             config = {
