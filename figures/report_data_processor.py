@@ -122,6 +122,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
                 for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
                     if tool_name == tool:
                         col_name = sig_column
+                print(f"col_name: {col_name}")
                 if utils.file_exists(report_file_path) and os.path.getsize(report_file_path) > 0:
                     report_df = pd.read_csv(report_file_path, sep=const.column_spliter,
                                             usecols=['gene_id', col_name])
