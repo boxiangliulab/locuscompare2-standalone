@@ -36,7 +36,7 @@ def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir="~/", fdr_thresh=0
         fdr = thresh_df.at[0, 'fdr']
         pvalue = thresh_df.at[0, 'pvalue']
         print(f'Threshold for {rpt} at fdr {fdr_thresh}:\nfdr:{fdr}\npvalue:{pvalue}')
-        return thresh_df.at[0, 'pvalue'], "FDR < 0.05"
+        return pvalue, f"Default: {pvalue} (FDR < 0.05)"
     else:
         return 0, "FDR threshold calculation failed"
 

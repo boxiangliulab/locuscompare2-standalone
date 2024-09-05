@@ -35,7 +35,7 @@ def calc_threshold_for_prob_rpt(rpt, prob_col_name, fdr_thresh=0.05):
     prob_thresh = df[prob_col_name].loc[threshold_idx]
     print(f'Threshold for {rpt} at fdr {fdr_thresh}:\nfdr:{fdr}\nprobability:{prob_thresh}')
 
-    return prob_thresh, "FDR < 0.05"
+    return prob_thresh, f"Default: {prob_thresh} (FDR < 0.05)"
 
 if __name__ == '__main__':
     start_time = datetime.now()
