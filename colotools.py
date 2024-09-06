@@ -269,6 +269,9 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
         if tool == 'ecaviar':
             ecaviar_schedual = True
             break
+        if tool == 'fusion':
+            fusion_schedual = True
+            break
         if tool == 'coloc':
             coloc_schedual = True
             break
@@ -277,9 +280,6 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
             break
         if tool == 'predixcan':
             predixcan_schedual = True
-            break
-        if tool == 'fusion':
-            fusion_schedual = True
             break
 
         
