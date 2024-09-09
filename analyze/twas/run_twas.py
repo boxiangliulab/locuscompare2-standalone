@@ -75,27 +75,27 @@ class TWAS:
                                    twas_path, weights_path, tools_config_file)
 
         self.__analyze_result(input_dir, output_file)
-        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+        # fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if not os.path.exists(output_file) or os.path.getsize(output_file) <= 0:
             ## FDR threshold
-            config = {
-                'value': 0,
-                'note': "No result found",
-            }
-            with open(fdrthreshold_outfile, 'w') as file:
-                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+            # config = {
+            #     'value': 0,
+            #     'note': "No result found",
+            # }
+            # with open(fdrthreshold_outfile, 'w') as file:
+            #     yaml.dump(config, file, default_flow_style=False, sort_keys=False)
             logging.warning(f'Process completed, duration {datetime.now() - start_time}, no result found')
         else:
             logging.info(
                 f'Process completed, duration {datetime.now() - start_time}, check {output_file} for result!')
             ## FDR threshold
-            pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'TWAS.P', working_dir)
-            config = {
-                'value': float(pval_thresh),
-                'note': notes,
-            }
-            with open(fdrthreshold_outfile, 'w') as file:
-                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+            # pval_thresh, notes = pval_fdr.calc_threshold_for_pval_rpt(output_file, 'TWAS.P', working_dir)
+            # config = {
+            #     'value': float(pval_thresh),
+            #     'note': notes,
+            # }
+            # with open(fdrthreshold_outfile, 'w') as file:
+            #     yaml.dump(config, file, default_flow_style=False, sort_keys=False)
 
         return output_file
 

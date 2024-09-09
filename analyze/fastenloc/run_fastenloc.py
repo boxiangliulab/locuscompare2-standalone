@@ -49,7 +49,7 @@ class Fastenloc:
         report_output_sig_tsv_file = f'{output_dir}/{self.COLOC_TOOL_NAME}_output_{datetime.now().strftime("%Y%m%d%H%M%S")}.tsv.gz'
         # sort sig file LCP(locus-level colocalization probability)
         # sort sig file GLCP(gene locus-level colocalization probability)
-        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+        # fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if utils.file_exists(report_output_sig_file):
             df_output_sig = pd.read_csv(report_output_sig_file, sep='\s+')
             if len(df_output_sig) > 0:
@@ -72,30 +72,30 @@ class Fastenloc:
                 
                 ## FDR threshold
                 prob_thresh, notes = prob_fdr.calc_threshold_for_prob_rpt(report_output_sig_tsv_file, 'GLCP')
-                print(f"fastenlocthreshold: {prob_thresh}")
-                config = {
-                    'value': float(prob_thresh),
-                    'note': notes,
-                }
-                with open(fdrthreshold_outfile, 'w') as file:
-                    yaml.dump(config, file, default_flow_style=False, sort_keys=False)
-            else:
-                ## FDR threshold
-                config = {
-                    'value': 1,
-                    'note': "No result found",
-                }
-                with open(fdrthreshold_outfile, 'w') as file:
-                    yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+                # print(f"fastenlocthreshold: {prob_thresh}")
+                # config = {
+                #     'value': float(prob_thresh),
+                #     'note': notes,
+                # }
+                # with open(fdrthreshold_outfile, 'w') as file:
+                #     yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+            # else:
+            #     ## FDR threshold
+            #     config = {
+            #         'value': 1,
+            #         'note': "No result found",
+            #     }
+            #     with open(fdrthreshold_outfile, 'w') as file:
+            #         yaml.dump(config, file, default_flow_style=False, sort_keys=False)
 
-        else:
-            ## FDR threshold
-            config = {
-                'value': 1,
-                'note': "No result found",
-            }
-            with open(fdrthreshold_outfile, 'w') as file:
-                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+        # else:
+        #     ## FDR threshold
+        #     config = {
+        #         'value': 1,
+        #         'note': "No result found",
+        #     }
+        #     with open(fdrthreshold_outfile, 'w') as file:
+        #         yaml.dump(config, file, default_flow_style=False, sort_keys=False)
 
         return report_output_sig_tsv_file
 

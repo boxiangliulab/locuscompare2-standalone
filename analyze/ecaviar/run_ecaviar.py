@@ -111,24 +111,24 @@ class ECaviar:
                                   'eqtl_pip': eqtl_pips,
                                   'clpp': gene_clpps})
         report_df.sort_values(by='clpp', ascending=False, inplace=True)
-        fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
+        # fdrthreshold_outfile = os.path.join(working_dir, 'analyzed', 'fdr_threshold.txt')
         if report_df.shape[0] > 0:
             report_df = report_df.round(4)
             report_df.to_csv(output_report_path, sep=const.column_spliter, index=False)
-            # FDR threshold
-            config = {
-                'value': 0.01,
-                'note': "General threshold",
-            }
-            with open(fdrthreshold_outfile, 'w') as file:
-                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
-        else:
-            config = {
-                'value': 1,
-                'note': "No result found",
-            }
-            with open(fdrthreshold_outfile, 'w') as file:
-                yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+            # # FDR threshold
+            # config = {
+            #     'value': 0.01,
+            #     'note': "General threshold",
+            # }
+            # with open(fdrthreshold_outfile, 'w') as file:
+            #     yaml.dump(config, file, default_flow_style=False, sort_keys=False)
+        # else:
+        #     config = {
+        #         'value': 1,
+        #         'note': "No result found",
+        #     }
+        #     with open(fdrthreshold_outfile, 'w') as file:
+        #         yaml.dump(config, file, default_flow_style=False, sort_keys=False)
 
 
         return output_report_path
