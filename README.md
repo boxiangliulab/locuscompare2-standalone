@@ -1,10 +1,11 @@
-# Colotools
+# LocusCompare2
 
-Colotools is an interactive visualization tool for genetic association analysis of GWAS dataset and eQTL dataset.
+LocusCompare2 is an interactive visualization tool for genetic association analysis of GWAS dataset and eQTL dataset.
+![icon_new](icon_new.png)
 
 ## Overview
 
-Colotools integrates 6 popular colocalization tools:
+LocusCompare2 integrates 6 popular colocalization tools:
 + SNP-level colocalization: [coloc](https://github.com/chr1swallace/coloc), [fastEnloc](https://github.com/xqwen/fastenloc), [finemap](http://christianbenner.com/)
 + Mendelian randomization: [SMR](https://yanglab.westlake.edu.cn/software/smr/#Overview)
 + Transcriptomic association: [PrediXcan](https://github.com/hakyimlab/PrediXcan) and [TWAS](http://gusevlab.org/projects/fusion/)
@@ -13,7 +14,7 @@ It could run all the colocalization tools above, display summary report and give
 the significant SNPs and genes.
 
 ## 1. Setup Environment
-We provide a shell to set up the running environment for colotools.
+We provide a shell to set up the running environment for LocusCompare2.
 1) Install [miniconda](https://docs.conda.io/en/latest/miniconda.html)
 2) Clone locuscompare-v2 from [github](https://github.com/boxiangliulab/locuscompare-v2.git)
 3) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
@@ -21,15 +22,15 @@ We provide a shell to set up the running environment for colotools.
 cd running_env
 ./setup_env.sh env.yml
 ```
-4) The console shows 'All finished' when the setup is done. Activate the colotools virtual environment by execute:
+4) The console shows 'All finished' when the setup is done. Activate the LocusCompare2 virtual environment by execute:
 ```shell
 conda activate colotools
 ```
 
 ## 2. Setup Configuration
 
-### Build colotools config file ([Sample](./config.yml))
-The colotools needs a config file to indicate the input data file, output file path, the GWAS and eQTL field name 
+### Build LocusCompare2 config file ([Sample](./config.yml))
+The LocusCompare2 needs a config file to indicate the input data file, output file path, the GWAS and eQTL field name 
 mapping etc.
 
 Specification of config file example:
@@ -55,7 +56,7 @@ input:
     type: cc
     # Optional. Seperator of the GWAS input file, escaping character must be in double quotes("\t" for tab), default sep is tab
     sep: '	'
-    # Tell colotools the field name in input GWAS file.
+    # Tell LocusCompare2 the field name in input GWAS file.
     col_name_mapping:
       # Required. The rs id field name in input GWAS file.
       # Can be other values(like variant_id), as long as they match the values of ID column in vcf file and the snp column in eQTL file,
@@ -84,7 +85,7 @@ input:
     sample_size: 147
     # Optional. Seperator of the eQTL input file, escaping character must be in double quotes("\t" for tab), default sep is tab
     sep: '	'
-    # Tell colotools the field name in the input eQTL file.
+    # Tell LocusCompare2 the field name in the input eQTL file.
     col_name_mapping:
       # Required. The rs id field name in input eQTL file.
       # Can be other values(like variant_id), as long as they match the snp column in GWAS file,
@@ -110,30 +111,16 @@ input:
       
   # Required. The vcf files from 1000genomes.
   # hg38 https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV/
-  # 
-  # We splitted the vcf files by population EUR, EAS, SAS, AFR, AMR. Please create the population folder and download your research population vcf and related tbi files from:
-  # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz  
-  # https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/vcf/phased_hg38/{population}/chr{n}.vcf.gz.tbi
-  # 'population' can be EUR, EAS, SAS, AFR, AMR; 'n' can be 1 to 22.
-  #
-  # After download the files, make sure the vcf and tbi files are in your created population folder. For exmaple: '/Volumes/HD/biodata/colocalization-tools/raw/vcf/hg38/EUR/chr1.vcf.gz'
-  # Then set the parent folder of the population folder path here.
-  vcf: '/Volumes/HD/biodata/colocalization-tools/raw/vcf/hg38'
+  vcf: '/PATH/vcf/hg38'
   
   # Required, must match the gene version in eQTL files
   # If you want to use GTEx eQTL, download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.basic.annotation.gtf.gz for GTEx V8
   # Then set the file's local path here.
   # If you want to use your own eQTL, set the eQTL reference gencode version path here.
-  genecode: '/Volumes/HD//biodata/colocalization-tools/raw/genecode/gencode.v26.basic.annotation.gtf.gz'
+  genecode: '/PATH/gencode.v26.basic.annotation.gtf.gz'
   
   # Required if you want to run fastEnloc.
-  # The LD blocks are population-specific, you could download LD block file for EUR, EAS and AFR from:
-  # hg38
-  # EUR: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/eur_hg38_ld_block.bed
-  # EAS: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/eas_hg38_ld_block.bed
-  # AFR: https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/ld_block/afr_hg38_ld_block.bed
-  # Then set the LD block reference path here.
-  ld_block_loci_file: '/Volumes/HD/biodata/colocalization-tools/raw/loci/eur_ld.hg38.bed'
+  ld_block_loci_file: '/PATH/eur_ld.hg38.bed'
   
   # Required if you want to run fastEnloc.
   # How to derive data:
@@ -141,7 +128,7 @@ input:
   # * If you have your own eQTL data or other version of GTEx, please refer https://github.com/xqwen/fastenloc/tree/master/tutorial#derive-annotations-based-on-your-own-eqtl-data 
   #   to derive the eQTL annotation file.
   # Then set the eQTL annotation path here.
-  eqtl_finemapping_file: '/Volumes/HD/biodata/colocalization-tools/raw/eqtl/finemapping/v8.vcf.gz'
+  eqtl_finemapping_file: '/PATH/v8.vcf.gz'
   
   # Required if you want to run PrediXcan.
   # How to derive data:
@@ -150,17 +137,17 @@ input:
   # * If you have your own eQTL data or other version of GTEx, please refer to predictdb-pipeline module to build the prediction 
   #   model and covariance.
   # Then set the prediction model and covariance based directory here.
-  # Colotools will find the model and covariance in this directory by the configured eQTL tissue name. Note that the db file name must end with .db and the covariance must end with .txt.gz 
+  # LocusCompare2 will find the model and covariance in this directory by the configured eQTL tissue name. Note that the db file name must end with .db and the covariance must end with .txt.gz 
   # The model and covariance file name format should be 'mashr_{tissue_name}.db' and 'mashr_{tissue_name}.txt.gz'.
-  # For example, if the eQTL name is 'Cells_EBV-transformed_lymphocytes', Colotools will find 'mashr_Cells_EBV-transformed_lymphocytes.db' 
+  # For example, if the eQTL name is 'Cells_EBV-transformed_lymphocytes', LocusCompare2 will find 'mashr_Cells_EBV-transformed_lymphocytes.db' 
   # and 'mashr_Cells_EBV-transformed_lymphocytes.txt.gz' in this directory.
-  prediction_dir: '/Volumes/HD/biodata/colocalization-tools/raw/prediction_model_covariance'
+  prediction_dir: '/PATH/prediction_model_covariance'
 
   # Required if you want to run TWAS
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
-  # Colotools will find the pos file in this directory by the configured eQTL tissue name. Note that the post file name must end with .pos
-  twas_model_dir: '/Volumes/HD/biodata/colocalization-tools/raw/twas_model'
+  # LocusCompare2 will find the pos file in this directory by the configured eQTL tissue name. Note that the post file name must end with .pos
+  twas_model_dir: '/PATH/twas_model'
 
 p-value_threshold:
   # GWAS and eQTL significance P-value threshold. Coefficient type should be float. 
@@ -190,11 +177,11 @@ python colotools_project_path/common/config_generator.py --out output_dir
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
 
 
-## 3. Run Colotools
+## 3. Run LocusCompare2
 
 + We incorporate [INTACT](https://github.com/jokamoto97/INTACT/) to output an ensemble score based on the results of different tools. 
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
-+ Run Colotools in command line
++ Run LocusCompare2 in command line
 ```shell
 python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools_config parameter_config_file_for_each_tool] [--disable_parallel] [--log path_to_logfile] [--no_report]
 ```
@@ -206,17 +193,17 @@ python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools_c
 | no_report        | Optional. Generate offline site                                                                                                                                                                                                                                                       |
 | log              | Optional. The path to log file                                                                                                                                                                                                                                                        |
 
-+ Run Colotools in python project
++ Run LocusCompare2 in python project
 
 ```python
 import colotools
 
-colotools.run(config_yml_file, ['coloc','fastenloc']) # The tools name list. All tools will be run by default.
+colotools.run(config_yml_file) 
 ```
 
 ### Output
 
-After running Colotools, a summarized report and plot will be generated in the working directory.
+After running LocusCompare2, a summarized report and plot will be generated in the working directory.
 
 <span style="color:red">**TODO Specification of the report and plot**</span>
 
@@ -230,4 +217,4 @@ working_dir, trait, tissue, population are specified in config.yml.
   + Path: [working_dir]/processed/[study (value of --config if it's a directory else default)]/[trait]/[tissue]/[population]/[tool_name]/analyzed/
 
 ## License
-<span style="color:red">**TODO Choose an appropriate license.**</span>
+<span style="color:red">**This project is released under the [Apache 2.0 license](LICENSE).**</span>
