@@ -40,22 +40,45 @@ def __preprocess_and_run_fastenloc(glob_processor, currenttissuenum, numoftissue
 
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rf.Fastenloc.COLOC_TOOL_NAME)
     fgdp_obj = fgdp.FastenlocGwasProcessor()
-    fastenloc_gwas_result, gwas_snp_count = fgdp_obj.prepare_gwas_data(\
-                    working_dir=_working_dir,
-                    gwas_preprocessed_file=glob_processor.gwas_preprocessed_file,
-                    gwas_col_dict=glob_processor.gwas_col_dict,
-                    ld_block_loci_file=glob_processor.global_config['input']['ld_block_loci_file'], 
-                    rank_dir = glob_processor.rank_dir,
-                    currenttissuenum=currenttissuenum, numoftissues=numoftissues, 
-                    whether_schedual=whether_schedual)
+    # fastenloc_gwas_result, gwas_snp_count = fgdp_obj.prepare_gwas_data(\
+    #                 working_dir=_working_dir,
+    #                 gwas_preprocessed_file=glob_processor.gwas_preprocessed_file,
+    #                 gwas_col_dict=glob_processor.gwas_col_dict,
+    #                 ld_block_loci_file=glob_processor.global_config['input']['ld_block_loci_file'], 
+    #                 rank_dir = glob_processor.rank_dir,
+    #                 currenttissuenum=currenttissuenum, numoftissues=numoftissues, 
+    #                 whether_schedual=whether_schedual)
+
+    # rf_obj = rf.Fastenloc()
+    # return rf_obj.run(eqtl_tissue=glob_processor.eqtl_tissue,
+    #                   working_dir=_working_dir,
+    #                   eqtl_finemapping_file=glob_processor.global_config['input']['eqtl_finemapping_file'],
+    #                   eqtl_output_report=glob_processor.eqtl_output_report,
+    #                   output_torus_output_file=fastenloc_gwas_result,
+    #                   gwas_snp_count=gwas_snp_count,
+    #                   tools_config_file=glob_processor.tools_config_file)
+
+
+
+    output_summary_statistics_file = fgdp_obj.prepare_fastenlocinput_data(_working_dir,
+                     gdp.Processor.VAR_ID_COL_NAME,
+                     glob_processor.gwas_cluster_output_dir,
+                     glob_processor.gwas_cluster_summary,
+                     glob_processor.gwas_col_dict,
+                     glob_processor.eqtl_output_report,
+                     glob_processor.eqtl_output_dir,
+                     glob_processor.eqtl_col_dict,
+                     parallel=glob_processor.config_holder.parallel,
+                     rank_dir = glob_processor.rank_dir,
+                     currenttissuenum = currenttissuenum, 
+                     numoftissues = numoftissues, 
+                     whether_schedual = whether_schedual)
 
     rf_obj = rf.Fastenloc()
     return rf_obj.run(eqtl_tissue=glob_processor.eqtl_tissue,
                       working_dir=_working_dir,
-                      eqtl_finemapping_file=glob_processor.global_config['input']['eqtl_finemapping_file'],
-                      eqtl_output_report=glob_processor.eqtl_output_report,
-                      output_torus_output_file=fastenloc_gwas_result,
-                      gwas_snp_count=gwas_snp_count,
+                      eqtl_output_report = glob_processor.eqtl_output_report,
+                      summary_statistics_file=output_summary_statistics_file,
                       tools_config_file=glob_processor.tools_config_file)
 
 

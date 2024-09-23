@@ -24,8 +24,8 @@ from ranking import scoring as sc
 
 def __before_run_fastenloc_tools_check(global_config):
     logging.info(f'start check fastenloc')
-    utils.check_file_or_path_exist(global_config['input']['ld_block_loci_file'])
-    utils.check_file_or_path_exist(global_config['input']['eqtl_finemapping_file'])
+    # utils.check_file_or_path_exist(global_config['input']['ld_block_loci_file'])
+    # utils.check_file_or_path_exist(global_config['input']['eqtl_finemapping_file'])
 
 
 def __before_run_coloc_tools_check(global_config):
@@ -282,7 +282,6 @@ def __run_single_cfg(config_holder, report_list, parallel, study, currenttissuen
             predixcan_schedual = True
             break
 
-        
     config_schedual = {'smr': smr_schedual,
                         'ecaviar': ecaviar_schedual,
                         'coloc': coloc_schedual,
