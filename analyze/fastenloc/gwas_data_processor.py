@@ -324,60 +324,60 @@ class FastenlocGwasProcessor:
         output_prefastenloc_file = f'{output_preprocess_dir}/pre_fastenloc_summarystat.tsv.gz'
         Path(output_preprocess_dir).mkdir(parents=True, exist_ok=True)
         utils.delete_file_if_exists(output_prefastenloc_file)
-        if parallel:
-            with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
-                futures = []
-                for ix, row in eqtl_summary_df.iterrows():
-                    if whether_schedual:
-                        outputschedule(rownum=ix,
-                            totalnum=total_len,
-                            currenttissuenum = currenttissuenum,
-                            numoftissues=numoftissues,
-                            rank_dir=rank_dir)
+        # if parallel:
+        #     with ThreadPoolExecutor(max_workers=parallel_worker_num) as executor:
+        #         futures = []
+        #         for ix, row in eqtl_summary_df.iterrows():
+        #             if whether_schedual:
+        #                 outputschedule(rownum=ix,
+        #                     totalnum=total_len,
+        #                     currenttissuenum = currenttissuenum,
+        #                     numoftissues=numoftissues,
+        #                     rank_dir=rank_dir)
                         
-                    chrom = str(row.loc['chrom'])
-                    if chrom not in gwas_chroms:
-                        continue
-                    eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
-                    gene_id = utils.get_file_name(eqtl_gene_file)
-                    for gwas_range_file in gwas_range_files[chrom]:
-                        eqtl_significant_positions = ast.literal_eval(row.loc['positions'])
-                        range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
-                        if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
-                            continue
-                        futures.append(executor.submit(self.process_gene, working_dir,
-                                                       gwas_range_file, gwas_col_dict, row,
-                                                       eqtl_gene_file,
-                                                       var_id_col_name, gene_id, eqtl_col_dict, output_prefastenloc_file))
+        #             chrom = str(row.loc['chrom'])
+        #             if chrom not in gwas_chroms:
+        #                 continue
+        #             eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
+        #             gene_id = utils.get_file_name(eqtl_gene_file)
+        #             for gwas_range_file in gwas_range_files[chrom]:
+        #                 eqtl_significant_positions = ast.literal_eval(row.loc['positions'])
+        #                 range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
+        #                 if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
+        #                     continue
+        #                 futures.append(executor.submit(self.process_gene, working_dir,
+        #                                                gwas_range_file, gwas_col_dict, row,
+        #                                                eqtl_gene_file,
+        #                                                var_id_col_name, gene_id, eqtl_col_dict, output_prefastenloc_file))
 
-                for future in concurrent.futures.as_completed(futures):
-                    try:
-                        data = future.result()
-                    except Exception as exc:
-                        logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
+        #         for future in concurrent.futures.as_completed(futures):
+        #             try:
+        #                 data = future.result()
+        #             except Exception as exc:
+        #                 logging.error("".join(traceback.TracebackException.from_exception(exc).format()))
 
-        else:
-            for ix, row in eqtl_summary_df.iterrows():
-                if whether_schedual:
-                    outputschedule(rownum=ix,
-                        totalnum=total_len,
-                        currenttissuenum = currenttissuenum,
-                        numoftissues=numoftissues,
-                        rank_dir=rank_dir)
-                        
-                chrom = str(row.loc['chrom'])
-                if chrom not in gwas_chroms:
+        # else:
+        for ix, row in eqtl_summary_df.iterrows():
+            if whether_schedual:
+                outputschedule(rownum=ix,
+                    totalnum=total_len,
+                    currenttissuenum = currenttissuenum,
+                    numoftissues=numoftissues,
+                    rank_dir=rank_dir)
+                    
+            chrom = str(row.loc['chrom'])
+            if chrom not in gwas_chroms:
+                continue
+            eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
+            gene_id = utils.get_file_name(eqtl_gene_file)
+            for gwas_range_file in gwas_range_files[chrom]:
+                eqtl_significant_positions = ast.literal_eval(row.loc['positions'])
+                range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
+                if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
                     continue
-                eqtl_gene_file = os.path.join(eqtl_output_dir, chrom, row.loc['gene_file'])
-                gene_id = utils.get_file_name(eqtl_gene_file)
-                for gwas_range_file in gwas_range_files[chrom]:
-                    eqtl_significant_positions = ast.literal_eval(row.loc['positions'])
-                    range_lead_snp = utils.get_file_name(gwas_range_file).split('-')[0]
-                    if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(eqtl_significant_positions)) == 0:
-                        continue
-                    self.process_gene(working_dir, gwas_range_file,
-                                      gwas_col_dict, row, eqtl_gene_file,
-                                      var_id_col_name, gene_id, eqtl_col_dict, output_prefastenloc_file)
+                self.process_gene(working_dir, gwas_range_file,
+                                    gwas_col_dict, row, eqtl_gene_file,
+                                    var_id_col_name, gene_id, eqtl_col_dict, output_prefastenloc_file)
 
 
 
