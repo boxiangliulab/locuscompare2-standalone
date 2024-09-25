@@ -1,6 +1,7 @@
 # LocusCompare2
 
 LocusCompare2 is an interactive visualization tool for genetic association analysis of GWAS dataset and eQTL dataset.
+
 [![Website](https://img.shields.io/website?url=https://www.locuscompare2.com/)](https://www.locuscompare2.com/)
 ![icon_new](icon_new.png)
 
