@@ -119,17 +119,6 @@ input:
   # If you want to use your own eQTL, set the eQTL reference gencode version path here.
   genecode: '/PATH/gencode.v26.basic.annotation.gtf.gz'
   
-  # Required if you want to run fastEnloc.
-  ld_block_loci_file: '/PATH/eur_ld.hg38.bed'
-  
-  # Required if you want to run fastEnloc.
-  # How to derive data:
-  # * You could use the pre-computed GTEx V8 multi-tissue eQTL annotation here, download from https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/raw/eqtl_finemapping/v8.vcf.gz
-  # * If you have your own eQTL data or other version of GTEx, please refer https://github.com/xqwen/fastenloc/tree/master/tutorial#derive-annotations-based-on-your-own-eqtl-data 
-  #   to derive the eQTL annotation file.
-  # Then set the eQTL annotation path here.
-  eqtl_finemapping_file: '/PATH/v8.vcf.gz'
-  
   # Required if you want to run PrediXcan.
   # How to derive data:
   # * PrediXcan provides the prediction model and covariance file by their prediction strategies on GTEx v8 release data.

@@ -1,5 +1,13 @@
 #!/bin/bash
 
+#install fastenloc
+if command -v fastenloc >/dev/null 2>&1; then
+	echo "  "
+else
+	echo "Please refer to https://github.com/xqwen/fastenloc/tree/dev/src to install fastenloc"
+	exit 1
+fi
+
 #set -xv
 
 if [[ "$#" -ne 1 ]];then
@@ -52,8 +60,8 @@ if [[ "${platform}" == "Unknown" ]];then
 fi
 
 #removing target directory if already exists
-rm -rf ~/colotools_env
-mkdir ~/colotools_env && cd ~/colotools_env
+# rm -rf ~/colotools_env
+# mkdir ~/colotools_env && cd ~/colotools_env
 if [[ $? != 0 ]];then
 	echo "error creating colotools_env directory"
 	exit 1
@@ -71,19 +79,14 @@ echo "current conda env bin path is ${current_conda_bin}"
 
 # install SMR
 echo "Installing SMR..."
-smr_file="smr.zip"
-smr_file_name=${smr_file%%.*}
-curl --connect-timeout 10 --retry 3 -o ${smr_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/smr/${os_name}/${smr_file}
-if [[ $? != 0 ]];then
-	echo "error downloading SMR"
-	exit 1
+
+if [[ "${platform}" == "Mac" ]];then
+	smr_file="software/smr_v1.3.1/Mac/smr"
+else
+	smr_file="software/smr_v1.3.1/Linux/smr"
 fi
-unzip -q ${smr_file}
-if [[ $? != 0 ]];then
-	echo "error installing SMR"
-	exit 1
-fi
-cp ${smr_file_name} ${current_conda_bin}
+
+cp ${smr_file} ${current_conda_bin}
 if [[ $? != 0 ]];then
 	echo "error installing SMR"
 	exit 1
@@ -110,53 +113,21 @@ fi
 predixcan_path=$(which SPrediXcan.py)
 echo "PrediXcan full path is ${predixcan_path}"
 
-#install fastenloc
-echo "Installing Fastenloc..."
-torus_file="torus.zip"
-torus_file_name=${torus_file%%.*}
-fastenloc_file="fastenloc.zip"
-fastenloc_file_name=${fastenloc_file%%.*}
-curl --connect-timeout 10 --retry 3 -o ${torus_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/fastenloc/${os_name}/${torus_file}
-if [[ $? != 0 ]];then
-	echo "error downloading Fastenloc"
-	exit 1
-fi
-curl --connect-timeout 10 --retry 3 -o ${fastenloc_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/fastenloc/${os_name}/${fastenloc_file}
-if [[ $? != 0 ]];then
-	echo "error downloading Fastenloc"
-	exit 1
-fi
-unzip -q ${torus_file}
-if [[ $? != 0 ]];then
-	echo "error installing Fastenloc"
-	exit 1
-fi
-unzip -q ${fastenloc_file}
-if [[ $? != 0 ]];then
-	echo "error installing Fastenloc"
-	exit 1
-fi
-cp ${torus_file_name} ${fastenloc_file_name} ${current_conda_bin}
-if [[ $? != 0 ]];then
-	echo "error installing Fastenloc"
-	exit 1
-fi
-
 #install finemap
 echo "Installing finemap"
-finemap_file="finemap"
-curl --connect-timeout 10 --retry 3 -o ${finemap_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/finemap/${os_name}/${finemap_file}
-if [[ $? != 0 ]];then
-    echo "error downloading finemap"
-    exit 1
+if [[ "${platform}" == "Mac" ]];then
+	finemap_file="software/finemap_v1.4.2/Mac/finemap"
+else
+	finemap_file="software/finemap_v1.4.2/Linux/finemap"
 fi
+
 chmod 777 ${finemap_file}
 cp ${finemap_file} ${current_conda_bin}
 
 #install intact
 echo "Installing INTACT..."
-intact_file="INTACT_0.99.0.tar.gz"
-curl --connect-timeout 10 --retry 3 -o ${intact_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/intact/${intact_file}
+intact_file="software/INTACT_0.99.0.tar.gz"
+# curl --connect-timeout 10 --retry 3 -o ${intact_file} https://www.bioconductor.org/packages/release/bioc/src/contrib/INTACT_1.4.0.tar.gz
 if [[ $? != 0 ]];then
 	echo "error downloading INTACT"
 	exit 1
@@ -196,12 +167,8 @@ echo "TWAS assoc_test full path is ${twas_assoc_path}"
 
 #install plink2R
 echo "Installing plink2R..."
-plink2R_file="plink2R_1.1.tar.gz"
-curl --connect-timeout 10 --retry 3 -o ${plink2R_file} https://biotech-coloc-hangzhou.oss-cn-hangzhou.aliyuncs.com/plink2r/${plink2R_file}
-if [[ $? != 0 ]];then
-	echo "error downloading plink2R"
-	exit 1
-fi
+plink2R_file="software/plink2R_1.1.tar.gz"
+
 R CMD INSTALL ${plink2R_file}
 if [[ $? != 0 ]];then
 	echo "error installing plink2R"
