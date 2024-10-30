@@ -15,7 +15,7 @@ eqtl_type = args[7]
 tp1 = as.numeric(args[8])
 # prior probability a SNP is associated with trait 2, default 1e-4
 tp2 = as.numeric(args[9])
-# prior probability a SNP is associated with both traits, default 1e-5
+# prior probability a SNP is associated with both traits, default 1e-6
 tp12 = as.numeric(args[10])
 # The threshold to consider overall H4 is true, only when overall H4 is true, the SNP level H4 is considered as relevant, optional
 overall_h4_threshold = as.numeric(args[11])

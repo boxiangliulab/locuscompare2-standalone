@@ -318,7 +318,7 @@ class Coloc:
         params = utils.get_tools_params_dict(self.COLOC_TOOL_NAME, tools_config)
         _p1 = 1.0E-4 if params.get('p1') is None else params['p1']
         _p2 = 1.0E-4 if params.get('p2') is None else params['p2']
-        _p12 = 1.0E-5 if params.get('p12') is None else params['p12']
+        _p12 = 1.0E-6 if params.get('p12') is None else params['p12']
         return _p1, _p2, _p12
 
     def __analyze_result(self, output_dir, final_result_file, working_dir):
