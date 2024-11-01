@@ -9,5 +9,5 @@ input:
   twas_model_dir: '/ebs2/linyi/00_data/locuscompare2/raw/twas_model'
 p-value_threshold:
   gwas: 5.0E-8
-  eqtl: 1.0E-6
+  eqtl: 1.0E-5
 population: 'EUR'

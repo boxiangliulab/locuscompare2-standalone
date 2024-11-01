@@ -16,7 +16,7 @@ fastenloc:
 coloc:
   p1: 1.0E-4
   p2: 1.0E-4
-  p12: 1.0E-6
+  p12: 1.0E-5
 # smr refer to https://yanglab.westlake.edu.cn/software/smr/#SMR
 smr:
   heidi-mtd: 1
