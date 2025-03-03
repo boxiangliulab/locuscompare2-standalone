@@ -207,4 +207,4 @@ working_dir, trait, tissue, population are specified in config.yml.
   + Path: [working_dir]/processed/[study (value of --config if it's a directory else default)]/[trait]/[tissue]/[population]/[tool_name]/analyzed/
 
 ## License
-<span style="color:red">**This project is released under the [Apache 2.0 license](LICENSE).**</span>
+<span style="color:red">**This project is released under the [Dual Licensing Options](LICENSE).**</span>
