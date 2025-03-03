@@ -60,10 +60,10 @@ if [[ "${platform}" == "Unknown" ]];then
 fi
 
 #removing target directory if already exists
-# rm -rf ~/colotools_env
-# mkdir ~/colotools_env && cd ~/colotools_env
+# rm -rf ~/locuscompare2
+# mkdir ~/locuscompare2 && cd ~/locuscompare2
 if [[ $? != 0 ]];then
-	echo "error creating colotools_env directory"
+	echo "error creating locuscompare2 directory"
 	exit 1
 fi
 
@@ -94,18 +94,11 @@ fi
 
 #install predixcan
 echo "Installing Predixcan..."
-predixcan_file="predixcan.zip"
-curl --connect-timeout 10 --retry 3 -o ${predixcan_file} https://codeload.github.com/hakyimlab/MetaXcan/zip/refs/heads/master
-if [[ $? != 0 ]];then
-	echo "error downloading Predixcan"
-	exit 1
-fi
-unzip -q predixcan.zip
-if [[ $? != 0 ]];then
-	echo "error installing Predixcan"
-	exit 1
-fi
-ln -s $(pwd)/MetaXcan-master/software/SPrediXcan.py ${current_conda_bin}/SPrediXcan.py
+
+# git clone https://github.com/liufei-f/MetaXcan-fit-env.git
+
+cp $(pwd)/MetaXcan-master/software/*  ${current_conda_bin}/*
+
 if [[ $? != 0 ]];then
 	echo "error installing Predixcan"
 	exit 1

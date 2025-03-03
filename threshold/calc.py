@@ -5,10 +5,10 @@ from pathlib import Path
 import sys
 import pandas as pd
 
-from ranking.constants import GENE_ID_COL_NAME
+from ranking.constants import PHENOTYPE_ID_COL_NAME
 from ranking.constants import RESULT_TYPE_PVAL
 from ranking.constants import TOOL_SIG_COL_INFO
-from common import coloc_utils as utils
+from common import utils
 
 
 def calc_threshold_for_pval_rpt(rpt, p_val_col_name, work_dir='', fdr_thresh=0.05):
@@ -39,11 +39,11 @@ def calc_threshold_for_prob_rpt(rpt, prob_col_name, fdr_thresh=0.05):
     # ecaviar threshold fix to 0.01
     if prob_col_name == 'clpp':
         return 0.01
-    df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, prob_col_name])
+    df = pd.read_table(rpt, usecols=[PHENOTYPE_ID_COL_NAME, prob_col_name])
     if df.empty:
         return 1
     df.sort_values(by=[prob_col_name], ascending=False, inplace=True)
-    df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+    df.drop_duplicates(subset=PHENOTYPE_ID_COL_NAME, inplace=True)
     df['cumulative_count'] = range(1, df.shape[0] + 1)
     df['fdr'] = (1 - df[prob_col_name]).cumsum() / df['cumulative_count']
     threshold_idx = (df['fdr'] - fdr_thresh).abs().idxmin()

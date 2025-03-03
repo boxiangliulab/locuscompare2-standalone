@@ -49,16 +49,16 @@ def generate_gwas_eqtl_config(output_config_dir, gwas_dir, eqtl_dir):
                 if eqtl_file.endswith('.gz'):
                     tissue_name = eqtl_file.split('.')[0]
                     eqtl_record_df = eqtl_ref_df[eqtl_ref_df['tissue_name'] == tissue_name]
-                    eqtl_sample_size = int(eqtl_record_df.iloc[0]['sample_size'])
+                    qtl_sample_size = int(eqtl_record_df.iloc[0]['sample_size'])
                     eqtl_path = f'{eqtl_dir}/{eqtl_file}'
 
                     # generate config.yml
                     output_config_file_name = f'{trait_name}_{tissue_name}_config.yml'
                     eqtl_configs[0]['file'] = eqtl_path
-                    eqtl_configs[0]['tissue'] = tissue_name
-                    eqtl_configs[0]['sample_size'] = eqtl_sample_size
+                    eqtl_configs[0]['biological_context'] = tissue_name
+                    eqtl_configs[0]['sample_size'] = qtl_sample_size
                     config_template['input']['gwas'] = gwas_configs[0]
-                    config_template['input']['eqtl'] = eqtl_configs[0]
+                    config_template['input']['qtl'] = eqtl_configs[0]
                     config_yml_text = yaml.dump(config_template)
                     with open(f'{output_sub_dir}/{output_config_file_name}', 'w') as output_config_file:
                         output_config_file.write(config_yml_text)

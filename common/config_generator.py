@@ -33,7 +33,7 @@ def generate_gwas_eqtl_config(output_config_dir, config_template_path=None, gwas
         for e_config in eqtl_configs:
             output_config_file_name = f'{g_config["trait"]}_{e_config["tissue"]}_config.yml'
             config_template['input']['gwas'] = g_config
-            config_template['input']['eqtl'] = e_config
+            config_template['input']['qtl'] = e_config
             config_yaml_text = yaml.dump(config_template)
             with open(f'{output_config_dir}/{output_config_file_name}', 'w') as output_config_file:
                 output_config_file.write(config_yaml_text)

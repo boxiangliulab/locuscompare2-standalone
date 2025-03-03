@@ -2,7 +2,7 @@ from pathlib import Path
 import os
 import sys
 import pandas as pd
-from common import global_data_process as gdp, constants as const, coloc_utils as utils, config as cf
+from common import global_data_process as gdp, constants as const, utils, config as cf
 from figures import sql_query_snp_r2 as sqr
 from ranking import scoring as sc
 import logging
@@ -14,7 +14,7 @@ import pyranges as pr
 
 '''
     predixcan report no snp column
-    coloc、jlim、smr、predixcan,ecaviar report have snp column
+    coloc、smr、ecaviar report have snp column
     all tools target snp is gwas(pvalue)+eqtl(pvalue) is min
 '''
 
@@ -76,12 +76,12 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         ranking_output_file_path = trait_df['rank_output_file'].iloc[0]
         gwas_preprocessed_file = processor.gwas_preprocessed_file
         gwas_col_dict = processor.gwas_col_dict
-        eqtl_col_dict = processor.eqtl_col_dict
+        qtl_col_dict = processor.qtl_col_dict
         population = processor.global_config.get('population', 'EUR').upper()
         report_list_pd.loc[(report_list_pd['trait'] == trait_name) & (
                 report_list_pd['tissue'] == tissue_name), 'population'] = population
 
-        eqtl_file_path = processor.eqtl_output_dir
+        eqtl_file_path = processor.qtl_grouped_dir
         gene_code_file = processor.global_config['input']['genecode']
         output_base_dir = os.path.join(processor.report_path, 'figures', 'data')
         Path(output_base_dir).mkdir(parents=True, exist_ok=True)
@@ -136,7 +136,7 @@ def create_trait_file(report_list_pd=None, tissue_df=None, tissue_name=None):
         if ranking_mg is not None and len(ranking_mg) > 0:
             # create genes file
             create_gene_file(ranking_mg, gwas_preprocessed_file, gwas_col_dict, tissue_trait_path,
-                             eqtl_col_dict, population, gene_code_file, eqtl_file_path)
+                             qtl_col_dict, population, gene_code_file, eqtl_file_path)
         else:
             logging.warning('this colocalization result has no report data !!! so has no offline report')
     return output_base_dir, report_list_pd
@@ -160,13 +160,13 @@ def prepare_genecode(genecode_file):
 
 
 def create_gene_file(df_genes_info_path_pd=None, gwas_preprocessed_file=None, gwas_col_dict=None, trait_path=None,
-                     eqtl_col_dict=None, population=None, gene_code_file=None, eqtl_file_path_dir=None):
+                     qtl_col_dict=None, population=None, gene_code_file=None, eqtl_file_path_dir=None):
     print(os.path.basename(__file__))
     print(sys._getframe().f_code.co_name)
     logging.info('create_gene_file')
     var_id = gdp.Processor.VAR_ID_COL_NAME
-    input_read_eqtl_columns = [eqtl_col_dict['snp'], eqtl_col_dict['pvalue'], eqtl_col_dict['chrom'],
-                               eqtl_col_dict['position'], var_id]
+    input_read_eqtl_columns = [qtl_col_dict['snp'], qtl_col_dict['pvalue'], qtl_col_dict['chrom'],
+                               qtl_col_dict['position'], var_id]
 
     # creat manhattan plot file
     gwas_preprocessed_pd = create_manhattan_plot_file(gwas_col_dict, gwas_preprocessed_file, var_id, trait_path)
@@ -188,13 +188,13 @@ def create_gene_file(df_genes_info_path_pd=None, gwas_preprocessed_file=None, gw
                 eqtl_file_path_pd = pd.read_table(eqtl_file_path, sep=const.column_spliter, header=0,
                                                   usecols=input_read_eqtl_columns)
 
-                # eqtl_file_path_pd[var_id] = 'chr' + eqtl_file_path_pd[eqtl_col_dict['chrom']].astype(str) + '_' + \
-                #                             eqtl_file_path_pd[eqtl_col_dict['position']].map(
+                # eqtl_file_path_pd[var_id] = 'chr' + eqtl_file_path_pd[qtl_col_dict['chrom']].astype(str) + '_' + \
+                #                             eqtl_file_path_pd[qtl_col_dict['position']].map(
                 #                                 str)
 
                 eqtl_file_path_pd.rename(
-                    columns={eqtl_col_dict['snp']: 'eqtl_snp',
-                             eqtl_col_dict['pvalue']: 'eqtl_pvalue'}, inplace=True)
+                    columns={qtl_col_dict['snp']: 'eqtl_snp',
+                             qtl_col_dict['pvalue']: 'eqtl_pvalue'}, inplace=True)
                 merge_pd = pd.merge(left=gwas_preprocessed_pd,
                                     right=eqtl_file_path_pd[['eqtl_snp', 'eqtl_pvalue', var_id]],
                                     how='inner', on=var_id)
@@ -347,14 +347,3 @@ def report_html_handler(output_dir):
         __copy_static_files(static_files_path, output_static_files_path)
         # 复制html文件所需展示数据目录下
         shutil.copy(os.path.join(current_dir, 'index.html'), output_index_path)
-
-# if __name__ == '__main__':
-# study = const.default_study
-# default_config = const.default_config
-# config_holder = cf.ConfigHolder(single_config_file=default_config, study=study)
-# list_a = [{'trait': 'cell', 'tool_name': 'jlim',
-#            'report_path': '/Users/luoyujiao/Downloads/test/jlim_output_20220609110744.tsv',
-#            'cfg_pro': config_holder}, {'trait': 'cell2', 'tool_name': 'smr',
-#                                    'report_path': '/Users/luoyujiao/Downloads/test/smr_output_20220901182724.tsv',
-#                                    'cfg_pro': config_holder}, ]
-# report_data_process([])

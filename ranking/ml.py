@@ -11,7 +11,7 @@ from sklearn import svm
 from sklearn.model_selection import train_test_split
 from pulearn import BaggingPuClassifier
 
-from ranking.constants import GENE_ID_COL_NAME
+from ranking.constants import PHENOTYPE_ID_COL_NAME
 from ranking.constants import TOOL_SIG_COL_INFO
 from ranking.constants import RESULT_TYPE_PVAL
 from ranking.constants import RESULT_TYPE_PROB
@@ -36,10 +36,10 @@ def retrieve_sim_label_df(generated_list, causal_types=None):
                 generated_list_df['gwas_r2'] >= 0.8) & (generated_list_df[col] <= 0.01)].copy()
         # h1 label is 1, rest are 0
         df[LABEL_COL_NAME] = 1 if idx == 1 else 0
-        df[GENE_ID_COL_NAME] = df['gene'] + f'_{idx}'
-        df_list.append(df[[GENE_ID_COL_NAME, LABEL_COL_NAME]])
+        df[PHENOTYPE_ID_COL_NAME] = df['gene'] + f'_{idx}'
+        df_list.append(df[[PHENOTYPE_ID_COL_NAME, LABEL_COL_NAME]])
     std_df = pd.concat(df_list)
-    # std_df has 2 columns: [GENE_ID_COL_NAME, LABEL_COL_NAME]
+    # std_df has 2 columns: [PHENOTYPE_ID_COL_NAME, LABEL_COL_NAME]
     return std_df
 
 
@@ -51,13 +51,13 @@ def read_sim_result(tool, rpts, sig_column):
         report = rpts.get(sim_model)
         if report is None or len(report) == 0 or (not os.path.exists(report)) or os.path.getsize(report) <= 0:
             continue
-        report_df = pd.read_table(report, usecols=[sig_column, GENE_ID_COL_NAME])
-        report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-        report_df[GENE_ID_COL_NAME] = report_df[GENE_ID_COL_NAME] + f'_{idx}'
+        report_df = pd.read_table(report, usecols=[sig_column, PHENOTYPE_ID_COL_NAME])
+        report_df.drop_duplicates(subset=PHENOTYPE_ID_COL_NAME, inplace=True)
+        report_df[PHENOTYPE_ID_COL_NAME] = report_df[PHENOTYPE_ID_COL_NAME] + f'_{idx}'
         tool_df_list.append(report_df)
     result_df = pd.concat(tool_df_list)
     result_df.rename(columns={sig_column: tool}, inplace=True)
-    # result_df has 2 columns: [GENE_ID_COL_NAME, tool], tool col means tool result value
+    # result_df has 2 columns: [PHENOTYPE_ID_COL_NAME, tool], tool col means tool result value
     return result_df
 
 
@@ -78,11 +78,11 @@ def prepare_sim_train_data(generated_file_path, rpts):
             ranking_df = tool_df
         else:
             ranking_df = pd.merge(left=ranking_df, right=tool_df,
-                                  left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                                  left_on=PHENOTYPE_ID_COL_NAME, right_on=PHENOTYPE_ID_COL_NAME,
                                   how='outer')
     std_df = retrieve_sim_label_df(generated_file_path)
     result_df = pd.merge(left=std_df, right=ranking_df,
-                         left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                         left_on=PHENOTYPE_ID_COL_NAME, right_on=PHENOTYPE_ID_COL_NAME,
                          how='outer')
     # label na 置为0
     tp_na_bool_series = result_df[LABEL_COL_NAME].isna()
@@ -103,7 +103,7 @@ def prepare_sim_train_data(generated_file_path, rpts):
                 sig_na_bool_series = result_df[tool].isna()
                 result_df.loc[result_df[sig_na_bool_series].index, tool] = 0
     result_df = result_df.reindex(
-        columns=[GENE_ID_COL_NAME, LABEL_COL_NAME] + [tool for tool, _, _ in TOOL_SIG_COL_INFO], copy=False)
+        columns=[PHENOTYPE_ID_COL_NAME, LABEL_COL_NAME] + [tool for tool, _, _ in TOOL_SIG_COL_INFO], copy=False)
     return result_df
 
 
@@ -339,8 +339,8 @@ def read_tool_result(rpt, tool_name, sig_col_name):
     
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
-    rpt_df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, sig_col_name])
-    rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+    rpt_df = pd.read_table(rpt, usecols=[PHENOTYPE_ID_COL_NAME, sig_col_name])
+    rpt_df.drop_duplicates(subset=PHENOTYPE_ID_COL_NAME, inplace=True)
     rpt_df.rename(columns={sig_col_name: tool_name}, inplace=True)
     return rpt_df
 
@@ -369,7 +369,7 @@ def prepare_ranking_input(rpts):
             ranking_df = rpt_df
         else:
             ranking_df = pd.merge(left=ranking_df, right=rpt_df,
-                                  left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                                  left_on=PHENOTYPE_ID_COL_NAME, right_on=PHENOTYPE_ID_COL_NAME,
                                   how='outer')
     tool_ranking_cols = []
     for tool, sig_column, sig_type in TOOL_SIG_COL_INFO:
@@ -391,7 +391,7 @@ def prepare_ranking_input(rpts):
     ranking_df[AVG_RANKING_COL_NAME] = ranking_df[tool_ranking_cols].sum(axis=1) / len(tool_ranking_cols)
     ranking_df.drop(columns=tool_ranking_cols, inplace=True)
     # tool order is important
-    prediction_required_cols = [GENE_ID_COL_NAME] + [tool for tool, _, _ in TOOL_SIG_COL_INFO]
+    prediction_required_cols = [PHENOTYPE_ID_COL_NAME] + [tool for tool, _, _ in TOOL_SIG_COL_INFO]
     ranking_df = ranking_df.reindex(
         columns=prediction_required_cols + [col for col in ranking_df.columns if col not in prediction_required_cols],
         copy=False)
@@ -656,7 +656,7 @@ if __name__ == '__main__':
     input_df_list = []
     for _idx, _rpt in enumerate(rpt_set):
         _input_df = prepare_sim_train_data(generated_file_path=_rpt[0], rpts=_rpt[1])
-        _input_df[GENE_ID_COL_NAME] = _input_df[GENE_ID_COL_NAME] + f'#{os.path.basename(_rpt[0])}'
+        _input_df[PHENOTYPE_ID_COL_NAME] = _input_df[PHENOTYPE_ID_COL_NAME] + f'#{os.path.basename(_rpt[0])}'
         input_df_list.append(_input_df)
     if len(input_df_list) == 0:
         print('No input files, nothing to do')

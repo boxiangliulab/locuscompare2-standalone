@@ -1,4 +1,4 @@
-# input file first column should be "gene_id", rest columns should be p-value of different tools, no other columns are allowed
+# input file first column should be "phenotype_id", rest columns should be p-value of different tools, no other columns are allowed
 # results are ranking, the smaller the better
 args <- commandArgs(trailingOnly = TRUE)
 
@@ -98,20 +98,20 @@ BIRRA=function(data, prior=0.05, num.bin=50, num.iter=10, return.all=F, plot.leg
 }
 
 # row.names can not have duplicates
-data = read.table(file = input_file_path, row.names="gene_id", sep = "\t", header = TRUE)
+data = read.table(file = input_file_path, row.names="phenotype_id", sep = "\t", header = TRUE)
 if(ncol(data) == 1) {
   # do not coerce dataframe dimension, see ?`[`
   data = data[order(data[1]),, drop=FALSE]
-  data["gene_id"] = rownames(data)
+  data["phenotype_id"] = rownames(data)
   data["birra_ranking"] = 1:nrow(data)
 } else {
   # run BIRRA
   birra_result = BIRRA(data, return.all=TRUE)
   data["birra_ranking"] = birra_result["result"]
-  # add gene_id column and move it to the first column
-  data["gene_id"] = rownames(data)
+  # add phenotype_id column and move it to the first column
+  data["phenotype_id"] = rownames(data)
   cols = colnames(data)
-  col_order = c("gene_id", cols[! cols %in% c("gene_id")])
+  col_order = c("phenotype_id", cols[! cols %in% c("phenotype_id")])
   data = data[, col_order]
   # sort dataframe by birra result
   data = data[order(data["birra_ranking"]),]

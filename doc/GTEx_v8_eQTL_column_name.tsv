@@ -1,0 +1,9 @@
+gene_id ENSG00000227232.5
+variant_id  chr1_13550_G_A_b38
+tss_distance    -16003
+maf  0.007732
+ma_samples  3
+ma_count    3
+pval_nominal    0.769969
+slope   -0.126727
+slope_se    0.432617

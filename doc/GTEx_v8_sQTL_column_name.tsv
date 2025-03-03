@@ -1,0 +1,9 @@
+phenotype_id    chr1:14829:14970:clu_50677:ENSG00000227232.5
+variant_id  chr1_13550_G_A_b38
+tss_distance    -16003
+maf 0.017745
+ma_samples  17
+ma_count    17
+pval_nominal    0.735501
+slope   0.098180
+slope_se    0.290451

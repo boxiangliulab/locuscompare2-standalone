@@ -4,36 +4,51 @@ import logging
 import sys
 import pandas as pd
 
-from ranking.constants import GENE_ID_COL_NAME
+from ranking.constants import PHENOTYPE_ID_COL_NAME, GENE_ID_COL_NAME
 from ranking.constants import TOOL_SIG_COL_INFO
 from ranking.constants import RESULT_TYPE_PVAL
 from ranking.constants import AVG_RANKING_COL_NAME
 
 
 def read_tool_result(rpt, tool_name, sig_col_name):
-    
-    
+
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
     additional_reading_cols = []
     if tool_name == 'predixcan':
         additional_reading_cols = ['zscore']
-    if tool_name == 'twas':
+    if tool_name == 'fusion':
         additional_reading_cols = ['TWAS.Z']
     elif tool_name == 'smr':
         additional_reading_cols = ['b_SMR', 'se_SMR', 'p_HEIDI']
-    report_df = pd.read_table(rpt, usecols=[GENE_ID_COL_NAME, sig_col_name] + additional_reading_cols)
-    report_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-    if tool_name == 'predixcan':
-        report_df.rename(columns={'zscore': f'{tool_name}_zscore'}, inplace=True)
-    if tool_name == 'fusion':
-        report_df.rename(columns={'TWAS.Z': f'{tool_name}_zscore'}, inplace=True)
-    elif tool_name == 'smr':
-        report_df[f'{tool_name}_zscore'] = report_df['b_SMR'] / report_df['se_SMR']
-        report_df.drop(columns=['b_SMR', 'se_SMR'], inplace=True)
-    report_df.rename(columns={sig_col_name: tool_name}, inplace=True)
-    return report_df
-    # result_df has 2 or more columns: [GENE_ID_COL_NAME, tool, tool_zscore], tool col means tool result value
+    # report_df = pd.read_table(rpt, usecols=[PHENOTYPE_ID_COL_NAME, sig_col_name] + additional_reading_cols)
+    report_df = pd.read_table(rpt)
+    if PHENOTYPE_ID_COL_NAME in report_df.columns:
+        report_df = report_df[[PHENOTYPE_ID_COL_NAME, sig_col_name] + additional_reading_cols]
+        report_df.drop_duplicates(subset=PHENOTYPE_ID_COL_NAME, inplace=True)
+        if tool_name == 'predixcan':
+            report_df.rename(columns={'zscore': f'{tool_name}_zscore'}, inplace=True)
+        if tool_name == 'fusion':
+            report_df.rename(columns={'TWAS.Z': f'{tool_name}_zscore'}, inplace=True)
+        elif tool_name == 'smr':
+            report_df[f'{tool_name}_zscore'] = report_df['b_SMR'] / report_df['se_SMR']
+            report_df.drop(columns=['b_SMR', 'se_SMR'], inplace=True)
+        report_df.rename(columns={sig_col_name: tool_name}, inplace=True)
+        return report_df
+    # result_df has 2 or more columns: [PHENOTYPE_ID_COL_NAME, tool, tool_zscore], tool col means tool result value
+    else:
+        report_df[PHENOTYPE_ID_COL_NAME] = report_df[GENE_ID_COL_NAME]
+        report_df = report_df[[PHENOTYPE_ID_COL_NAME, sig_col_name] + additional_reading_cols]
+        report_df.drop_duplicates(subset=PHENOTYPE_ID_COL_NAME, inplace=True)
+        if tool_name == 'predixcan':
+            report_df.rename(columns={'zscore': f'{tool_name}_zscore'}, inplace=True)
+        if tool_name == 'fusion':
+            report_df.rename(columns={'TWAS.Z': f'{tool_name}_zscore'}, inplace=True)
+        elif tool_name == 'smr':
+            report_df[f'{tool_name}_zscore'] = report_df['b_SMR'] / report_df['se_SMR']
+            report_df.drop(columns=['b_SMR', 'se_SMR'], inplace=True)
+        report_df.rename(columns={sig_col_name: tool_name}, inplace=True)
+        return report_df
 
 
 def prepare_ranking_input(output_file_path, rpts):
@@ -61,7 +76,7 @@ def prepare_ranking_input(output_file_path, rpts):
             ranking_df = rpt_df
         else:
             ranking_df = pd.merge(left=ranking_df, right=rpt_df,
-                                  left_on=GENE_ID_COL_NAME, right_on=GENE_ID_COL_NAME,
+                                  left_on=PHENOTYPE_ID_COL_NAME, right_on=PHENOTYPE_ID_COL_NAME,
                                   how='outer')
     if ranking_df is None:
         return None

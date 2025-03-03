@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import logging
 from pathlib import Path
-from ranking.constants import GENE_ID_COL_NAME
+from ranking.constants import PHENOTYPE_ID_COL_NAME, GENE_ID_COL_NAME
 from ranking.constants import TOOL_SIG_COL_INFO
 from ranking.constants import RESULT_TYPE_PVAL
 import sys
@@ -49,14 +49,26 @@ def read_tool_result(rpt, tool_name, sig_col_name, sig_type):
     
     if rpt is None or (not os.path.exists(rpt)) or os.path.getsize(rpt) <= 0:
         return None
-    rpt_df = pd.read_table(rpt, usecols=[sig_col_name, GENE_ID_COL_NAME])
-    rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
-    rpt_df.sort_values(sig_col_name, ascending=sig_type == RESULT_TYPE_PVAL, inplace=True)
-    rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
-    rpt_df[tool_name] = rpt_df[GENE_ID_COL_NAME]
-    rpt_df.drop(labels=GENE_ID_COL_NAME, axis=1, inplace=True)
-    rpt_df[RANK_COL_NAME] = range(1, rpt_df.shape[0] + 1)
-    return rpt_df
+    # rpt_df = pd.read_table(rpt, usecols=[sig_col_name, PHENOTYPE_ID_COL_NAME])
+    rpt_df = pd.read_table(rpt)
+    if len(set([GENE_ID_COL_NAME, PHENOTYPE_ID_COL_NAME]) & set(rpt_df.columns)) == 1:
+        rpt_df = rpt_df[[sig_col_name, GENE_ID_COL_NAME]]
+        rpt_df.drop_duplicates(subset=GENE_ID_COL_NAME, inplace=True)
+        rpt_df.sort_values(sig_col_name, ascending=sig_type == RESULT_TYPE_PVAL, inplace=True)
+        rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
+        rpt_df[tool_name] = rpt_df[GENE_ID_COL_NAME]
+        rpt_df.drop(labels=GENE_ID_COL_NAME, axis=1, inplace=True)
+        rpt_df[RANK_COL_NAME] = range(1, rpt_df.shape[0] + 1)
+        return rpt_df
+    else:
+        rpt_df = rpt_df[[sig_col_name, GENE_ID_COL_NAME, PHENOTYPE_ID_COL_NAME]]
+        rpt_df.drop_duplicates(subset=[GENE_ID_COL_NAME, PHENOTYPE_ID_COL_NAME], inplace=True)
+        rpt_df.sort_values(sig_col_name, ascending=sig_type == RESULT_TYPE_PVAL, inplace=True)
+        rpt_df.drop(labels=sig_col_name, axis=1, inplace=True)
+        rpt_df[tool_name] = rpt_df[PHENOTYPE_ID_COL_NAME] + '_' + (rpt_df[PHENOTYPE_ID_COL_NAME])
+        rpt_df.drop(labels=[GENE_ID_COL_NAME, PHENOTYPE_ID_COL_NAME], axis=1, inplace=True)
+        rpt_df[RANK_COL_NAME] = range(1, rpt_df.shape[0] + 1)
+        return rpt_df
 
 
 def run_ranking(output_file_path, rpt=None, sample_size=None, method=None):

@@ -7,7 +7,7 @@ from datetime import datetime
 import argparse
 import uuid
 
-GENE_ID_COL_NAME = 'gene_id'
+PHENOTYPE_ID_COL_NAME = 'phenotype_id'
 
 
 
@@ -44,7 +44,6 @@ if __name__ == '__main__':
     start_time = datetime.now()
     print(f'start run all coloctools, start time: {start_time}')
     parser = argparse.ArgumentParser()
-    # --tools all / --tools jlim fastenloc  get
     # parser.add_argument('--tools', dest='tools_list', default=['all'], type=str, nargs='*', help='coloc tools')
     # config.yml directory
     parser.add_argument('--rpt', dest='rpt', help="")

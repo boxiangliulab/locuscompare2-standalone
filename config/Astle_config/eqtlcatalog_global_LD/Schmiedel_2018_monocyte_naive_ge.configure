@@ -1,0 +1,59 @@
+input:
+  qtl:
+    qtl_type: 'eqtl'
+    genomic_window: LD_based_window
+    window_size: 500000
+    LD_r2_filter: 0.1
+    LD_additional_expansion: 50000
+    target_loci: 'ALL'
+    col_name_mapping:
+      alt: alt
+      beta: beta
+      chrom: chromosome
+      phenotype_id: molecular_trait_id
+      maf: maf
+      position: position
+      pvalue: pvalue
+      ref: ref
+      se: se
+      snp: rsid
+      variant_id: variant
+    file: /home/users/nus/e1124850/scratch/eqtl_catelog_data/raw/Schmiedel_2018_monocyte_naive_ge.tsv.gz
+    sample_size: 91
+    sep: '\t'
+    biological_context: Schmiedel_2018_monocyte_naive_ge
+    type: quant
+  gwas:
+    file: /home/users/nus/e1124850/e1124850/locuscompare2file/Astle_blood_trait/preprocessed_mpv_build37_164454_20161212.tsv.gz
+    trait: GCST004599_update
+    sample_size: 164454
+    type: quant
+    genomic_window: LD_based_window
+    window_size: 500000
+    LD_r2_filter: 0.1
+    LD_additional_expansion: 50000
+    target_loci: 'ALL'
+    col_name_mapping:
+      snp: rsid
+      chrom: chr
+      position: pos
+      beta: beta
+      effect_allele: alt
+      other_allele: ref
+      pvalue: pval
+      se: se
+      variant_id: 
+    sep: '\t'
+  vcf: /data/projects/11003054/e1124850/locuscompare2file/vcf_hg38
+  genecode: /data/projects/11003054/e1124850/locuscompare2file/gencode.v26.basic.annotation.gtf.gz
+  ld_block_loci_file: /home/users/nus/e1124850/e1124850/locuscompare2file/eur_hg38_ld_block.bed
+  prediction_dir: /home/users/nus/e1124850/e1124850/locuscompare2file/predixcan/eqtl/mashr
+  twas_model_dir: /data/projects/11003054/e1124850/locuscompare2file/twas_model
+min_matching_number: 5
+p-value_threshold:
+  gwas: 5.0e-08
+  qtl: 5.0e-08
+population: EUR
+working_dir: /home/users/nus/e1124850/scratch/astle_202502_eqtlcatalog
+tools: 
+- fastenloc

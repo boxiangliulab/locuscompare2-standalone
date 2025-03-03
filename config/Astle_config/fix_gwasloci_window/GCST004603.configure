@@ -1,0 +1,63 @@
+working_dir: /home/users/nus/e1124850/scratch/astle_202501_global_LD_window
+tools:
+- fastenloc
+- coloc
+- smr
+- ecaviar
+- predixcan
+- fusion
+input:
+  gwas:
+    file: /home/users/nus/e1124850/e1124850/locuscompare2file/Astle_blood_trait/preprocessed_plt_build37_166066_20161212.tsv.gz
+    trait: GCST004603_fixed_GWAS_Loci_window
+    sample_size: 166066
+    type: quant
+    genomic_window: fixed_GWAS_Loci_window
+    window_size: 500000
+    LD_r2_filter: 0.1
+    LD_additional_expansion: 50000
+    target_loci: 'ALL'
+    col_name_mapping:
+      snp: rsid
+      chrom: chr
+      position: pos
+      beta: beta
+      effect_allele: alt
+      other_allele: ref
+      pvalue: pval
+      se: se
+      variant_id: 
+  qtl:
+    qtl_type: 'eqtl'
+    file: /home/users/nus/e1124850/scratch/qsub_dir/Lung.v8.preprocessed.eqtl.tsv.gz
+    biological_context: Lung
+    sample_size: 436
+    type: quant
+    genomic_window: 
+    window_size: 
+    LD_r2_filter: 
+    LD_additional_expansion: 
+    target_loci: 'ALL'
+    col_name_mapping:
+      snp: rs_id_dbSNP151_GRCh38p7
+      chrom: chr
+      position: pos
+      beta: slope
+      alt: alt
+      ref: ref
+      pvalue: pval_nominal
+      se: slope_se
+      phenotype_id: phenotype_id
+      maf: maf
+      variant_id: variant_id
+  vcf: /data/projects/11003054/e1124850/locuscompare2file/vcf_hg38
+  genecode: /data/projects/11003054/e1124850/locuscompare2file/gencode.v26.basic.annotation.gtf.gz
+  ld_block_loci_file: /home/users/nus/e1124850/e1124850/locuscompare2file/eur_hg38_ld_block.bed
+  prediction_dir: /home/users/nus/e1124850/e1124850/locuscompare2file/predixcan/eqtl/mashr
+  twas_model_dir: /data/projects/11003054/e1124850/locuscompare2file/twas_model
+min_matching_number: 5
+p-value_threshold:
+  gwas: 5.0e-08
+  qtl: 5.0e-08
+population: EUR
+

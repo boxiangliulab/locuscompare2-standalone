@@ -39,6 +39,6 @@ for (i in 1:ncol(data)) {
   glist = append(glist, list(col))
 }
 rra_result = aggregateRanks(glist = glist, method = method, N = sample_zie)
-colnames(rra_result) = c("gene_id", paste(if (method == "geom.mean") "geo" else method, "ranking", sep = "_"))
+colnames(rra_result) = c("phenotype_id", paste(if (method == "geom.mean") "geo" else method, "ranking", sep = "_"))
 # write result to output file
 write.table(rra_result, if (endsWith(output_file_path, ".gz")) gzfile(output_file_path) else output_file_path, sep = "\t", row.names = FALSE, col.names = TRUE)
