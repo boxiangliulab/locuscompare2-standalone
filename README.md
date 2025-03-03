@@ -37,7 +37,7 @@ mapping etc.
 Specification of config file example:
 ```yaml
 # Required. The output root dir
-working_dir: '/Volumes/HD/biodata/colotools-tools'
+working_dir: '~/output_dir'
 tools:
 - coloc
 - smr
@@ -56,7 +56,17 @@ input:
     # Required. Study type, cc or quant
     type: cc
     # Optional. Seperator of the GWAS input file, escaping character must be in double quotes("\t" for tab), default sep is tab
-    sep: '	'
+    sep: '\t'
+    # The genomic window used for variant-level colocalization methods: LD_based_window/fixed_GWAS_Loci_window
+    genomic_window: fixed_GWAS_Loci_window
+    # When the genomic_window is set to ‘fixed_GWAS_Loci_window’, the GWAS file will first be partitioned into loci, with each locus defined by a 500 kb window on either side of the lead SNP. When the genomic_window is set to ‘LD_based_window’, the loci identification step involves computing the LD score within a 500 kb region flanking the lead SNP.
+    window_size: 500000
+    # This parameter will be used together with LD_based_window. Specifically, for LD-based window selection, variants with LD r² > 0.1 with lead SNP will be included in the analysis.
+    LD_r2_filter: 0.1
+    # This parameter will be used together with LD_based_window and LD_r2_filter. If ‘LD_based_window’ is selected, the test region for variant-level colocalization methods will include variants with LD r² > 0.1 with the lead variant in each locus, along with an additional 50 kb flanking region on either side.
+    LD_additional_expansion: 50000
+    # Currently all loci will go through the analyses. 
+    target_loci: 'ALL'
     # Tell LocusCompare2 the field name in input GWAS file.
     col_name_mapping:
       # Required. The rs id field name in input GWAS file.
@@ -77,7 +87,8 @@ input:
       pvalue: 'p.value'
       # Required. The se field name in input GWAS file. 
       se: 'se'
-  eqtl:
+  qtl:
+    qtl_type: 'eqtl'
     # Required. Input eQTL file path, the position should base on hg38
     file: '/raw/eqtl/Spleen.tsv.gz'
     # Required. Tissue name
@@ -85,7 +96,18 @@ input:
     # Required. eQTL sample size
     sample_size: 147
     # Optional. Seperator of the eQTL input file, escaping character must be in double quotes("\t" for tab), default sep is tab
-    sep: '	'
+    sep: '\t'
+    # For QTL analyses, genomic_window/window_size/LD_r2_filter/LD_additional_expansion can be left empty.
+    # When GWAS is set to LD_based_window, users have the option to also select 'LD_based_window' for QTL. If both GWAS and QTL files are set to LD_based_window mode, the analysis will be performed using the global LD-based approach.
+    genomic_window: ''
+    # When the genomic_window is 'LD_based_window', in the loci identification step, the LD score will be calculate in the 500kb at each side of lead SNP region.
+    window_size: ''
+    # This parameter will be used together with LD_based_window. Specifically, for LD-based window selection, variants with LD r² > 0.1 with lead SNP will be included in the analysis.
+    LD_r2_filter: ''
+    # This parameter will be used together with LD_based_window and LD_r2_filter. If ‘LD_based_window’ is selected, the test region for variant-level colocalization methods will include variants with LD r² > 0.1 with the lead variant in each locus, along with an additional 50 kb flanking region on either side.
+    LD_additional_expansion: ''
+    # Currently all loci will go through the analyses. 
+    target_loci: 'ALL'
     # Tell LocusCompare2 the field name in the input eQTL file.
     col_name_mapping:
       # Required. The rs id field name in input eQTL file.
@@ -147,6 +169,8 @@ p-value_threshold:
   eqtl: 1.0E-5
 # Your research population, EUR, EAS, SAS, AMR or AFR
 population: 'EUR'
+# The minimun matching number of variants in each loci between GWAS and QTL, default: 5. If the matching number is less than 5, current locus will be skipped.
+min_matching_number: 5
 ```
 
 ### Generate Multiple Configs GWAS and eQTL (Optional)
@@ -173,7 +197,10 @@ python colotools_project_path/common/config_generator.py --out output_dir
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run LocusCompare2 in command line
 ```shell
-python path_to_colotools/colotools.py --config config_yml_file_or_dir [--tools_config parameter_config_file_for_each_tool] [--disable_parallel] [--log path_to_logfile] [--no_report]
+python ~/locuscompare2-standalone/locuscompare2advanced.py \
+--config ~/locuscompare2-standalone/config/Astle_config/LD_based_gwas_loci/CONFIGURE \
+--tools_config ~/locuscompare2-standalone/config/tools_config.yml \
+[--disable_parallel] [--log path_to_logfile] [--no_report]
 ```
 | Parameter        | Description                                                                                                                                                                                                                                                                           |
 |------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
