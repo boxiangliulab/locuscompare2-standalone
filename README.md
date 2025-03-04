@@ -147,7 +147,7 @@ input:
     # Required. Input eQTL file path, the position should base on hg38
     file: '/raw/eqtl/Spleen.tsv.gz'
     # Required. Tissue name
-    tissue: 'Spleen'
+    biological_context: 'Spleen'
     # Required. eQTL sample size
     sample_size: 147
     # Optional. Seperator of the eQTL input file, escaping character must be in double quotes("\t" for tab), default sep is tab
