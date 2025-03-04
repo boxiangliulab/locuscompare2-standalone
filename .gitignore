@@ -79,6 +79,10 @@ ENV/
 # mypy
 .mypy_cache/
 
+# data and output file
+data/
+working_dir/
+
 output/
 .DS_Store
 

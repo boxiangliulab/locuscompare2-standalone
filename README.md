@@ -16,24 +16,66 @@ the significant SNPs and genes.
 
 ## 1. Data Preparation
 
+1. Clone locuscompare2 from [github](https://github.com/boxiangliulab/locuscompare2-standalone.git) and create a `data` folder in the project.
 
+```
+cd $locuscompare2-standalone
+mkdir data && cd data
+```
+
+2. Create a symbolic link to the data folder.
+
+Here is an example:
+
+```
+ln /locuscompare2file/Astle_blood_trait/preprocessed_mpv_build37_164454_20161212.tsv.gz ./
+ln /locuscompare2file/Whole_Blood.v8.preprocessed.eqtl.tsv.gz ./
+ln /locuscompare2file/vcf_hg38 ./
+genecode
+ld_block_loci_file
+...
+```
+
+3. Create a `working_dir` folder in the project.
+
+```
+cd $locuscompare2-standalone
+mkdir working_dir
+```
 
 ## 2. Setup Environment
 
 ### 2.1 Run with Docker/Singularity (recommended)
 
-We provid a [Docker image](https://hub.docker.com/repository/docker/junbingao/locuscompare2/general) and a [Singularity image](#) to help users run directly on their servers or HPC.
+1. We provid a [Docker image](https://hub.docker.com/repository/docker/junbingao/locuscompare2/general) and a [Singularity image](#) to help users run directly on their servers or HPC.
 
++ For Docker users:
 
+```
+docker run -it -v $locuscompare2-standalone/data:/root/locuscompare2-standalone/data -v $locuscompare2-standalone/working_dir:/root/locuscompare2-standalone/working_dir -d junbingao/locuscompare2:latest /bin/bash
+```
+
++ For Singularity users:
+
+Download locuscompare2.sif Singularity Image from [google drive](#) and execute:
+
+```
+singularity shell -B $locuscompare2-standalone/data:/root/locuscompare2-standalone/data -B $locuscompare2-standalone/working_dir:/root/locuscompare2-standalone/working_dir locuscompare2.sif
+```
+
+2. Activate the LocusCompare2 virtual environment by execute:
+
+```
+conda activate locuscompare2
+```
 
 ### 2.2 Manual installation
 
 1) Install [miniconda](https://docs.conda.io/en/latest/miniconda.html)
-2) Clone locuscompare2 from [github](https://github.com/boxiangliulab/locuscompare2-standalone.git)
-3) Follow instructions to install  [fastEnloc](https://github.com/xqwen/fastenloc/tree/dev/src) 
-4) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
+2) Follow instructions to install  [fastEnloc](https://github.com/xqwen/fastenloc/tree/dev/src) 
+3) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
 ```shell
-cd running_env
+cd $locuscompare2-standalone/running_env
 ./setup_env.sh env.yml
 ```
 4) The console shows 'All finished' when the setup is done. Activate the LocusCompare2 virtual environment by execute:
@@ -50,7 +92,7 @@ mapping etc.
 Specification of config file example:
 ```yaml
 # Required. The output root dir
-working_dir: '~/output_dir'
+working_dir: 'working_dir'
 tools:
 - coloc
 - smr
@@ -61,7 +103,7 @@ tools:
 input:
   gwas:
     # Required. Input GWAS file path, the position should base on hg38
-    file: '/raw/Eczema/EAGLE_AD_GWAS_results_2015_hg38.tsv.gz'
+    file: 'data/EAGLE_AD_GWAS_results_2015_hg38.tsv.gz'
     # Required. Trait name
     trait: 'eczemas'
     # Required. GWAS sample size
@@ -147,13 +189,13 @@ input:
       
   # Required. The vcf files from 1000genomes.
   # hg38 https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV/
-  vcf: '/PATH/vcf/hg38'
+  vcf: 'data/hg38'
   
   # Required, must match the gene version in eQTL files
   # If you want to use GTEx eQTL, download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.basic.annotation.gtf.gz for GTEx V8
   # Then set the file's local path here.
   # If you want to use your own eQTL, set the eQTL reference gencode version path here.
-  genecode: '/PATH/gencode.v26.basic.annotation.gtf.gz'
+  genecode: 'data/gencode.v26.basic.annotation.gtf.gz'
   
   # Required if you want to run PrediXcan.
   # How to derive data:
@@ -166,13 +208,13 @@ input:
   # The model and covariance file name format should be 'mashr_{tissue_name}.db' and 'mashr_{tissue_name}.txt.gz'.
   # For example, if the eQTL name is 'Cells_EBV-transformed_lymphocytes', LocusCompare2 will find 'mashr_Cells_EBV-transformed_lymphocytes.db' 
   # and 'mashr_Cells_EBV-transformed_lymphocytes.txt.gz' in this directory.
-  prediction_dir: '/PATH/prediction_model_covariance'
+  prediction_dir: 'data/prediction_model_covariance'
 
   # Required if you want to run TWAS
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
   # LocusCompare2 will find the pos file in this directory by the configured eQTL tissue name. Note that the post file name must end with .pos
-  twas_model_dir: '/PATH/twas_model'
+  twas_model_dir: 'data/twas_model'
 
 p-value_threshold:
   # GWAS and eQTL significance P-value threshold. Coefficient type should be float. 
@@ -210,9 +252,10 @@ python colotools_project_path/common/config_generator.py --out output_dir
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
 + Run LocusCompare2 in command line
 ```shell
-python ~/locuscompare2-standalone/locuscompare2advanced.py \
---config ~/locuscompare2-standalone/config/Astle_config/LD_based_gwas_loci/CONFIGURE \
---tools_config ~/locuscompare2-standalone/config/tools_config.yml \
+cd $locuscompare2-standalone
+python locuscompare2advanced.py \
+--config config/Astle_config/LD_based_gwas_loci/CONFIGURE \
+--tools_config config/tools_config.yml \
 [--disable_parallel] [--log path_to_logfile] [--no_report]
 ```
 | Parameter        | Description                                                                                                                                                                                                                                                                           |
