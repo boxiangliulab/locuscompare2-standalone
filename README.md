@@ -14,21 +14,34 @@ LocusCompare2 integrates 6 popular colocalization tools:
 It could run all the colocalization tools above, display summary report and give manhattan plot and LocusCompare plot for 
 the significant SNPs and genes.
 
-## 1. Setup Environment
-We provide a shell to set up the running environment for LocusCompare2.
+## 1. Data Preparation
+
+
+
+## 2. Setup Environment
+
+### 2.1 Run with Docker/Singularity (recommended)
+
+We provid a [Docker image](https://hub.docker.com/repository/docker/junbingao/locuscompare2/general) and a [Singularity image](#) to help users run directly on their servers or HPC.
+
+
+
+### 2.2 Manual installation
+
 1) Install [miniconda](https://docs.conda.io/en/latest/miniconda.html)
-2) Clone locuscompare-v2 from [github](https://github.com/boxiangliulab/locuscompare-v2.git)
-3) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
+2) Clone locuscompare2 from [github](https://github.com/boxiangliulab/locuscompare2-standalone.git)
+3) Follow instructions to install  [fastEnloc](https://github.com/xqwen/fastenloc/tree/dev/src) 
+4) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
 ```shell
 cd running_env
 ./setup_env.sh env.yml
 ```
 4) The console shows 'All finished' when the setup is done. Activate the LocusCompare2 virtual environment by execute:
 ```shell
-conda activate colotools
+conda activate locuscompare2
 ```
 
-## 2. Setup Configuration
+## 3. Setup Configuration
 
 ### Build LocusCompare2 config file ([Sample](./config.yml))
 The LocusCompare2 needs a config file to indicate the input data file, output file path, the GWAS and eQTL field name 
@@ -191,7 +204,7 @@ python colotools_project_path/common/config_generator.py --out output_dir
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
 
 
-## 3. Run LocusCompare2
+## 4. Run LocusCompare2
 
 + We incorporate [INTACT](https://github.com/jokamoto97/INTACT/) to output an ensemble score based on the results of different tools. 
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.

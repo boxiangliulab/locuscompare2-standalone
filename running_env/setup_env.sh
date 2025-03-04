@@ -93,18 +93,18 @@ if [[ $? != 0 ]];then
 fi
 
 #install predixcan
-echo "Installing Predixcan..."
+# echo "Installing Predixcan..."
 
 # git clone https://github.com/liufei-f/MetaXcan-fit-env.git
 
-cp $(pwd)/MetaXcan-master/software/*  ${current_conda_bin}/*
+# cp $(pwd)/MetaXcan-master/software/*  ${current_conda_bin}/*
 
-if [[ $? != 0 ]];then
-	echo "error installing Predixcan"
-	exit 1
-fi
-predixcan_path=$(which SPrediXcan.py)
-echo "PrediXcan full path is ${predixcan_path}"
+# if [[ $? != 0 ]];then
+# 	echo "error installing Predixcan"
+# 	exit 1
+# fi
+# predixcan_path=$(which SPrediXcan.py)
+# echo "PrediXcan full path is ${predixcan_path}"
 
 #install finemap
 echo "Installing finemap"
