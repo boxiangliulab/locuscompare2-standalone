@@ -139,8 +139,8 @@ class Coloc:
                             logging.info(f"coloc range_lead_snp {range_lead_snp} not in set(gwas_cluster_snps_dict.keys())")
                             continue
                         if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(qtl_significant_positions)) < min_matching_number:
+                            logging.info(f"coloc not enough SNPs in loci: {range_lead_snp} and pheno {phenotype_id} ")
                             continue
-                        logging.info(f"passa")
 
                         futures.append(executor.submit(self.process_gene, self.__get_output_dir(working_dir),
                                                     gwas_range_file, gwas_type_dict, gwas_col_dict, row,
@@ -183,8 +183,8 @@ class Coloc:
                         logging.info(f"coloc range_lead_snp {range_lead_snp} not in set(gwas_cluster_snps_dict.keys())")
                         continue
                     if len(set(gwas_cluster_snps_dict[range_lead_snp]) & set(qtl_significant_positions)) < min_matching_number:
+                        logging.info(f"coloc not enough SNPs in loci: {range_lead_snp} and pheno {phenotype_id} ")
                         continue
-                    logging.info(f"passa")
                     self.process_gene(self.__get_output_dir(working_dir), gwas_range_file, gwas_type_dict,
                                         gwas_col_dict, row, qtl_gene_file, qtl_type_dict,
                                         var_id_col_name, coloc_input_dir, phenotype_id, qtl_col_dict, gwas_sample_size,

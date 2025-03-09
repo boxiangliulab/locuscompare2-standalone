@@ -209,7 +209,12 @@ class Smr:
                 candidate_qtl_trait_df.to_csv(qtl_input_path, sep=const.output_spliter, header=True, index=False)
                 logging.info(f'qtl_input_path: {qtl_input_path}')
                 del candidate_qtl_trait_df
-                genecode_df_idx = genecode_df[genecode_df['gene_id'] == gene_id].index
+                if len(gene_id.split('.')) == 1:
+                    gene_id_df = genecode_df['gene_id'].str.split('.', n=1, expand=True)
+                    genecode_df.loc[:, 'gene_id'] = gene_id_df[0]
+                    genecode_df_idx = genecode_df[genecode_df['gene_id'] == gene_id].index
+                else:
+                    genecode_df_idx = genecode_df[genecode_df['gene_id'] == gene_id].index
                 if len(genecode_df_idx) == 0:
                     continue
                 probe_bp = genecode_df.at[genecode_df_idx[0], 'position']

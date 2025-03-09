@@ -135,13 +135,18 @@ def get_gene_name(file_path):
     return '.'.join(file_path.split(os.sep)[-1].split('.')[-3:-1])
 
 def get_eqtl_gene_name(file_path):
+    # print(f"get_eqtl_gene_name {file_path.split(os.sep)[-1].split('.')}")
     # return file name without extension
-    return '.'.join(file_path.split(os.sep)[-1].split('.')[:2])
+    if len(file_path.split(os.sep)[-1].split('.')) == 3:
+        return file_path.split(os.sep)[-1].split('.')[0]
+    else:
+        return '.'.join(file_path.split(os.sep)[-1].split('.')[:-2])
+
 
 def get_pheno_name(file_path):
     # return file name without extension
     return '.'.join(file_path.split(os.sep)[-1].split('.')[:-2])
-
+    
 def file_exists(file_path):
     if file_path is None:
         return False
@@ -151,15 +156,15 @@ def file_exists(file_path):
 def delete_file_if_exists(file_path):
     if file_exists(file_path):
         try:
-            # os.remove(file_path)
-            pass
+            os.remove(file_path)
+            # pass
         except OSError as e:
             logging.warning(f'Fail to delete {file_path}: {e}')
 
 
 def delete_dir(file_path):
-    # os.system(f'rm -rf {file_path}')
-    pass
+    os.system(f'rm -rf {file_path}')
+    # pass
     # too slow, replace by rm -rf
     # if file_exists(file_path):
     #     if Path(file_path).is_file():

@@ -8,7 +8,7 @@ tools:
 - ecaviar
 input:
   gwas:
-    file: /home/users/nus/e1124850/e1124850/locuscompare2file/Astle_blood_trait/preprocessed_wbc_build37_172435_20161212.tsv.gz
+    file: data/preprocessed_wbc_build37_172435_20161212.tsv.gz
     trait: wbc
     sample_size: 172435
     type: quant

@@ -123,7 +123,10 @@ class ECaviar:
             var_id = '_'.join(gwas_snp_file.split('_')[1:5])
             chrom = var_id.split('_')[0]
             chrom_num = chrom.replace('chr', '')
-            phenotype_id = '.'.join(gwas_snp_file.split('_')[5].split('.')[:2])
+            if len(gwas_snp_file.split('_')[5].split('.')) == 2:
+                phenotype_id = gwas_snp_file.split('_')[5].split('.')[0]
+            else: 
+                phenotype_id = '.'.join(gwas_snp_file.split('_')[5].split('.')[:2])
             merge_snp_pd['chrom'] = chrom_num
             merge_snp_pd['lead_variant'] = var_id
             merge_snp_pd['gene_id'] = phenotype_id

@@ -136,7 +136,7 @@ class Fastenloc:
                 df_output_sig['lead_variant'] = df_output_sig['ix'].apply(lambda x: '_'.join(x.split('_')[1:]))
                 df_output_sig.sort_values(by='GRCP', ascending=False, inplace=True)
                 filtered_gene = pd.read_csv(qtl_output_report, sep=const.column_spliter, usecols=['chrom', 'pheno_file'])
-                filtered_gene['gene_id'] = filtered_gene['pheno_file'].apply(lambda x: '.'.join(x.split('.')[:2]))
+                filtered_gene['gene_id'] = filtered_gene['pheno_file'].apply(lambda x: '.'.join(x.split('.')[:2]) if len(x.split('.'))== 4 else x.split('.')[0])
                 df_output_sig_mg = pd.merge(df_output_sig[['gene_id','lead_variant','GRCP','GLCP']], filtered_gene[['gene_id','chrom']], 
                                             on=['gene_id'], how='left')
                 df_output_sig_mg = df_output_sig_mg.round(4)
