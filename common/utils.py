@@ -719,4 +719,3 @@ def get_tools_params_dict(tool_name, tool_config_file):
     else:
         logging.info(f'No parameter config for {tool_name}, use default parameters')
     return {} if params is None else params
-       
