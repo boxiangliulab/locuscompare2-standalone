@@ -28,12 +28,13 @@ mkdir data && cd data
 Here is an example:
 
 ```
-ln /locuscompare2file/Astle_blood_trait/preprocessed_mpv_build37_164454_20161212.tsv.gz ./
-ln /locuscompare2file/Whole_Blood.v8.preprocessed.eqtl.tsv.gz ./
-ln /locuscompare2file/vcf_hg38 ./
-genecode
-ld_block_loci_file
-...
+ln -s /locuscompare2file/GWAS.tsv.gz ./
+ln /locuscompare2file/eQTL.tsv.gz ./
+ln /locuscompare2file/vcf_hg38/ ./
+ln /locuscompare2file/genecode.v26.basic.annotation.gtf.gz ./
+ln /locuscompare2file/ld_block_loci_file ./
+ln /locuscompare2file/TWAS_weights/ ./
+ln /locuscompare2file/predixcan_db/ ./
 ```
 
 3. Create a `working_dir` folder in the project.

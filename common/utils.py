@@ -318,6 +318,21 @@ def read_config(config_file):
     logging.info(f'read config file: {config_file}')
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
+    config_dir = Path(config_file).resolve().parent.parent
+    
+    def update_path(value):
+        if isinstance(value, str):
+            if ('/' in value or '\\' in value) and not value.startswith(("\t", "\n", "\r")):
+                return str(config_dir / value) if not Path(value).is_absolute() else value
+        return value
+    def recursive_update(d):
+        if isinstance(d, dict):
+            return {key: recursive_update(update_path(value)) for key, value in d.items()}
+        elif isinstance(d, list):
+            return [recursive_update(update_path(item)) for item in d]
+        else:
+            return d
+    config = recursive_update(config)
     return config
 
 
@@ -704,3 +719,4 @@ def get_tools_params_dict(tool_name, tool_config_file):
     else:
         logging.info(f'No parameter config for {tool_name}, use default parameters')
     return {} if params is None else params
+       
