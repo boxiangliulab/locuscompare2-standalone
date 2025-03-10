@@ -18,7 +18,7 @@ the significant SNPs and genes.
 
 ### 1.1 Run with Docker/Singularity (recommended)
 
-We provid a [Docker image](https://hub.docker.com/repository/docker/junbingao/locuscompare2/general) to help users run directly on their servers or HPC.
+We provid a [Docker image](https://hub.docker.com/r/junbingao/locuscompare2) to help users run directly on their servers or HPC.
 
 1. Prepare Data, here is an example of the data you need to use
 
