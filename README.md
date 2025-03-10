@@ -14,77 +14,80 @@ LocusCompare2 integrates 6 popular colocalization tools:
 It could run all the colocalization tools above, display summary report and give manhattan plot and LocusCompare plot for 
 the significant SNPs and genes.
 
-## 1. Data Preparation
+## 1. Setup Environment
 
-1. Clone locuscompare2 from [github](https://github.com/boxiangliulab/locuscompare2-standalone.git) and create a `data` folder in the project.
+### 1.1 Run with Docker/Singularity (recommended)
+
+We provid a [Docker image](https://hub.docker.com/repository/docker/junbingao/locuscompare2/general) to help users run directly on their servers or HPC.
+
+1. Prepare Data, here is an example of the data you need to use
 
 ```
-cd $locuscompare2-standalone
-mkdir data && cd data
+/locuscompare2file/GWAS.tsv.gz
+/locuscompare2file/eQTL.tsv.gz
+/locuscompare2file/vcf_hg38/
+/locuscompare2file/genecode.v26.basic.annotation.gtf.gz
+/locuscompare2file/ld_block_loci_file
+/locuscompare2file/TWAS_weights/
+/locuscompare2file/predixcan_db/
 ```
 
-2. Create a symbolic link to the data folder.
+2. Start a docker and map these files into the docker container
+
+```shell
+# $working_dir is the local location where you want the output file to be stored
+docker run -it -v /locuscompare2file:/root/locuscompare2-standalone/data -v $working_dir:/root/locuscompare2-standalone/working_dir -d junbingao/locuscompare2:latest /bin/bash
+```
+
+3. Activate the LocusCompare2 virtual environment by execute:
+
+```shell
+conda activate locuscompare2
+```
+
+### 1.2 Manual installation
+
+1) Install [miniconda](https://docs.conda.io/en/latest/miniconda.html)
+2) Follow instructions to install  [fastEnloc](https://github.com/xqwen/fastenloc/tree/dev/src) (See the Q&A section for more help on installation)
+3) Clone locuscompare2 from [github](https://github.com/boxiangliulab/locuscompare2-standalone.git)
+4. Execute the [environment set up script](./running_env/setup_env.sh) in `running_env` folder
+
+```shell
+cd running_env
+./setup_env.sh env.yml
+```
+5. The console shows `All finished` when the setup is done. Activate the LocusCompare2 virtual environment by execute:
+
+```shell
+conda activate locuscompare2
+```
+
+6. Create a `data` folder in the project and create a symbolic link to the data folder.
 
 Here is an example:
 
-```
-ln -s /locuscompare2file/GWAS.tsv.gz ./
-ln -s /locuscompare2file/eQTL.tsv.gz ./
-ln -s /locuscompare2file/vcf_hg38/ ./
-ln /locuscompare2file/genecode.v26.basic.annotation.gtf.gz ./
-ln /locuscompare2file/ld_block_loci_file ./
-ln /locuscompare2file/TWAS_weights/ ./
-ln /locuscompare2file/predixcan_db/ ./
+```shell
+cd $locuscompare2-standalone
+mkdir data && cd data
+ln -s /locuscompare2file/GWAS.tsv.gz
+ln -s /locuscompare2file/eQTL.tsv.gz
+ln -s /locuscompare2file/vcf_hg38/
+ln -s /locuscompare2file/genecode.v26.basic.annotation.gtf.gz
+ln -s /locuscompare2file/ld_block_loci_file
+ln -s /locuscompare2file/TWAS_weights/
+ln -s /locuscompare2file/predixcan_db/
 ```
 
-3. Create a `working_dir` folder in the project.
+7. Create a `working_dir` folder in the project.
 
-```
+```shell
 cd $locuscompare2-standalone
 mkdir working_dir
 ```
 
-## 2. Setup Environment
+## 
 
-### 2.1 Run with Docker/Singularity (recommended)
-
-1. We provid a [Docker image](https://hub.docker.com/repository/docker/junbingao/locuscompare2/general) and a [Singularity image](#) to help users run directly on their servers or HPC.
-
-+ For Docker users:
-
-```
-docker run -it -v $locuscompare2-standalone/data:/root/locuscompare2-standalone/data -v $locuscompare2-standalone/working_dir:/root/locuscompare2-standalone/working_dir -d junbingao/locuscompare2:latest /bin/bash
-```
-
-+ For Singularity users:
-
-Download locuscompare2.sif Singularity Image from [google drive](#) and execute:
-
-```
-singularity shell -B $locuscompare2-standalone/data:/root/locuscompare2-standalone/data -B $locuscompare2-standalone/working_dir:/root/locuscompare2-standalone/working_dir locuscompare2.sif
-```
-
-2. Activate the LocusCompare2 virtual environment by execute:
-
-```
-conda activate locuscompare2
-```
-
-### 2.2 Manual installation
-
-1) Install [miniconda](https://docs.conda.io/en/latest/miniconda.html)
-2) Follow instructions to install  [fastEnloc](https://github.com/xqwen/fastenloc/tree/dev/src) 
-3) Execute the [environment set up script](./running_env/setup_env.sh) in /running_env folder
-```shell
-cd $locuscompare2-standalone/running_env
-./setup_env.sh env.yml
-```
-4) The console shows 'All finished' when the setup is done. Activate the LocusCompare2 virtual environment by execute:
-```shell
-conda activate locuscompare2
-```
-
-## 3. Setup Configuration
+## 2. Setup Configuration
 
 ### Build LocusCompare2 config file ([Sample](./config.yml))
 The LocusCompare2 needs a config file to indicate the input data file, output file path, the GWAS and eQTL field name 
@@ -247,7 +250,7 @@ python colotools_project_path/common/config_generator.py --out output_dir
 5. Config files for each GWAS-eQTL pair will be created to the output directory.
 
 
-## 4. Run LocusCompare2
+## 3. Run LocusCompare2
 
 + We incorporate [INTACT](https://github.com/jokamoto97/INTACT/) to output an ensemble score based on the results of different tools. 
 It is **highly recommended** to run all the tools, else INTACT score and report may not be generated.
@@ -290,5 +293,24 @@ working_dir, trait, tissue, population are specified in config.yml.
 + Report data
   + Path: [working_dir]/processed/[study (value of --config if it's a directory else default)]/[trait]/[tissue]/[population]/[tool_name]/analyzed/
 
+## Q&A
+
+1. Question: How to install the newest version of fastEnloc?
+
+   Answer:
+
+   If you have sudo permissions, just install `g++, zlib1g-dev, libgsl-dev` via `apt`/`yum`/`brew`;
+
+   If you don't have sudo permissions, you should install `GSL` from [source code](https://www.linuxfromscratch.org/blfs/view/11.1/general/gsl.html) and add the env_path like
+
+   ```
+   export CPLUS_INCLUDE_PATH=$HOME/GSL/gsl/include
+   export LIBRARY_PATH=$HOME/GSL/gsl/lib
+   export LD_LIBRARY_PATH=$HOME/GSL/gsl/lib:$LD_LIBRARY_PATH
+   ```
+
+   Then, you should clone the fastEnloc and change to the dev branch. Compile fastEnloc with make to generate an executable and add the path to the environment variable.
+
 ## License
+
 <span style="color:red">**This project is released under the [Dual Licensing Options](LICENSE).**</span>
