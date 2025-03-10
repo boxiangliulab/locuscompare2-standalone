@@ -318,12 +318,12 @@ def read_config(config_file):
     logging.info(f'read config file: {config_file}')
     with open(config_file, 'r') as file:
         config = yaml.safe_load(file)
-    config_dir = Path(config_file).resolve().parent.parent
+    root_dir = Path(__file__).resolve().parent.parent
     
     def update_path(value):
         if isinstance(value, str):
             if ('/' in value or '\\' in value) and not value.startswith(("\t", "\n", "\r")):
-                return str(config_dir / value) if not Path(value).is_absolute() else value
+                return str(root_dir / value) if not Path(value).is_absolute() else value
         return value
     def recursive_update(d):
         if isinstance(d, dict):

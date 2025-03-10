@@ -62,13 +62,12 @@ cd running_env
 conda activate locuscompare2
 ```
 
-6. Create a `data` folder in the project and create a symbolic link to the data folder.
+6. Create a symbolic link to the data folder.
 
 Here is an example:
 
 ```shell
-cd $locuscompare2-standalone
-mkdir data && cd data
+cd $locuscompare2-standalone/data
 ln -s /locuscompare2file/GWAS.tsv.gz
 ln -s /locuscompare2file/eQTL.tsv.gz
 ln -s /locuscompare2file/vcf_hg38/
@@ -84,8 +83,6 @@ ln -s /locuscompare2file/predixcan_db/
 cd $locuscompare2-standalone
 mkdir working_dir
 ```
-
-## 
 
 ## 2. Setup Configuration
 
