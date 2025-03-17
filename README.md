@@ -84,6 +84,18 @@ cd $locuscompare2-standalone
 mkdir working_dir
 ```
 
+> Locuscompare2 runs on six tools that depend on the following versions, and users can install them manually.
+>
+> - fastENLOC v3.1 September, 2024 (dev branch)
+>
+> - coloc v5.2.3
+>
+> - FINEMAP v1.4.2
+>
+> - SMR v1.3.1
+> - PrediXcan (Latest version of github)
+> - TWAS (Latest version of github)
+
 ## 2. Setup Configuration
 
 ### Build LocusCompare2 config file ([Sample](./config.yml))
@@ -104,7 +116,7 @@ tools:
 input:
   gwas:
     # Required. Input GWAS file path, the position should base on hg38
-    file: 'data/EAGLE_AD_GWAS_results_2015_hg38.tsv.gz'
+    file: 'data/GWAS.tsv.gz'
     # Required. Trait name
     trait: 'eczemas'
     # Required. GWAS sample size
@@ -146,7 +158,7 @@ input:
   qtl:
     qtl_type: 'eqtl'
     # Required. Input eQTL file path, the position should base on hg38
-    file: '/raw/eqtl/Spleen.tsv.gz'
+    file: 'data/eQTL.tsv.gz'
     # Required. Tissue name
     biological_context: 'Spleen'
     # Required. eQTL sample size
@@ -190,13 +202,13 @@ input:
       
   # Required. The vcf files from 1000genomes.
   # hg38 https://ftp.1000genomes.ebi.ac.uk/vol1/ftp/data_collections/1000G_2504_high_coverage/working/20220422_3202_phased_SNV_INDEL_SV/
-  vcf: 'data/hg38'
+  vcf: 'data/vcf_hg38'
   
   # Required, must match the gene version in eQTL files
   # If you want to use GTEx eQTL, download https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_26/gencode.v26.basic.annotation.gtf.gz for GTEx V8
   # Then set the file's local path here.
   # If you want to use your own eQTL, set the eQTL reference gencode version path here.
-  genecode: 'data/gencode.v26.basic.annotation.gtf.gz'
+  genecode: 'data/genecode.v26.basic.annotation.gtf.gz'
   
   # Required if you want to run PrediXcan.
   # How to derive data:
@@ -209,13 +221,13 @@ input:
   # The model and covariance file name format should be 'mashr_{tissue_name}.db' and 'mashr_{tissue_name}.txt.gz'.
   # For example, if the eQTL name is 'Cells_EBV-transformed_lymphocytes', LocusCompare2 will find 'mashr_Cells_EBV-transformed_lymphocytes.db' 
   # and 'mashr_Cells_EBV-transformed_lymphocytes.txt.gz' in this directory.
-  prediction_dir: 'data/prediction_model_covariance'
+  prediction_dir: 'data/predixcan_db'
 
   # Required if you want to run TWAS
   # TWAS weight files of GTEx v8: http://gusevlab.org/projects/fusion/#gtex-v8-multi-tissue-expression, download and unpack the files.
   # If you want to compute your weights, refer to predictive-model-pipeline module
   # LocusCompare2 will find the pos file in this directory by the configured eQTL tissue name. Note that the post file name must end with .pos
-  twas_model_dir: 'data/twas_model'
+  twas_model_dir: 'data/TWAS_weights'
 
 p-value_threshold:
   # GWAS and eQTL significance P-value threshold. Coefficient type should be float. 
