@@ -93,7 +93,7 @@ mkdir working_dir
 > - FINEMAP v1.4.2
 >
 > - SMR v1.3.1
-> - PrediXcan (Latest version of github)
+> - PrediXcan v0.7.5
 > - TWAS (Latest version of github)
 
 ## 2. Setup Configuration
