@@ -98,7 +98,7 @@ mkdir working_dir
 
 ## 2. Setup Configuration
 
-### Build LocusCompare2 config file ([Sample](./config.yml))
+### Build LocusCompare2 config file ([Example](config/example.config))
 The LocusCompare2 needs a config file to indicate the input data file, output file path, the GWAS and eQTL field name 
 mapping etc.
 
@@ -240,24 +240,6 @@ population: 'EUR'
 # The minimun matching number of variants in each loci between GWAS and QTL, default: 5. If the matching number is less than 5, current locus will be skipped.
 min_matching_number: 5
 ```
-
-### Generate Multiple Configs GWAS and eQTL (Optional)
-If you need to run a number of GWAS and eQTL data, you need to provide config file for each GWAS-eQTL pair.
-
-The [config generator](/common/config_generator.py) is a tool to generate config files.
-
-+ Use Config Generator:
-
-1. Create a GWAS config list yaml file. [Sample](/resource/gwas_config.yml)
-2. Create a eQTL config list yaml file. [Sample](/resource/eqtl_config.yml)
-3. Create a global config yaml file. [Sample](/resource/config_template.yml)
-4. Run python script
-```shell
-python colotools_project_path/common/config_generator.py --out output_dir 
-[--gb_temp global_config_path] [--gw_temp gwas_configs_path] [--eqtl_temp eqtl_configs_path]
-```
-5. Config files for each GWAS-eQTL pair will be created to the output directory.
-
 
 ## 3. Run LocusCompare2
 
