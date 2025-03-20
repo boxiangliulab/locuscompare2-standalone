@@ -1,0 +1,37 @@
+coloc:
+  p1: 0.0001
+  p2: 0.0001
+  p12: 1.0e-05
+smr:
+  diff-freq-prop: 1
+  peqtl-smr: 1.0e-05
+  diff-freq:
+  maf:
+  ld-upper-limit:
+  ld-lower-limit:
+  peqtl-heidi: 
+  heidi-min-m: 
+  heidi-max-m: 
+  cis-wind:
+  heidi-mtd:
+ecaviar:
+  n-causal-snps: 1
+  cond-pvalue:
+  corr-config:
+  n-configs-top:
+  n-conv-sss:
+  n-iter:
+  pvalue-snps:
+  prob-cred-set:
+  prob-conv-sss-tol:
+  prior-std:
+fusion:
+  max_impute: 0.5
+  min_r2pred: 
+  perm_minp: 
+fastenloc:
+  p1: 
+  p2: 
+  p12: 
+  sdy_e: 
+  sdy_g: 
