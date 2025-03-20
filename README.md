@@ -256,7 +256,7 @@ python locuscompare2advanced.py \
 | Parameter        | Description                                                                                                                                                                                                                                                                           |
 |------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | config           | Required. The config file path or the directory that contains config yml file.                                                                                                                                                                                                        
-| tools_config     | Optional. Parameters for each tool, example is in [/resource/tools_config.yml](/resource/tools_config.yml)                                                                                                                                                                            |
+| tools_config     | Optional. Parameters for each tool, example is in [tools_config.yml](config/tools_config.yml)                                                                                                                                                                            |
 | disable_parallel | Optional. Disable parallel mode (enabled by default), parallel run requires more resources (CPU, memory and disk IO) but saves a lot of time.                                                                                                                                         |
 | no_report        | Optional. Generate offline site                                                                                                                                                                                                                                                       |
 | log              | Optional. The path to log file                                                                                                                                                                                                                                                        |
@@ -264,9 +264,9 @@ python locuscompare2advanced.py \
 + Run LocusCompare2 in python project
 
 ```python
-import colotools
+import locuscompare2
 
-colotools.run(config_yml_file) 
+locuscompare2.run(config_yml_file) 
 ```
 
 ### Output
