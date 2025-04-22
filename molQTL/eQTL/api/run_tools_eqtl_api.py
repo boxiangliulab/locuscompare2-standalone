@@ -285,7 +285,6 @@ def __preprocess_and_run_predixcan(glob_processor, current_analysis_order, total
 
 def __preprocess_and_run_twas(glob_processor, current_analysis_order, total_numof_analyses, whether_schedual):
     print(f"__preprocess_and_run_twas: {glob_processor.global_config['input']['qtl']['qtl_type']}")
-
     ## chrom
     _working_dir = os.path.join(glob_processor.tool_parent_dir, rt.TWAS.COLOC_TOOL_NAME)
     Path(_working_dir).mkdir(exist_ok=True, parents=True)
@@ -295,15 +294,25 @@ def __preprocess_and_run_twas(glob_processor, current_analysis_order, total_numo
     pop = glob_processor.global_config.get('population', 'EUR').upper()
     twas = rt.TWAS()
 
-    return twas.run(_working_dir,
-                    _weight_pos_file,
-                    glob_processor.gwas_output_dir,
-                    glob_processor.gwas_col_dict,
-                    glob_processor.ref_vcf_dir,
-                    pop,
+    # return twas.run(_working_dir,
+    #                 _weight_pos_file,
+    #                 glob_processor.gwas_output_dir,
+    #                 glob_processor.gwas_col_dict,
+    #                 glob_processor.ref_vcf_dir,
+    #                 pop,
+    #                 parallel=False,
+    #                 tools_config_file=glob_processor.tools_config_file)
+
+    inputrefvcf = glob_processor.rsidvcf
+    logging.info(f"fusion inputrefvcf:{inputrefvcf}")
+    return twas.run(working_dir = _working_dir,
+                    weights_path = _weight_pos_file,
+                    gwas_chrom_group_dir = glob_processor.gwas_output_dir,
+                    gwas_col_dict = glob_processor.gwas_col_dict,
+                    ref_vcf_dir = inputrefvcf,
+                    population = pop,
                     parallel=False,
                     tools_config_file=glob_processor.tools_config_file)
-
 
     ## loci 
     # _working_dir = os.path.join(glob_processor.tool_parent_dir, rt.TWAS.COLOC_TOOL_NAME)

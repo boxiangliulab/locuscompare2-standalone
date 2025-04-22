@@ -126,6 +126,16 @@ class ConfigHolder:
         self.ref_vcf_dir = self.global_config['input']['vcf']
         print(f"self.ref_vcf_dir: {self.ref_vcf_dir}")
 
+        if ('vcf_rsid' in self.global_config['input']) and \
+            self.global_config['input']['vcf_rsid']:
+            self.rsidvcf = self.global_config['input']['vcf_rsid']
+            print(f"self.global_config['input']: {self.global_config['input']}")
+            print(f"self.rsidvcf: {self.rsidvcf}")
+        else:
+            self.rsidvcf = self.ref_vcf_dir
+            print(f"no rsidvcf")
+        print(f"self.rsidvcf: {self.rsidvcf}")
+        
         self.parallel = parallel
 
         # p-val threshold

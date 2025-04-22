@@ -79,6 +79,7 @@ class Processor:
         # vcf input output path
         self.vcf_output_dir = self.config_holder.vcf_output_dir
         self.ref_vcf_dir = self.config_holder.ref_vcf_dir
+        self.rsidvcf = self.config_holder.rsidvcf
         self.min_matching_number = self.config_holder.min_matching_number
 
         # tools parameter config path
