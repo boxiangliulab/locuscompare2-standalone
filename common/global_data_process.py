@@ -81,11 +81,13 @@ class Processor:
         self.ref_vcf_dir = self.config_holder.ref_vcf_dir
         self.rsidvcf = self.config_holder.rsidvcf
         self.min_matching_number = self.config_holder.min_matching_number
+        print(f"globalprocessorself.rsidvcf: {self.rsidvcf}")
 
         # tools parameter config path
         self.tools_config_file = self.config_holder.tools_config_file
 
-        self.shell_command_plink_execute = 'plink --silent --vcf {} --r2 --ld-snp {} --ld-window-kb {} --ld-window-r2 {} --out {}'
+        # self.shell_command_plink_execute = 'plink --silent --vcf {} --r2 --ld-snp {} --ld-window 99999 --ld-window-kb {} --ld-window-r2 {} --out {}'
+        self.shell_command_plink_execute = 'plink --silent --vcf {} --r2 --ld-snp {} --ld-window 99999 --ld-window-r2 {} --out {}'
 
 
     def __merge_alt_ref(self, gwas_df, chrom, population):        
@@ -220,16 +222,17 @@ class Processor:
                 positions_list = []
                 cluster_pos_dict = {}
                 count = 0
-                self.__qtl_ld_interval(pval_filter_eqtl_df, eqtl_trait_df, 
-                                       self.qtl_window_size, 
-                                       self.qtl_preprocesed_dir,
-                                       self.qtl_col_dict, chrom_list, 
-                                       lead_SNP_list, positions_list, 
-                                       cluster_pos_dict, count, 
-                                       self.config_holder.qtl_p_threshold,
-                                       self.qtl_LD_window, gene_id,
-                                       additional_expansion = self.qtl_LD_additional_expansion
-                                       )
+                if self.global_LD_based_window == True:
+                    self.__qtl_ld_interval(pval_filter_eqtl_df, eqtl_trait_df, 
+                                        self.qtl_window_size, 
+                                        self.qtl_preprocesed_dir,
+                                        self.qtl_col_dict, chrom_list, 
+                                        lead_SNP_list, positions_list, 
+                                        cluster_pos_dict, count, 
+                                        self.config_holder.qtl_p_threshold,
+                                        self.qtl_LD_window, gene_id,
+                                        additional_expansion = self.qtl_LD_additional_expansion
+                                        )
                 eqtl_trait_df.sort_values([self.qtl_col_dict['chrom'], self.qtl_col_dict['position']],
                                           inplace=True)
                 eqtl_trait_df.to_csv(eqtl_trait_file_path, sep=const.output_spliter, index=False)
@@ -244,6 +247,7 @@ class Processor:
                           additional_expansion = 50000):
 
         population = self.global_config.get('population', 'EUR').upper()
+        print(f"population: {population}")
 
 
         for _, row in pval_filter_df.iterrows(): 
@@ -280,8 +284,11 @@ class Processor:
                 if lead_SNP_id == None:
                     continue
                 else:
+                    # os.system(self.shell_command_plink_execute.format(f'{vcf_output_dir}/{output_vcf_name}', 
+                    #                                             lead_SNP_id, window_size/1000, self.qtl_LD_r2_filter,
+                    #                                             output_ld_file))
                     os.system(self.shell_command_plink_execute.format(f'{vcf_output_dir}/{output_vcf_name}', 
-                                                                lead_SNP_id, window_size, self.qtl_LD_r2_filter,
+                                                                lead_SNP_id, self.qtl_LD_r2_filter,
                                                                 output_ld_file))
                     
                 if Path(f"{output_ld_file}.ld").exists():
@@ -454,7 +461,7 @@ class Processor:
             print(f"Starting preprocess GWAS ... ")
         ############################################################################
         #                              1.4.1 Clean GWAS                            #
-        ############################################################################
+        ############################################################################  **
             gwas_df = pd.read_csv(gwas_file_path, sep=self.config_holder.gwas_sep, header=0,
                                     # usecols=self.gwas_col_dict.values(),
                                     dtype={self.gwas_col_dict['position']: 'Int64', 
@@ -525,6 +532,7 @@ class Processor:
             gwas_df[Processor.VAR_ID_COL_NAME] = gwas_df[self.gwas_col_dict['variant_id']].apply(lambda x: '_'.join(x.split('_')[:4]))
             logging.info(
                 f'Writing GWAS preprocessed data to {self.gwas_preprocessed_file}, time: {datetime.datetime.now()}')
+            gwas_df.loc[gwas_df[self.gwas_col_dict['pvalue']] == 0, self.gwas_col_dict['pvalue']] = 1e-300
             gwas_df.to_csv(self.gwas_preprocessed_file, sep=const.output_spliter, header=True, index=False)
             logging.info(f'Filtering GWAS data by p-value threshold {self.config_holder.gwas_p_threshold}')
         ############################################################################
@@ -537,7 +545,13 @@ class Processor:
                                                 inplace=False)
             logging.info(
                 f'GWAS data filtered result {len(pval_filter_gwas_df)} rows, writing to file, time: {datetime.datetime.now()}')
-            pval_filter_gwas_df.to_csv(self.gwas_filter_file, sep=const.output_spliter, header=True, index=False)
+            pval_filter_gwas_df.to_csv(self.gwas_filter_file, sep=const.output_spliter, header=True, index=False) # **
+
+            # pval_filter_gwas_df = pd.read_csv(self.gwas_filter_file, sep=const.output_spliter) # **
+            # gwas_df = pd.read_csv(self.gwas_preprocessed_file, sep=const.output_spliter)
+            # raw_gwas_snp_size = len(gwas_df)
+            # filtered_gwas_snp_size = len(gwas_df) # **
+
             if pval_filter_gwas_df.empty:
                 # print(f'No significant records found in GWAS file {gwas_file_path}')
                 logging.warning(f'No significant records found in GWAS file {gwas_file_path}')
@@ -546,7 +560,7 @@ class Processor:
             Path(self.gwas_output_dir).mkdir(exist_ok=True, parents=True)
             utils.delete_dir(self.gwas_cluster_output_dir)
             Path(self.gwas_cluster_output_dir).mkdir(exist_ok=True, parents=True)
-            pval_filter_gwas_df.sort_values([self.gwas_col_dict['chrom'], self.gwas_col_dict['pvalue']], inplace=True)
+            pval_filter_gwas_df.sort_values(self.gwas_col_dict['pvalue'], inplace=True)
 
             chrom_list = []
             lead_SNP_list = []
@@ -610,149 +624,165 @@ class Processor:
 
         # shell_command_plink_execute = 'plink --silent --vcf {} --r2 --matrix --mac 1 --write-snplist --out {}'
 
-        shell_command_plink_execute = 'plink --silent --vcf {} --r2 --ld-snp {} --ld-window-kb {} --ld-window-r2 {} --out {}'
+        # shell_command_plink_execute = 'plink --silent --vcf {} --r2 --ld-snp {} --ld-window-kb {} --ld-window-r2 {} --out {}'
         for _, row in pval_filter_gwas_df.iterrows(): 
             chrom = row.loc[self.gwas_col_dict['chrom']]
             pos = row.loc[self.gwas_col_dict['position']]
             chrom_cluster_pos_list = cluster_pos_dict.get(chrom, [])
             input_vcf = os.path.join(self.ref_vcf_dir, population, f'chr{chrom}.vcf.gz')
-            # for cp in chrom_cluster_pos_list:
-            #     cp_start = max(0, cp - window_size)
-            #     cp_end = cp + window_size
-            #     if cp_start <= pos <= cp_end:
-            #         break
+
             if pos in set(chrom_cluster_pos_list):
+                ## already included in previous step
                 continue
             else:
-                # chrom_cluster_pos_list.append(pos)
-                # cluster_pos_dict[chrom] = chrom_cluster_pos_list
-                # retrieve range_df from group by peak_positions.min <= group[position] <= peak_positions.max
+                lead_SNP_id = row.loc[Processor.VAR_ID_COL_NAME]
+                print(f"leadSNP: {lead_SNP_id}")
+                file_name = f'{lead_SNP_id}-chr{chrom}.tsv.gz'
+                
                 cluster_start = max(0, pos - window_size)
                 cluster_end = pos + window_size
 
-                range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
+                vcf_range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
                         cluster_start <= gwas_df[self.gwas_col_dict['position']]) & (
                                         gwas_df[self.gwas_col_dict['position']] <= cluster_end)]
-                lead_SNP_id = \
-                    range_df.loc[range_df[self.gwas_col_dict['position']] == pos][Processor.VAR_ID_COL_NAME].iloc[0]
-                print(f"__preprocess_gwas_LD_based: {lead_SNP_id}")
-                    # chr1_13550_G_A
-                # target_snp = \
-                #     range_df.loc[range_df[self.gwas_col_dict['position']] == pos][self.gwas_col_dict['snp']].iloc[0]
+
                 vcf_output_dir = os.path.join(self.gwas_preprocessed_dir, 'vcf')
                 Path(vcf_output_dir).mkdir(parents=True, exist_ok=True)
                 output_vcf_name = f"{lead_SNP_id}.vcf"
 
-                utils.extract_vcf_data(chrom, range_df, input_vcf, vcf_output_dir,
+                utils.extract_vcf_data(str(chrom), vcf_range_df, input_vcf, vcf_output_dir,
                                output_vcf_name, self.gwas_col_dict['position'], 
                                target_snp_col_name=Processor.VAR_ID_COL_NAME, 
                                extract_step_size=window_size)
                 output_ld_file = os.path.join(vcf_output_dir, f"{lead_SNP_id}")
+
+                ## calculate LD 
                 if lead_SNP_id == None:
                     continue
                 else:
+                    # os.system(self.shell_command_plink_execute.format(f'{vcf_output_dir}/{output_vcf_name}', 
+                    #                                             lead_SNP_id, window_size/1000, self.gwas_LD_r2_filter,
+                    #                                             output_ld_file))
                     os.system(self.shell_command_plink_execute.format(f'{vcf_output_dir}/{output_vcf_name}', 
-                                                                lead_SNP_id, window_size, self.gwas_LD_r2_filter,
+                                                                lead_SNP_id, self.gwas_LD_r2_filter,
                                                                 output_ld_file))
                     
-                
+
+                ## define range_df
                 if not Path(f"{output_ld_file}.ld").exists():
-                    continue
+                    range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
+                            max(0, pos - additional_expansion) <= gwas_df[self.gwas_col_dict['position']]) & (
+                                            gwas_df[self.gwas_col_dict['position']] <= pos + additional_expansion)]
+                else: 
+                    ld_filter_df = pd.read_csv(f"{output_ld_file}.ld", sep='\s+')
+                    
+                    if (len(ld_filter_df) == 0) or (len(ld_filter_df) == 1):
+                        logging.info(f"Calculating LD failure {lead_SNP_id}.")
+                        range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
+                                max(0, pos - additional_expansion) <= gwas_df[self.gwas_col_dict['position']]) & (
+                                                gwas_df[self.gwas_col_dict['position']] <= pos + additional_expansion)]
+                    else:
+                        range_start = int(list(ld_filter_df['BP_B'])[0])
+                        range_end = int(list(ld_filter_df['BP_B'])[-1])
 
-                ld_filter_df = pd.read_csv(f"{output_ld_file}.ld", sep='\s+')
-                
-                if len(ld_filter_df) == 0:
-                    logging.info(f"Calculating LD failure {lead_SNP_id}.")
-                    continue
-                if len(ld_filter_df) == 1: # No SNP with LD > threshold with the lead_SNP_id
-                    logging.info(f"No SNP has a linkage disequilibrium (LD) with the target SNP {lead_SNP_id} that exceeds the {self.gwas_LD_r2_filter}.")
+                        logging.info(f"range: {range_start} - {range_end}")
+                        # range_df[self.gwas_col_dict['position']] = range_df[self.gwas_col_dict['position']].astype('int')
 
-                range_start = int(list(ld_filter_df['BP_B'])[0])
-                range_end = int(list(ld_filter_df['BP_B'])[-1])
+                        range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & 
+                            (range_start-additional_expansion <= gwas_df[self.gwas_col_dict['position']]) & 
+                            (gwas_df[self.gwas_col_dict['position']] <= range_end+additional_expansion)]
 
-                logging.info(f"range: {range_start} - {range_end}")
-                range_df[self.gwas_col_dict['position']] = range_df[self.gwas_col_dict['position']].astype('int')
-
-                range_df = range_df[
-                    (range_start-additional_expansion <= range_df[self.gwas_col_dict['position']]) & 
-                    (range_df[self.gwas_col_dict['position']] <= range_end+additional_expansion)]
 
                 if self.global_LD_based_window == True and Path(self.qtl_LD_window).exists():
-                    # get the union of gwas and qtl LD based window
-                    logging.info(f"Preprocessing global LD based window ... ")
-
+                    ## Combined LD based
+                    logging.info(f"Preprocessing Combined LD based window ... ")
+                    pairvariants_ld_cmd = "plink --silent --vcf {} --r2 --ld {} {} --out {}"
                     ld_window = list(range_df[self.gwas_col_dict['position']])
                     
-                    overlap = False
+                    extended = False
 
                     qtl_LD_window_summary = pd.read_csv(self.qtl_LD_window, sep=const.column_spliter)
+                    max_LD_r_sq_between_gwas_qtl_leadsnp = 0
                     for ix_qtl, row_qtl in qtl_LD_window_summary.iterrows():
                         chrom_qtl = str(row_qtl.loc['chrom'])
                         if str(chrom_qtl) != str(chrom):
                             continue
 
                         qtl_positions = ast.literal_eval(row_qtl.loc['positions'])
+                        qtl_locus_leadSNP_variant_id = row_qtl.loc['lead_SNP']
                         if len(set(range_df[self.gwas_col_dict['position']]) & set(qtl_positions)) < self.min_matching_number:
-                            logging.info(f"Less than {self.min_matching_number} matched variants")
+                            ## filter out if no more than 5 overlap
+                            # logging.info(f"Less than {self.min_matching_number} matched variants")
                             continue
                         else:
-                            overlap = True
-                            logging.info(f"More than {self.min_matching_number} matched variants")
-                            ld_window = ld_window + list(set(qtl_positions))
-                            logging.info(f"ld_window: {ld_window}")
+                            ## if have overlap between GWAS locus and QTL locus
+                            pairvariants_ld_out = os.path.join(self.gwas_preprocessed_dir, "pairedld")
+                            ## calculate LD between GWAS lead SNP and QTL lead SNP
+                            os.system(pairvariants_ld_cmd.format(f'{input_vcf}', 
+                                                                lead_SNP_id, qtl_locus_leadSNP_variant_id,
+                                                                pairvariants_ld_out))
+                            if Path(f"{pairvariants_ld_out}.log").exists():
+                                r2 = utils.extract_r2_from_ld_file(f"{pairvariants_ld_out}.log")
+                                print("Extracted r-sq:", r2)
+                                if r2 != None:
+                                    if r2 > max_LD_r_sq_between_gwas_qtl_leadsnp:
+                                        # keep the maximun LD
+                                        max_LD_r_sq_between_gwas_qtl_leadsnp = r2
+                                        added_qtl_positions = list(set(qtl_positions))
+                                        extended = True
                     
-                    if overlap == False:
+                    
+                    if extended == False:
+                        ## not overlap with any QTL locus and no valid LD (LD r2=None) with this GWAS lead variant locus
+                        ## next GWAS lead SNP
+                        print("not overlap with any QTL locus")
                         continue
+                    else: 
+                        ## update locus window size
+                        ld_window = ld_window + list(set(added_qtl_positions))
+                        ld_window = list(set(ld_window))
 
+                    ## if not continue, update the output range df for this locus
                     range_df = gwas_df[(gwas_df[self.gwas_col_dict['chrom']] == chrom) & (
                             int(min(ld_window)) <= gwas_df[self.gwas_col_dict['position']]) & (
                                             gwas_df[self.gwas_col_dict['position']] <= int(max(ld_window)))]
-                    logging.info(f"len of range_df: {range_df}")
-                    file_name = f'{lead_SNP_id}-chr{chrom}.tsv.gz'
-                    if len(range_df[range_df[self.gwas_col_dict['pvalue']] < self.config_holder.gwas_p_threshold]) < 2:
-                        logging.info(f"Less than 2 significant variants in {lead_SNP_id} loci")
+                    logging.info(f"len of range_df: {len(range_df)}")
+                    if len(range_df[range_df[self.gwas_col_dict['pvalue']] < self.config_holder.gwas_p_threshold]) < 1:
+                        logging.info(f"Less than 1 significant GWAS variants in {lead_SNP_id} loci")
                         continue
-                    logging.info(f"More than 2 significant variants in {lead_SNP_id} loci")
-                    chrom_list.append(chrom)
-                    lead_SNP_list.append(lead_SNP_id)
-                    count += 1
-                    range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), 
-                                    sep=const.output_spliter, header=True, index=False)
-                    chrom_cluster_pos_list = chrom_cluster_pos_list + list(range_df[self.gwas_col_dict['position']])
-                    cluster_pos_dict[chrom] = list(set(chrom_cluster_pos_list))
-                    logging.info(f"cluster_pos_dict[chrom]: {cluster_pos_dict[chrom]}")
-                    positions_list.append(range_df[self.gwas_col_dict['position']].tolist())
 
                 else:
-                    file_name = f'{lead_SNP_id}-chr{chrom}.tsv.gz'
-                    if len(range_df[range_df[self.gwas_col_dict['pvalue']] < self.config_holder.gwas_p_threshold]) < 2:
-                        logging.info(f"Less than 2 significant variants in {lead_SNP_id} loci")
+                    ## GWAS LD based
+                    if len(range_df[range_df[self.gwas_col_dict['pvalue']] < self.config_holder.gwas_p_threshold]) < 1:
+                        logging.info(f"Less than 1 significant variants in {lead_SNP_id} loci")
                         continue
-                    logging.info(f"More than 2 significant variants in {lead_SNP_id} loci")
-                    chrom_list.append(chrom)
-                    lead_SNP_list.append(lead_SNP_id)
-                    count += 1
-                    range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
-                                    header=True,
-                                    index=False)
-                    logging.info(f"range_dfrange_df: {range_df}")
-                    chrom_cluster_pos_list = chrom_cluster_pos_list + list(range_df[self.gwas_col_dict['position']])
-                    cluster_pos_dict[chrom] = list(set(chrom_cluster_pos_list))
-                    logging.info(f"cluster_pos_dict[chrom]: {cluster_pos_dict[chrom]}")
-                    positions_list.append(range_df[self.gwas_col_dict['position']].tolist())
-                    del range_df
+
+
+                chrom_list.append(chrom)
+                lead_SNP_list.append(lead_SNP_id)
+                count += 1
+                range_df.to_csv(os.path.join(self.gwas_cluster_output_dir, file_name), sep=const.output_spliter,
+                                header=True,
+                                index=False)
+                logging.info(f"range_dfrange_df: {range_df}")
+                chrom_cluster_pos_list = chrom_cluster_pos_list + list(range_df[self.gwas_col_dict['position']])
+                cluster_pos_dict[chrom] = list(set(chrom_cluster_pos_list))
+                # logging.info(f"cluster_pos_dict[chrom]: {cluster_pos_dict[chrom]}")
+                positions_list.append(range_df[self.gwas_col_dict['position']].tolist())
+                del range_df
+
                 #del pval_filter_range_df
         del pval_filter_gwas_df
 
         logging.info(
             f'Clumping GWAS SNPs, range files will be written to {self.gwas_cluster_output_dir}, time: {datetime.datetime.now()}')
         gwas_chrom_group_files = {}
-        for name, group in gwas_df.groupby(self.gwas_col_dict['chrom'], observed=True):
+        for name, group in gwas_df.groupby(self.gwas_col_dict['chrom'], observed=True): # **
             if group.shape[0] == 0:
                 continue
             group_file = os.path.join(self.gwas_output_dir, f'chr{name}.tsv.gz')
             group.to_csv(group_file, sep=const.output_spliter, header=True, index=False)
-            gwas_chrom_group_files[name] = group_file
+            gwas_chrom_group_files[name] = group_file # **
         del gwas_df
 
         with open(f'{self.gwas_preprocessed_dir}/gwas_snp_summary.log', mode='w') as snp_file:
