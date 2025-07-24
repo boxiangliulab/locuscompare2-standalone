@@ -16,15 +16,15 @@ the significant SNPs and genes.
 
 ## Get started
 
-### Online use
+### Online platform
 
 You can visit our online website [https://locuscompare2.com](https://locuscompare2.com) to use locuscompare2.
 
 ###  Source code
 
-- For university researchers, you can access our source code through your educational email. Please download it from the code access application portal. [https://download.locuscompare2.com](https://download.locuscompare2.com)
+- For education and research users, you can access the source code through your .edu email. Please download it from the source code access portal. [https://download.locuscompare2.com](https://download.locuscompare2.com)
 
-- For commercial users, please contact Fei (e1124850@u.nus.edu)
+- For commercial users, please contact Fei (e1124850@u.nus.edu) and Boxiang Liu (boxiangliu@nus.edu.sg).
 
 ## License
 
