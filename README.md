@@ -29,3 +29,9 @@ You can visit our online website [https://locuscompare2.com](https://locuscompar
 ## License
 
 <span style="color:red">**This project is released under the [Dual Licensing Options](LICENSE).**</span>
+
+## Citation
+
+If you use LocusCompare2 in your research, please cite:
+
+[Mitigating inconsistencies in GWAS follow-up analyses with LocusCompare2](https://www.nature.com/articles/s41588-025-02331-x)
